@@ -779,12 +779,6 @@ const { data: record } = await db
 })
 
 
-// // Insert multiple records
-// const { data: records } = await db.record.bulkInsert("table_uuid", [
-//   { title: "iPhone 15", price: 999.99 },
-//   { title: "iPad Air", price: 599.99 },
-// ]);
-
 // Find records with complex queries
 **Method 1**
 const { data: products, pagination } = await db.record.findAll("products", {
