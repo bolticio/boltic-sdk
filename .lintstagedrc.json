@@ -1,0 +1,9 @@
+{
+    "databases/**/*.{ts,tsx}": [
+        "cd databases && eslint --fix",
+        "cd databases && prettier --write"
+    ],
+    "databases/**/*.{json,md}": [
+        "cd databases && prettier --write"
+    ]
+}

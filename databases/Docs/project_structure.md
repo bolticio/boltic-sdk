@@ -351,30 +351,30 @@ scripts/
 #### `vite.config.ts`
 
 ```typescript
-import { defineConfig } from "vite";
-import { resolve } from "path";
-import dts from "vite-plugin-dts";
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
+import dts from 'vite-plugin-dts';
 
 export default defineConfig({
   build: {
     lib: {
       entry: {
-        index: resolve(__dirname, "src/index.ts"),
-        testing: resolve(__dirname, "src/testing/index.ts"),
+        index: resolve(__dirname, 'src/index.ts'),
+        testing: resolve(__dirname, 'src/testing/index.ts'),
       },
-      formats: ["es", "cjs", "umd"],
-      name: "BolticDatabase",
+      formats: ['es', 'cjs', 'umd'],
+      name: 'BolticDatabase',
     },
     rollupOptions: {
-      external: ["axios"],
+      external: ['axios'],
       output: {
         globals: {
-          axios: "axios",
+          axios: 'axios',
         },
       },
     },
     sourcemap: true,
-    minify: "terser",
+    minify: 'terser',
   },
   plugins: [
     dts({

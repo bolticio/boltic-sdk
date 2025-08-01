@@ -119,7 +119,7 @@ Use the exact configuration from `/Docs/project_structure.md`:
   "keywords": ["boltic", "database", "sdk", "typescript", "api"],
   "repository": {
     "type": "git",
-    "url": "https://github.com/boltic/database-js.git"
+    "url": "https://github.com/bolticio/boltic-sdk.git"
   },
   "scripts": {
     "build": "vite build",
@@ -227,30 +227,30 @@ Use the exact configuration from `/Docs/project_structure.md`:
 Use the exact configuration from `/Docs/project_structure.md`:
 
 ```typescript
-import { defineConfig } from "vite";
-import { resolve } from "path";
-import dts from "vite-plugin-dts";
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
+import dts from 'vite-plugin-dts';
 
 export default defineConfig({
   build: {
     lib: {
       entry: {
-        index: resolve(__dirname, "src/index.ts"),
-        testing: resolve(__dirname, "src/testing/index.ts"),
+        index: resolve(__dirname, 'src/index.ts'),
+        testing: resolve(__dirname, 'src/testing/index.ts'),
       },
-      formats: ["es", "cjs", "umd"],
-      name: "BolticDatabase",
+      formats: ['es', 'cjs', 'umd'],
+      name: 'BolticDatabase',
     },
     rollupOptions: {
-      external: ["axios"],
+      external: ['axios'],
       output: {
         globals: {
-          axios: "axios",
+          axios: 'axios',
         },
       },
     },
     sourcemap: true,
-    minify: "terser",
+    minify: 'terser',
   },
   plugins: [
     dts({
@@ -264,31 +264,31 @@ export default defineConfig({
 #### 4.2 Create vitest.config.ts
 
 ```typescript
-import { defineConfig } from "vitest/config";
-import { resolve } from "path";
+import { defineConfig } from 'vitest/config';
+import { resolve } from 'path';
 
 export default defineConfig({
   test: {
     globals: true,
-    environment: "jsdom",
-    setupFiles: ["./tests/setup/vitest.setup.ts"],
+    environment: 'jsdom',
+    setupFiles: ['./tests/setup/vitest.setup.ts'],
     coverage: {
-      provider: "v8",
-      reporter: ["text", "json", "html"],
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
       exclude: [
-        "node_modules/",
-        "dist/",
-        "tests/",
-        "examples/",
-        "**/*.test.ts",
-        "**/*.spec.ts",
+        'node_modules/',
+        'dist/',
+        'tests/',
+        'examples/',
+        '**/*.test.ts',
+        '**/*.spec.ts',
       ],
     },
   },
   resolve: {
     alias: {
-      "@": resolve(__dirname, "src"),
-      "@tests": resolve(__dirname, "tests"),
+      '@': resolve(__dirname, 'src'),
+      '@tests': resolve(__dirname, 'tests'),
     },
   },
 });
@@ -304,21 +304,21 @@ export default defineConfig({
 ```javascript
 module.exports = {
   root: true,
-  parser: "@typescript-eslint/parser",
-  plugins: ["@typescript-eslint", "prettier"],
-  extends: ["eslint:recommended", "@typescript-eslint/recommended", "prettier"],
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint', 'prettier'],
+  extends: ['eslint:recommended', '@typescript-eslint/recommended', 'prettier'],
   parserOptions: {
     ecmaVersion: 2020,
-    sourceType: "module",
-    project: "./tsconfig.json",
+    sourceType: 'module',
+    project: './tsconfig.json',
   },
   rules: {
-    "@typescript-eslint/no-unused-vars": "error",
-    "@typescript-eslint/explicit-function-return-type": "warn",
-    "@typescript-eslint/no-explicit-any": "warn",
-    "prettier/prettier": "error",
+    '@typescript-eslint/no-unused-vars': 'error',
+    '@typescript-eslint/explicit-function-return-type': 'warn',
+    '@typescript-eslint/no-explicit-any': 'warn',
+    'prettier/prettier': 'error',
   },
-  ignorePatterns: ["dist/", "node_modules/", "*.js"],
+  ignorePatterns: ['dist/', 'node_modules/', '*.js'],
 };
 ```
 
@@ -375,7 +375,7 @@ Create `.lintstagedrc.json`:
 Create `tests/setup/vitest.setup.ts`:
 
 ```typescript
-import { beforeAll, afterAll, beforeEach, afterEach } from "vitest";
+import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 
 // Global test setup
 beforeAll(() => {
@@ -401,7 +401,6 @@ Create placeholder test files:
 
 - `tests/unit/client/core/base-client.test.ts`
 - `tests/integration/api-flows/database-lifecycle.test.ts`
-- `tests/e2e/browser/react-app.test.ts`
 
 ### Task 7: Environment Configuration
 
@@ -413,7 +412,7 @@ Create placeholder test files:
 Create `src/types/config/environment.ts`:
 
 ```typescript
-export type Environment = "local" | "sit" | "uat" | "prod";
+export type Environment = 'local' | 'sit' | 'uat' | 'prod';
 
 export interface EnvironmentConfig {
   baseURL: string;
@@ -424,20 +423,20 @@ export interface EnvironmentConfig {
 
 export const ENV_CONFIGS: Record<Environment, EnvironmentConfig> = {
   local: {
-    baseURL: "http://localhost:8000",
+    baseURL: 'http://localhost:8000',
     timeout: 30000,
     debug: true,
   },
   sit: {
-    baseURL: "https://asia-south1.api.fcz0.de/service/panel/boltic-tables",
+    baseURL: 'https://asia-south1.api.fcz0.de/service/panel/boltic-tables',
     timeout: 15000,
   },
   uat: {
-    baseURL: "https://asia-south1.api.uat.fcz0.de/service/panel/boltic-tables",
+    baseURL: 'https://asia-south1.api.uat.fcz0.de/service/panel/boltic-tables',
     timeout: 15000,
   },
   prod: {
-    baseURL: "https://asia-south1.api.boltic.io/service/panel/boltic-tables",
+    baseURL: 'https://asia-south1.api.boltic.io/service/panel/boltic-tables',
     timeout: 10000,
   },
 };
@@ -452,7 +451,7 @@ import {
   Environment,
   EnvironmentConfig,
   ENV_CONFIGS,
-} from "../../types/config/environment";
+} from '../../types/config/environment';
 
 export interface ClientConfig extends EnvironmentConfig {
   apiKey: string;
@@ -465,7 +464,7 @@ export class ConfigManager {
 
   constructor(
     apiKey: string,
-    environment: Environment = "prod",
+    environment: Environment = 'prod',
     overrides?: Partial<EnvironmentConfig>
   ) {
     const envConfig = ENV_CONFIGS[environment];
@@ -487,58 +486,106 @@ export class ConfigManager {
 }
 ```
 
-### Task 8: Basic Error Handling Framework
+### Task 8: Error Handling Utilities
 
-**Duration**: 1 day
+**Duration**: 0.5 days
 **Priority**: High
 
-#### 8.1 Create Base Error Classes
+#### 8.1 Create Error Utility Functions
 
-Create `src/errors/base.ts`:
+Create `src/errors/utils.ts`:
 
 ```typescript
-export abstract class BolticError extends Error {
-  abstract readonly code: string;
-  readonly timestamp: Date;
+/**
+ * Utility functions for working with standard Error classes
+ */
 
-  constructor(message: string, public readonly context?: Record<string, any>) {
-    super(message);
-    this.name = this.constructor.name;
-    this.timestamp = new Date();
+/**
+ * Creates a structured error object with additional context
+ */
+export function createErrorWithContext(
+  message: string,
+  context?: Record<string, any>
+): Error {
+  const error = new Error(message);
+  if (context) {
+    // Add context as a property for debugging
+    (error as any).context = context;
+  }
+  return error;
+}
 
-    // Maintains proper stack trace for where our error was thrown
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor);
+/**
+ * Checks if an error is a network/HTTP related error
+ */
+export function isNetworkError(error: unknown): error is Error {
+  return (
+    error instanceof Error &&
+    (error.message.includes('network') ||
+      error.message.includes('fetch') ||
+      error.message.includes('timeout') ||
+      error.name === 'AbortError')
+  );
+}
+
+/**
+ * Extracts HTTP status code from axios or fetch errors
+ */
+export function getHttpStatusCode(error: unknown): number | null {
+  if (error && typeof error === 'object') {
+    // Axios error structure
+    if (
+      'response' in error &&
+      error.response &&
+      typeof error.response === 'object'
+    ) {
+      const response = error.response as any;
+      if ('status' in response && typeof response.status === 'number') {
+        return response.status;
+      }
+    }
+    // Fetch Response error
+    if ('status' in error && typeof (error as any).status === 'number') {
+      return (error as any).status;
     }
   }
+  return null;
+}
 
-  toJSON(): Record<string, any> {
-    return {
-      name: this.name,
-      code: this.code,
-      message: this.message,
-      timestamp: this.timestamp.toISOString(),
-      context: this.context,
-    };
+/**
+ * Formats error for logging/debugging
+ */
+export function formatError(error: unknown): string {
+  if (error instanceof Error) {
+    const context = (error as any).context;
+    const statusCode = getHttpStatusCode(error);
+
+    let formatted = `${error.name}: ${error.message}`;
+
+    if (statusCode) {
+      formatted += ` (HTTP ${statusCode})`;
+    }
+
+    if (context) {
+      formatted += `\nContext: ${JSON.stringify(context, null, 2)}`;
+    }
+
+    return formatted;
   }
+
+  return String(error);
 }
 ```
-
-Create additional error classes:
-
-- `src/errors/api-error.ts`
-- `src/errors/validation-error.ts`
-- `src/errors/network-error.ts`
 
 #### 8.2 Create Error Index
 
 Create `src/errors/index.ts`:
 
 ```typescript
-export * from "./base";
-export * from "./api-error";
-export * from "./validation-error";
-export * from "./network-error";
+export * from './utils';
+
+// Re-export standard Error types for convenience
+export { Error, TypeError, RangeError, ReferenceError } from 'global';
 ```
 
 ### Task 9: CI/CD Pipeline Setup
@@ -574,7 +621,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -602,7 +649,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20.x
-          cache: "npm"
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -639,10 +686,10 @@ npm install @boltic/database-js
 ## Quick Start
 
 ```typescript
-import { createClient } from "@boltic/database-js";
+import { createClient } from '@boltic/database-js';
 
-const boltic = createClient("your-api-key", {
-  environment: "prod",
+const boltic = createClient('your-api-key', {
+  environment: 'prod',
 });
 
 // Use the SDK...
@@ -685,18 +732,18 @@ export const VERSION = '1.0.0';
 #### 11.2 Create src/client/index.ts
 
 ```typescript
-import { ConfigManager } from "./core/config";
+import { ConfigManager } from './core/config';
 import type {
   Environment,
   EnvironmentConfig,
-} from "../types/config/environment";
+} from '../types/config/environment';
 
 export interface ClientOptions extends Partial<EnvironmentConfig> {
   environment?: Environment;
 }
 
 export function createClient(apiKey: string, options: ClientOptions = {}) {
-  const { environment = "prod", ...configOverrides } = options;
+  const { environment = 'prod', ...configOverrides } = options;
   const configManager = new ConfigManager(apiKey, environment, configOverrides);
 
   // TODO: Implement actual client
@@ -712,31 +759,31 @@ Mark this task as complete when ALL of the following are achieved:
 
 ### ✅ Structure Verification
 
-- [ ] All folders and files from `/Docs/project_structure.md` are created
-- [ ] Package.json is properly configured with all required scripts
-- [ ] TypeScript configuration is working without errors
-- [ ] Build system produces all required output formats (ESM, CJS, UMD)
+- [x] All folders and files from `/Docs/project_structure.md` are created
+- [x] Package.json is properly configured with all required scripts
+- [x] TypeScript configuration is working without errors
+- [x] Build system produces all required output formats (ESM, CJS, UMD)
 
 ### ✅ Development Environment
 
-- [ ] `npm install` runs without errors
-- [ ] `npm run build` produces clean builds
-- [ ] `npm run test` executes (even with placeholder tests)
-- [ ] `npm run lint` passes without errors
-- [ ] `npm run type-check` passes without errors
+- [x] `npm install` runs without errors
+- [x] `npm run build` produces clean builds
+- [x] `npm run test` executes (even with placeholder tests)
+- [x] `npm run lint` passes without errors
+- [x] `npm run type-check` passes without errors
 
 ### ✅ Quality Assurance
 
-- [ ] ESLint and Prettier are properly configured
-- [ ] Husky pre-commit hooks are working
-- [ ] Git repository is initialized (if needed)
-- [ ] CI/CD pipeline runs successfully
+- [x] ESLint and Prettier are properly configured
+- [x] Husky pre-commit hooks are working
+- [x] Git repository is initialized (if needed)
+- [x] CI/CD pipeline runs successfully
 
 ### ✅ Documentation
 
-- [ ] README.md provides clear setup instructions
-- [ ] TypeDoc configuration generates documentation
-- [ ] All placeholder files have appropriate basic content
+- [x] README.md provides clear setup instructions
+- [x] TypeDoc configuration generates documentation
+- [x] All placeholder files have appropriate basic content
 
 ## Error Handling Protocol
 
