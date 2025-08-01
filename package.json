@@ -1,0 +1,26 @@
+{
+    "name": "boltic-sdk",
+    "version": "1.0.0",
+    "description": "Boltic SDK Monorepo",
+    "private": true,
+    "workspaces": [
+        "databases"
+    ],
+    "scripts": {
+        "prepare": "husky install",
+        "lint": "npm run lint --workspace=databases",
+        "test": "npm run test --workspace=databases",
+        "build": "npm run build --workspace=databases",
+        "format": "npm run format --workspace=databases"
+    },
+    "devDependencies": {
+        "husky": "^8.0.3",
+        "lint-staged": "^15.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/bolticio/boltic-sdk.git"
+    },
+    "author": "Boltic",
+    "license": "MIT"
+}

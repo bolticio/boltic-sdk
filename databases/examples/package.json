@@ -1,0 +1,22 @@
+{
+  "name": "@boltic/database-js-examples",
+  "version": "1.0.0",
+  "description": "Examples and demonstrations for Boltic Tables SDK",
+  "private": true,
+  "scripts": {
+    "demo:stage2": "tsx basic/stage2-demo.ts",
+    "demo:stage2:watch": "tsx --watch basic/stage2-demo.ts",
+    "build:parent": "cd .. && npm run build",
+    "demo:stage2:built": "npm run build:parent && node basic/stage2-demo.js"
+  },
+  "dependencies": {
+    "tsx": "^4.6.0"
+  },
+  "keywords": [
+    "boltic",
+    "database",
+    "sdk",
+    "examples",
+    "demo"
+  ]
+}

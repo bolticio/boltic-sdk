@@ -1,0 +1,81 @@
+{
+  "name": "@boltic/database-js",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for Boltic Tables infrastructure",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./dist/types/index.d.ts"
+    },
+    "./testing": {
+      "import": "./dist/esm/testing/index.js",
+      "require": "./dist/cjs/testing/index.js",
+      "types": "./dist/types/testing/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "boltic",
+    "database",
+    "sdk",
+    "typescript",
+    "api"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bolticio/boltic-sdk.git"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix",
+    "format": "prettier --write src tests examples docs",
+    "docs:generate": "typedoc src/index.ts",
+    "docs:serve": "npx serve docs/api",
+    "release": "npm run build && npm run test && npm publish"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitest/ui": "^1.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "jsdom": "^26.1.0",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.0.0",
+    "terser": "^5.0.0",
+    "typedoc": "^0.25.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^3.0.0",
+    "vitest": "^1.0.0"
+  },
+  "peerDependencies": {
+    "axios": "^1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "axios": {
+      "optional": true
+    }
+  }
+}
