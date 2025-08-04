@@ -1,3 +1,10 @@
+import {
+  TableAccessRequest,
+  TableCreateRequest,
+  TableDeleteOptions,
+  TableQueryOptions,
+  TableUpdateRequest,
+} from '../types/api/table';
 import type {
   Environment,
   EnvironmentConfig,
@@ -6,6 +13,8 @@ import type { HttpRequestConfig, HttpResponse } from '../utils/http/adapter';
 import { AuthManager } from './core/auth-manager';
 import { BaseClient } from './core/base-client';
 import { ClientConfig, ConfigManager } from './core/config';
+import { TableResource } from './resources/table';
+import { TableBuilder } from './resources/table-builder';
 
 export interface ClientOptions extends Partial<EnvironmentConfig> {
   environment?: Environment;
@@ -14,10 +23,17 @@ export interface ClientOptions extends Partial<EnvironmentConfig> {
   headers?: Record<string, string>;
 }
 
+interface DatabaseContext {
+  databaseId: string;
+  databaseName: string;
+}
+
 export class BolticClient {
   private configManager: ConfigManager;
   private authManager: AuthManager;
   private baseClient: BaseClient;
+  private tableResource: TableResource;
+  private currentDatabase: DatabaseContext | null = null;
 
   constructor(apiKey: string, options: ClientOptions = {}) {
     // Initialize configuration
@@ -36,6 +52,50 @@ export class BolticClient {
 
     // Initialize HTTP client
     this.baseClient = new BaseClient(config, this.authManager);
+
+    // Initialize table operations
+    this.tableResource = new TableResource(this.baseClient);
+  }
+
+  // Database context management
+  useDatabase(databaseId: string, databaseName?: string): void {
+    this.currentDatabase = {
+      databaseId,
+      databaseName: databaseName || databaseId,
+    };
+  }
+
+  getCurrentDatabase(): DatabaseContext | null {
+    return this.currentDatabase;
+  }
+
+  getDatabaseContext(): DatabaseContext | null {
+    return this.currentDatabase;
+  }
+
+  // Method 1: Direct table operations
+  get tables() {
+    return {
+      create: (data: TableCreateRequest) => this.tableResource.create(data),
+      findAll: (options?: TableQueryOptions) =>
+        this.tableResource.findAll(options),
+      findOne: (options: TableQueryOptions) =>
+        this.tableResource.findOne(options),
+      update: (identifier: string, data: TableUpdateRequest) =>
+        this.tableResource.update(identifier, data),
+      rename: (oldName: string, newName: string) =>
+        this.tableResource.rename(oldName, newName),
+      setAccess: (data: TableAccessRequest) =>
+        this.tableResource.setAccess(data),
+      delete: (options: TableDeleteOptions | string) =>
+        this.tableResource.delete(options),
+      getMetadata: (name: string) => this.tableResource.getMetadata(name),
+    };
+  }
+
+  // Method 2: Fluent table operations
+  table(): TableBuilder {
+    return new TableBuilder(this.tableResource);
   }
 
   // Configuration management

@@ -11,5 +11,7 @@ export * from './core/auth-manager';
 export * from './core/base-client';
 export * from './core/base-resource';
 export * from './core/config';
+export * from './resources/table';
+export * from './resources/table-builder';
 export { BolticClient };
 export type { ClientOptions };

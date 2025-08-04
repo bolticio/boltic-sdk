@@ -2,6 +2,39 @@
  * Utility functions for working with standard Error classes
  */
 
+export interface ValidationFailure {
+  field: string;
+  message: string;
+}
+
+/**
+ * Validation error for input validation failures
+ */
+export class ValidationError extends Error {
+  public readonly failures: ValidationFailure[];
+
+  constructor(message: string, failures: ValidationFailure[] = []) {
+    super(message);
+    this.name = 'ValidationError';
+    this.failures = failures;
+  }
+}
+
+/**
+ * API error for HTTP/API related failures
+ */
+export class ApiError extends Error {
+  public readonly statusCode: number;
+  public readonly response?: unknown;
+
+  constructor(message: string, statusCode: number, response?: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.statusCode = statusCode;
+    this.response = response;
+  }
+}
+
 /**
  * Creates a structured error object with additional context
  */
