@@ -1,16 +1,10 @@
-// Utility exports (placeholders for now)
+// Utility exports
 
 // HTTP utilities
-// export * from './http';
+export * from './http';
 
-// Query utilities
-// export * from './query';
+// Table utilities
+export * from './table/schema-helpers';
 
-// Validation utilities
-// export * from './validation';
-
-// Common utilities
-// export * from './common';
-
-// For now, export a placeholder
+// Version
 export const UTILS_VERSION = '1.0.0';
