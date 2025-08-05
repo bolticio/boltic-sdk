@@ -95,7 +95,10 @@ export class BolticClient {
 
   // Method 2: Fluent table operations
   table(): TableBuilder {
-    return new TableBuilder(this.tableResource);
+    return new TableBuilder({
+      name: 'table',
+      description: 'Table created via fluent API',
+    });
   }
 
   // Configuration management

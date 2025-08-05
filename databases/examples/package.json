@@ -8,12 +8,16 @@
     "demo:stage2:watch": "tsx --watch basic/stage2-demo.ts",
     "demo:table-ops": "tsx basic/table-operations-demo.ts",
     "demo:table-ops:watch": "tsx --watch basic/table-operations-demo.ts",
+    "demo:tables-api": "tsx basic/tables-api-demo.ts",
+    "demo:tables-api:watch": "tsx --watch basic/tables-api-demo.ts",
     "build:parent": "cd .. && npm run build",
     "demo:stage2:built": "npm run build:parent && node basic/stage2-demo.js",
-    "demo:table-ops:built": "npm run build:parent && tsx basic/table-operations-demo.ts"
+    "demo:table-ops:built": "npm run build:parent && tsx basic/table-operations-demo.ts",
+    "demo:tables-api:built": "npm run build:parent && tsx basic/tables-api-demo.ts"
   },
   "dependencies": {
-    "tsx": "^4.6.0"
+    "tsx": "^4.6.0",
+    "dotenv": "^16.3.1"
   },
   "keywords": [
     "boltic",
