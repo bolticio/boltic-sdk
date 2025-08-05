@@ -84,8 +84,8 @@ export interface FieldDefinition {
 }
 
 export interface TableCreateRequest {
-  table_name: string;
-  schema: FieldDefinition[];
+  name: string;
+  fields: FieldDefinition[];
   description?: string;
   is_public?: boolean;
 }
