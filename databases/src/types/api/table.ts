@@ -14,15 +14,17 @@ export type FieldType =
   | 'halfvec'
   | 'sparsevec';
 
+export type AlignmentType = 'left' | 'right' | 'center';
+
 export interface FieldDefinition {
   name: string;
   type: FieldType;
-  is_nullable?: boolean;
-  is_primary_key?: boolean;
-  is_unique?: boolean;
+  is_nullable: boolean;
+  is_primary_key: boolean;
+  is_unique: boolean;
+  is_indexed: boolean;
   is_visible?: boolean;
   is_readonly?: boolean;
-  is_indexed?: boolean;
   field_order?: number;
   description?: string;
   default_value?: unknown;
@@ -32,7 +34,7 @@ export interface FieldDefinition {
   timezone?: string;
   date_format?: string;
   time_format?: string;
-  decimals?: number | string;
+  decimals?: string;
   currency_format?: string;
   selection_source?: string;
   selectable_items?: string[];
@@ -47,16 +49,22 @@ export interface FieldDefinition {
 }
 
 export interface TableCreateRequest {
-  table_name: string;
-  schema: FieldDefinition[];
+  name: string;
+  fields: FieldDefinition[];
   description?: string;
-  is_public?: boolean;
+  is_ai_generated_schema?: boolean;
+  is_template?: boolean;
 }
 
 export interface TableUpdateRequest {
   name?: string;
   snapshot?: string;
   is_shared?: boolean;
+}
+
+export interface TableCreateResponse {
+  id: string;
+  message: string;
 }
 
 export interface TableRecord {

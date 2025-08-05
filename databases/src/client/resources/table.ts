@@ -1,12 +1,10 @@
-import { ValidationError } from '../../errors/utils';
+import { TablesApiClient } from '../../api/clients/tables-api-client';
+import { ValidationError } from '../../errors';
 import {
   FieldDefinition,
-  FieldType,
-  PaginationInfo,
   TableAccessRequest,
   TableCreateRequest,
   TableDeleteOptions,
-  TableListResponse,
   TableQueryOptions,
   TableRecord,
   TableUpdateRequest,
@@ -14,181 +12,155 @@ import {
 import { ApiResponse } from '../../types/common/responses';
 import { BaseClient } from '../core/base-client';
 import { BaseResource } from '../core/base-resource';
+import { createTableBuilder, TableBuilder } from './table-builder';
+
+export interface GenerateSchemaOptions {
+  prompt: string;
+  isTemplate?: boolean;
+}
 
 export class TableResource extends BaseResource {
+  private tablesApiClient: TablesApiClient;
+
   constructor(client: BaseClient) {
     super(client, '/v1/tables');
+    const config = client.getConfig();
+
+    this.tablesApiClient = new TablesApiClient(config.apiKey, {
+      environment: config.environment,
+      timeout: config.timeout,
+      debug: config.debug,
+      retryAttempts: config.retryAttempts,
+      retryDelay: config.retryDelay,
+      headers: config.headers,
+    });
   }
 
   /**
-   * Create a new table with schema
+   * Create a new table
    */
   async create(data: TableCreateRequest): Promise<ApiResponse<TableRecord>> {
-    this.validateCreateRequest(data);
-
-    // Get current database context (defaults to 'Default' if none set)
-    const databaseId = this.getCurrentDatabaseId();
-
-    const requestData = {
-      ...data,
-      database_id: databaseId,
-    };
-
     try {
-      const response = await this.makeRequest<TableRecord>(
-        'POST',
-        '',
-        requestData
-      );
+      this.validateCreateRequest(data);
+      const result = await this.tablesApiClient.createTable(data);
 
-      return response;
-    } catch (error) {
-      // Check if it's a 409 conflict (table already exists)
-      if (
-        error &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        error.statusCode === 409
-      ) {
-        throw new ValidationError('Table already exists', [
-          {
-            field: 'table_name',
-            message: 'A table with this name already exists in the database',
-          },
-        ]);
+      if (result.error) {
+        return {
+          error:
+            typeof result.error === 'string'
+              ? result.error
+              : result.error.message || 'Unknown error',
+        };
       }
-      throw error;
+
+      return {
+        data: result.data as unknown as TableRecord,
+      };
+    } catch (error) {
+      return {
+        error: this.formatError(error),
+      };
     }
   }
 
   /**
-   * Find multiple tables with filtering and pagination
+   * Find all tables with optional filtering
    */
   async findAll(
     options: TableQueryOptions = {}
-  ): Promise<ApiResponse<TableRecord[]> & { pagination?: PaginationInfo }> {
-    // Auto-add current database filter if not specified
-    const databaseId = this.getCurrentDatabaseId();
-    if (databaseId && !options.where?.db_id) {
-      options = {
-        ...options,
-        where: {
-          ...options.where,
-          db_id: databaseId,
-        },
+  ): Promise<ApiResponse<TableRecord[]>> {
+    try {
+      const result = await this.tablesApiClient.listTables(options);
+
+      if (result.error) {
+        return {
+          error:
+            typeof result.error === 'string'
+              ? result.error
+              : result.error.message || 'Unknown error',
+        };
+      }
+
+      return {
+        data: result.data,
+      };
+    } catch (error) {
+      return {
+        error: this.formatError(error),
       };
     }
-
-    const queryParams = this.buildQueryParams(options);
-    const response = await this.makeRequest<TableListResponse>(
-      'GET',
-      '',
-      undefined,
-      { params: queryParams }
-    );
-
-    // Handle error response
-    if (response.error) {
-      return {
-        error: response.error,
-      } as ApiResponse<TableRecord[]> & { pagination?: PaginationInfo };
-    }
-
-    // Transform response to match expected format
-    return {
-      data: response.data?.tables || [],
-      pagination: response.data?.pagination,
-    } as ApiResponse<TableRecord[]> & { pagination?: PaginationInfo };
   }
 
   /**
-   * Find a single table
+   * Find a single table by ID or name
    */
   async findOne(
     options: TableQueryOptions
   ): Promise<ApiResponse<TableRecord | null>> {
-    if (!options.where || Object.keys(options.where).length === 0) {
-      throw new ValidationError(
-        'findOne requires at least one where condition',
-        [
-          {
-            field: 'where',
-            message: 'Where clause is required for findOne operation',
-          },
-        ]
-      );
-    }
+    try {
+      if (!options.where?.id && !options.where?.name) {
+        throw new Error('Either id or name must be provided in where clause');
+      }
 
-    // Auto-add current database filter if not specified
-    const databaseId = this.getCurrentDatabaseId();
-    if (databaseId && !options.where.db_id) {
-      options.where.db_id = databaseId;
-    }
+      const tables = await this.findAll(options);
 
-    const queryParams = this.buildQueryParams({ ...options, limit: 1 });
-    const response = await this.makeRequest<TableListResponse>(
-      'GET',
-      '',
-      undefined,
-      { params: queryParams }
-    );
+      if (tables.error) {
+        return {
+          error: tables.error,
+        };
+      }
 
-    // Handle error response
-    if (response.error) {
       return {
-        error: response.error,
-      } as ApiResponse<TableRecord | null>;
+        data: tables.data?.[0] || null,
+      };
+    } catch (error) {
+      return {
+        error: this.formatError(error),
+      };
     }
-
-    const table = response.data?.tables?.[0] || null;
-    return {
-      data: table,
-    } as ApiResponse<TableRecord | null>;
   }
 
   /**
-   * Update a table
+   * Update a table by ID or name
    */
   async update(
-    identifier: string | TableQueryOptions,
-    data?: TableUpdateRequest
+    identifier: string,
+    data: TableUpdateRequest
   ): Promise<ApiResponse<TableRecord>> {
-    let updateData: TableUpdateRequest;
-    let tableId: string;
+    try {
+      // First, find the table to get its ID
+      const table = await this.findOne({
+        where: { name: identifier },
+      });
 
-    if (typeof identifier === 'string') {
-      // Update by table name
-      updateData = data!;
-
-      // Find table by name to get ID
-      const findResult = await this.findOne({ where: { name: identifier } });
-      if (!findResult.data) {
-        throw new ValidationError('Table not found', [
-          { field: 'identifier', message: `Table '${identifier}' not found` },
-        ]);
+      if (table.error || !table.data) {
+        return {
+          error: table.error || 'Table not found',
+        };
       }
-      tableId = findResult.data.id;
-    } else {
-      throw new ValidationError(
-        'Table updates must specify a table name or ID',
-        [
-          {
-            field: 'identifier',
-            message: 'Table identifier is required for updates',
-          },
-        ]
+
+      const result = await this.tablesApiClient.updateTable(
+        table.data.id,
+        data
       );
+
+      if (result.error) {
+        return {
+          error:
+            typeof result.error === 'string'
+              ? result.error
+              : result.error.message || 'Unknown error',
+        };
+      }
+
+      return {
+        data: result.data,
+      };
+    } catch (error) {
+      return {
+        error: this.formatError(error),
+      };
     }
-
-    this.validateUpdateRequest(updateData);
-
-    const response = await this.makeRequest<TableRecord>(
-      'PUT',
-      `/${tableId}`,
-      updateData
-    );
-
-    return response;
   }
 
   /**
@@ -198,116 +170,236 @@ export class TableResource extends BaseResource {
     oldName: string,
     newName: string
   ): Promise<ApiResponse<TableRecord>> {
-    this.validateTableName(newName);
-
     return this.update(oldName, { name: newName });
   }
 
   /**
    * Set table access permissions
    */
-  async setAccess(
-    accessData: TableAccessRequest
-  ): Promise<ApiResponse<TableRecord>> {
-    // Use update API with is_shared property
-    return this.update(accessData.table_name, {
-      is_shared: accessData.is_shared,
-    });
+  async setAccess(data: TableAccessRequest): Promise<ApiResponse<TableRecord>> {
+    try {
+      const table = await this.findOne({
+        where: { name: data.table_name },
+      });
+
+      if (table.error || !table.data) {
+        return {
+          error: table.error || 'Table not found',
+        };
+      }
+
+      const result = await this.tablesApiClient.updateTable(table.data.id, {
+        is_shared: data.is_shared,
+      });
+
+      if (result.error) {
+        return {
+          error:
+            typeof result.error === 'string'
+              ? result.error
+              : result.error.message || 'Unknown error',
+        };
+      }
+
+      return {
+        data: result.data,
+      };
+    } catch (error) {
+      return {
+        error: this.formatError(error),
+      };
+    }
   }
 
   /**
-   * Delete a table
+   * Delete a table by ID or name
    */
   async delete(
     options: TableDeleteOptions | string
-  ): Promise<ApiResponse<{ success: boolean; message?: string }>> {
-    let whereClause: { id?: string; name?: string };
-    let tableId: string | undefined;
+  ): Promise<ApiResponse<boolean>> {
+    try {
+      let tableId: string;
 
-    if (typeof options === 'string') {
-      // Delete by table name
-      const findResult = await this.findOne({ where: { name: options } });
-      if (!findResult.data) {
-        throw new ValidationError('Table not found', [
-          { field: 'table', message: `Table '${options}' not found` },
-        ]);
-      }
-      tableId = findResult.data.id;
-      whereClause = { id: tableId };
-    } else {
-      whereClause = options.where;
-      if (whereClause.id) {
-        tableId = whereClause.id;
-      } else if (whereClause.name) {
-        const findResult = await this.findOne({
-          where: { name: whereClause.name },
+      if (typeof options === 'string') {
+        // If options is a string, treat it as table name
+        const table = await this.findOne({
+          where: { name: options },
         });
-        tableId = findResult.data?.id;
+
+        if (table.error || !table.data) {
+          return {
+            error: table.error || 'Table not found',
+          };
+        }
+
+        tableId = table.data.id;
+      } else {
+        // If options is an object, find the table
+        const table = await this.findOne({
+          where: options.where,
+        });
+
+        if (table.error || !table.data) {
+          return {
+            error: table.error || 'Table not found',
+          };
+        }
+
+        tableId = table.data.id;
       }
+
+      const result = await this.tablesApiClient.deleteTable(tableId);
+
+      if (result.error) {
+        return {
+          error:
+            typeof result.error === 'string'
+              ? result.error
+              : result.error.message || 'Unknown error',
+        };
+      }
+
+      return {
+        data: result.success,
+      };
+    } catch (error) {
+      return {
+        error: this.formatError(error),
+      };
     }
-
-    if (!tableId) {
-      throw new ValidationError('Table not found for deletion', [
-        { field: 'identifier', message: 'Could not resolve table identifier' },
-      ]);
-    }
-
-    const response = await this.makeRequest<{
-      success: boolean;
-      message?: string;
-    }>('DELETE', `/${tableId}`);
-
-    return response;
   }
 
   /**
-   * Get table metadata including schema
+   * Get table metadata by name
    */
-  async getMetadata(tableName: string): Promise<ApiResponse<TableRecord>> {
-    const response = await this.findOne({
-      where: { name: tableName },
-    });
+  async getMetadata(name: string): Promise<ApiResponse<TableRecord | null>> {
+    return this.findOne({ where: { name } });
+  }
 
-    if (!response.data) {
-      throw new ValidationError('Table not found', [
-        { field: 'table_name', message: `Table '${tableName}' not found` },
-      ]);
+  /**
+   * Generate table schema using AI
+   */
+  async generateSchema(prompt: string): Promise<
+    ApiResponse<{
+      fields: Array<{
+        name: string;
+        type: string;
+        description?: string;
+      }>;
+      name?: string;
+      description?: string;
+    }>
+  > {
+    try {
+      const result = await this.tablesApiClient.generateSchema(prompt);
+
+      if (result.error) {
+        return {
+          error:
+            typeof result.error === 'string'
+              ? result.error
+              : result.error.message || 'Unknown error',
+        };
+      }
+
+      return {
+        data:
+          result.data ||
+          ({} as {
+            fields: Array<{
+              name: string;
+              type: string;
+              description?: string;
+            }>;
+            name?: string;
+            description?: string;
+          }),
+      };
+    } catch (error) {
+      return {
+        error: this.formatError(error),
+      };
     }
+  }
 
-    return {
-      data: response.data,
-      error: response.error,
-    };
+  /**
+   * Get available currencies
+   */
+  async getCurrencies(): Promise<
+    ApiResponse<
+      Array<{
+        code: string;
+        name: string;
+        symbol: string;
+      }>
+    >
+  > {
+    try {
+      const result = await this.tablesApiClient.getCurrencies();
+
+      if (result.error) {
+        return {
+          error:
+            typeof result.error === 'string'
+              ? result.error
+              : result.error.message || 'Unknown error',
+        };
+      }
+
+      return {
+        data: result.data || [],
+      };
+    } catch (error) {
+      return {
+        error: this.formatError(error),
+      };
+    }
+  }
+
+  /**
+   * Validate currency format
+   */
+  async validateCurrencyFormat(currencyCode: string): Promise<{
+    isValid: boolean;
+    error?: string;
+    suggestion?: string;
+  }> {
+    return this.tablesApiClient.validateCurrencyFormat(currencyCode);
+  }
+
+  /**
+   * Create a table builder for fluent API
+   */
+  builder(options: {
+    name: string;
+    description?: string;
+    isPublic?: boolean;
+  }): TableBuilder {
+    return createTableBuilder(options, this.tablesApiClient);
   }
 
   // Private helper methods
+
   private validateCreateRequest(data: TableCreateRequest): void {
     const errors: Array<{ field: string; message: string }> = [];
 
-    if (!data.table_name || data.table_name.trim().length === 0) {
-      errors.push({ field: 'table_name', message: 'Table name is required' });
+    if (!data.name || data.name.trim().length === 0) {
+      errors.push({ field: 'name', message: 'Table name is required' });
     } else {
-      this.validateTableName(data.table_name);
+      this.validateTableName(data.name);
     }
 
     if (
-      !data.schema ||
-      !Array.isArray(data.schema) ||
-      data.schema.length === 0
+      !data.fields ||
+      !Array.isArray(data.fields) ||
+      data.fields.length === 0
     ) {
       errors.push({
-        field: 'schema',
-        message: 'Table schema is required and must contain at least one field',
+        field: 'fields',
+        message: 'Fields are required and must be a non-empty array',
       });
     } else {
-      this.validateSchema(data.schema);
-    }
-
-    if (data.description && data.description.length > 255) {
-      errors.push({
-        field: 'description',
-        message: 'Description cannot exceed 255 characters',
-      });
+      this.validateSchema(data.fields, errors);
     }
 
     if (errors.length > 0) {
@@ -315,313 +407,99 @@ export class TableResource extends BaseResource {
     }
   }
 
-  private validateUpdateRequest(data: TableUpdateRequest): void {
-    const errors: Array<{ field: string; message: string }> = [];
-
-    if (data.name !== undefined) {
-      if (!data.name || data.name.trim().length === 0) {
-        errors.push({ field: 'name', message: 'Table name cannot be empty' });
-      } else {
-        this.validateTableName(data.name);
-      }
-    }
-
-    if (errors.length > 0) {
-      throw new ValidationError('Table update validation failed', errors);
-    }
-  }
-
   private validateTableName(name: string): void {
-    // Table name validation rules
-    if (!/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(name)) {
-      throw new ValidationError('Invalid table name', [
-        {
-          field: 'table_name',
-          message:
-            'Table name must start with a letter and contain only letters, numbers, hyphens, and underscores',
-        },
-      ]);
+    if (name.length > 64) {
+      throw new ValidationError('Table name must be 64 characters or less');
     }
 
-    if (name.length > 50) {
-      throw new ValidationError('Table name too long', [
-        {
-          field: 'table_name',
-          message: 'Table name cannot exceed 50 characters',
-        },
-      ]);
-    }
-
-    // Reserved words check
-    const reservedWords = [
-      'table',
-      'index',
-      'view',
-      'database',
-      'schema',
-      'select',
-      'insert',
-      'update',
-      'delete',
-      'vector',
-    ];
-    if (reservedWords.includes(name.toLowerCase())) {
-      throw new ValidationError('Reserved table name', [
-        {
-          field: 'table_name',
-          message: `'${name}' is a reserved word and cannot be used as a table name`,
-        },
-      ]);
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+      throw new ValidationError(
+        'Table name must start with a letter or underscore and contain only letters, numbers, and underscores'
+      );
     }
   }
 
-  private validateSchema(schema: FieldDefinition[]): void {
-    const errors: Array<{ field: string; message: string }> = [];
+  private validateSchema(
+    schema: FieldDefinition[],
+    errors: Array<{ field: string; message: string }>
+  ): void {
     const fieldNames = new Set<string>();
 
     schema.forEach((field, index) => {
-      const fieldPrefix = `schema[${index}]`;
+      // Check for duplicate field names
+      if (fieldNames.has(field.name)) {
+        errors.push({
+          field: `fields[${index}].name`,
+          message: `Duplicate field name: ${field.name}`,
+        });
+      } else {
+        fieldNames.add(field.name);
+      }
 
       // Validate field name
       if (!field.name || field.name.trim().length === 0) {
         errors.push({
-          field: `${fieldPrefix}.name`,
+          field: `fields[${index}].name`,
           message: 'Field name is required',
         });
-      } else if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(field.name)) {
+      } else if (field.name.length > 64) {
         errors.push({
-          field: `${fieldPrefix}.name`,
+          field: `fields[${index}].name`,
+          message: 'Field name must be 64 characters or less',
+        });
+      } else if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(field.name)) {
+        errors.push({
+          field: `fields[${index}].name`,
           message:
-            'Field name must start with a letter and contain only letters, numbers, and underscores',
+            'Field name must start with a letter or underscore and contain only letters, numbers, and underscores',
         });
-      } else if (fieldNames.has(field.name.toLowerCase())) {
-        errors.push({
-          field: `${fieldPrefix}.name`,
-          message: `Duplicate field name: ${field.name}`,
-        });
-      } else {
-        fieldNames.add(field.name.toLowerCase());
       }
 
       // Validate field type
       if (!field.type) {
         errors.push({
-          field: `${fieldPrefix}.type`,
+          field: `fields[${index}].type`,
           message: 'Field type is required',
         });
-      } else {
-        this.validateFieldType(field, fieldPrefix, errors);
+      }
+
+      // Validate required boolean fields
+      if (typeof field.is_nullable !== 'boolean') {
+        errors.push({
+          field: `fields[${index}].is_nullable`,
+          message: 'is_nullable must be a boolean',
+        });
+      }
+      if (typeof field.is_primary_key !== 'boolean') {
+        errors.push({
+          field: `fields[${index}].is_primary_key`,
+          message: 'is_primary_key must be a boolean',
+        });
+      }
+      if (typeof field.is_unique !== 'boolean') {
+        errors.push({
+          field: `fields[${index}].is_unique`,
+          message: 'is_unique must be a boolean',
+        });
+      }
+      if (typeof field.is_indexed !== 'boolean') {
+        errors.push({
+          field: `fields[${index}].is_indexed`,
+          message: 'is_indexed must be a boolean',
+        });
       }
     });
-
-    if (errors.length > 0) {
-      throw new ValidationError('Schema validation failed', errors);
-    }
   }
 
-  private validateFieldType(
-    field: FieldDefinition,
-    fieldPrefix: string,
-    errors: Array<{ field: string; message: string }>
-  ): void {
-    const validTypes: FieldType[] = [
-      'text',
-      'long-text',
-      'number',
-      'currency',
-      'checkbox',
-      'dropdown',
-      'email',
-      'phone-number',
-      'link',
-      'json',
-      'date-time',
-      'vector',
-      'halfvec',
-      'sparsevec',
-    ];
-
-    if (!validTypes.includes(field.type)) {
-      errors.push({
-        field: `${fieldPrefix}.type`,
-        message: `Invalid field type: ${field.type}`,
-      });
-      return;
+  private formatError(error: unknown): string {
+    if (error instanceof ValidationError) {
+      return error.message;
     }
 
-    // Type-specific validations
-    switch (field.type) {
-      case 'vector':
-      case 'halfvec':
-      case 'sparsevec':
-        if (!field.vector_dimension || field.vector_dimension <= 0) {
-          errors.push({
-            field: `${fieldPrefix}.vector_dimension`,
-            message: `${field.type} fields require a positive vector_dimension`,
-          });
-        }
-        if (
-          field.type === 'halfvec' &&
-          field.vector_dimension &&
-          field.vector_dimension > 65535
-        ) {
-          errors.push({
-            field: `${fieldPrefix}.vector_dimension`,
-            message: 'Half-vector fields support maximum 65535 dimensions',
-          });
-        }
-        break;
-
-      case 'currency':
-        if (
-          field.currency_format &&
-          !/^[A-Z]{3}$/.test(field.currency_format)
-        ) {
-          errors.push({
-            field: `${fieldPrefix}.currency_format`,
-            message: 'Currency format must be a 3-letter ISO code (e.g., USD)',
-          });
-        }
-        break;
-
-      case 'dropdown':
-        if (
-          !field.selectable_items ||
-          !Array.isArray(field.selectable_items) ||
-          field.selectable_items.length === 0
-        ) {
-          errors.push({
-            field: `${fieldPrefix}.selectable_items`,
-            message: 'Dropdown fields require selectable_items array',
-          });
-        }
-        if (field.selectable_items && field.selectable_items.length > 100) {
-          errors.push({
-            field: `${fieldPrefix}.selectable_items`,
-            message: 'Dropdown fields support maximum 100 selectable items',
-          });
-        }
-        break;
-
-      case 'email':
-        // Email fields don't need additional validation
-        break;
-
-      case 'phone-number':
-        if (
-          field.phone_format &&
-          !['international', 'national', 'e164'].includes(field.phone_format)
-        ) {
-          errors.push({
-            field: `${fieldPrefix}.phone_format`,
-            message:
-              'Phone format must be one of: international, national, e164',
-          });
-        }
-        break;
-
-      case 'link':
-        // URLs will be validated at the data level, not schema level
-        break;
-
-      case 'long-text':
-        // Long text fields support larger content than regular text
-        break;
-
-      case 'text':
-        // Regular text fields
-        break;
-
-      case 'number':
-        if (
-          field.decimals &&
-          typeof field.decimals === 'number' &&
-          field.decimals < 0
-        ) {
-          errors.push({
-            field: `${fieldPrefix}.decimals`,
-            message: 'Decimal places must be non-negative',
-          });
-        }
-        break;
-
-      case 'checkbox':
-        if (
-          field.default_value !== undefined &&
-          typeof field.default_value !== 'boolean'
-        ) {
-          errors.push({
-            field: `${fieldPrefix}.default_value`,
-            message: 'Checkbox default value must be boolean',
-          });
-        }
-        break;
-
-      case 'date-time':
-        if (field.date_format && !/^[YMD\-/\s]+$/.test(field.date_format)) {
-          errors.push({
-            field: `${fieldPrefix}.date_format`,
-            message: 'Invalid date format pattern',
-          });
-        }
-        if (field.time_format && !/^[Hms:\s]+$/.test(field.time_format)) {
-          errors.push({
-            field: `${fieldPrefix}.time_format`,
-            message: 'Invalid time format pattern',
-          });
-        }
-        break;
-
-      case 'json':
-        // JSON fields don't need schema-level validation
-        break;
-    }
-  }
-
-  private getCurrentDatabaseId(): string | null {
-    // Get database context from client
-    const client = this.client as BaseClient & {
-      getDatabaseContext?: () => { databaseId: string } | null;
-    };
-    if (client.getDatabaseContext) {
-      const context = client.getDatabaseContext();
-      return context?.databaseId || 'Default';
-    }
-    return 'Default';
-  }
-
-  protected buildQueryParams(
-    options: TableQueryOptions = {}
-  ): Record<string, unknown> {
-    const params: Record<string, unknown> = {};
-
-    if (options.sort?.length) {
-      params.sort = options.sort.map((s) => `${s.field}:${s.order}`).join(',');
+    if (error instanceof Error) {
+      return error.message;
     }
 
-    if (options.limit !== undefined) {
-      params.limit = options.limit;
-    }
-
-    if (options.offset !== undefined) {
-      params.offset = options.offset;
-    }
-
-    if (options.where) {
-      Object.entries(options.where).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (typeof value === 'object' && !Array.isArray(value)) {
-            // Handle complex operators
-            Object.entries(value).forEach(([operator, operatorValue]) => {
-              params[`where[${key}][${operator}]`] = operatorValue;
-            });
-          } else {
-            params[`where[${key}]`] = value;
-          }
-        }
-      });
-    }
-
-    return params;
+    return 'An unexpected error occurred';
   }
 }

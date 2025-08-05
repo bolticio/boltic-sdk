@@ -39,7 +39,7 @@ export class SchemaHelpers {
       is_readonly: false,
       is_indexed: false,
       field_order: 1,
-      decimals: 2,
+      decimals: '0.00',
       ...options,
     };
   }
@@ -62,7 +62,7 @@ export class SchemaHelpers {
       is_readonly: false,
       is_indexed: false,
       field_order: 1,
-      decimals: 2,
+      decimals: '0.00',
       currency_format: currency,
       ...options,
     };
