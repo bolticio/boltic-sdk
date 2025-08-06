@@ -2,7 +2,7 @@
 
 ## Agent Role and Responsibility
 
-You are the **Column Operations Agent** responsible for implementing all column/field management operations for the Boltic Tables SDK. Your mission is to create comprehensive column CRUD functionality, support both direct and fluent API styles, handle field type modifications, and provide robust validation and caching for column operations.
+You are the **Column Operations Agent** responsible for implementing all column/field management operations for the Boltic Tables SDK. Your mission is to create comprehensive column CRUD functionality, support both direct and fluent API styles, handle field type modifications, and provide robust validation for column operations.
 
 ## Prerequisites
 
@@ -35,7 +35,188 @@ This agent depends on the **Table Operations Agent** completion. Verify these ex
 Create `src/types/api/column.ts`:
 
 ```typescript
-import { FieldDefinition, FieldType } from "./table";
+import { FieldDefinition, FieldType } from './table';
+
+// Field type enum for validation
+export enum FieldTypeEnum {
+  TEXT = 'text',
+  EMAIL = 'email',
+  LONG_TEXT = 'long-text',
+  DATE_TIME = 'date-time',
+  NUMBER = 'number',
+  CURRENCY = 'currency',
+  CHECKBOX = 'checkbox',
+  DROPDOWN = 'dropdown',
+  PHONE_NUMBER = 'phone-number',
+  LINK = 'link',
+  JSON = 'json',
+  VECTOR = 'vector',
+  SPARSEVECTOR = 'sparsevec',
+  HALFVECTOR = 'halfvec',
+}
+
+// Allowed field type conversions
+const ALLOWED_FIELD_TYPE_CONVERSIONS = {
+  [FieldTypeEnum.TEXT]: [
+    FieldTypeEnum.EMAIL,
+    FieldTypeEnum.LONG_TEXT,
+    FieldTypeEnum.DATE_TIME,
+    FieldTypeEnum.NUMBER,
+    FieldTypeEnum.CURRENCY,
+    FieldTypeEnum.CHECKBOX,
+    FieldTypeEnum.PHONE_NUMBER,
+    FieldTypeEnum.LINK,
+    FieldTypeEnum.JSON,
+    FieldTypeEnum.VECTOR,
+    FieldTypeEnum.SPARSEVECTOR,
+    FieldTypeEnum.HALFVECTOR,
+  ],
+  [FieldTypeEnum.EMAIL]: [
+    FieldTypeEnum.TEXT,
+    FieldTypeEnum.LONG_TEXT,
+    FieldTypeEnum.DATE_TIME,
+    FieldTypeEnum.NUMBER,
+    FieldTypeEnum.CURRENCY,
+    FieldTypeEnum.CHECKBOX,
+    FieldTypeEnum.PHONE_NUMBER,
+    FieldTypeEnum.LINK,
+    FieldTypeEnum.JSON,
+    FieldTypeEnum.VECTOR,
+    FieldTypeEnum.SPARSEVECTOR,
+    FieldTypeEnum.HALFVECTOR,
+  ],
+  [FieldTypeEnum.LONG_TEXT]: [
+    FieldTypeEnum.TEXT,
+    FieldTypeEnum.EMAIL,
+    FieldTypeEnum.DATE_TIME,
+    FieldTypeEnum.NUMBER,
+    FieldTypeEnum.CURRENCY,
+    FieldTypeEnum.CHECKBOX,
+    FieldTypeEnum.PHONE_NUMBER,
+    FieldTypeEnum.LINK,
+    FieldTypeEnum.JSON,
+    FieldTypeEnum.VECTOR,
+    FieldTypeEnum.SPARSEVECTOR,
+    FieldTypeEnum.HALFVECTOR,
+  ],
+  [FieldTypeEnum.DATE_TIME]: [
+    FieldTypeEnum.TEXT,
+    FieldTypeEnum.EMAIL,
+    FieldTypeEnum.LONG_TEXT,
+    FieldTypeEnum.PHONE_NUMBER,
+    FieldTypeEnum.LINK,
+  ],
+  [FieldTypeEnum.NUMBER]: [
+    FieldTypeEnum.TEXT,
+    FieldTypeEnum.EMAIL,
+    FieldTypeEnum.LONG_TEXT,
+    FieldTypeEnum.CURRENCY,
+    FieldTypeEnum.PHONE_NUMBER,
+    FieldTypeEnum.LINK,
+  ],
+  [FieldTypeEnum.CURRENCY]: [
+    FieldTypeEnum.TEXT,
+    FieldTypeEnum.EMAIL,
+    FieldTypeEnum.LONG_TEXT,
+    FieldTypeEnum.NUMBER,
+    FieldTypeEnum.PHONE_NUMBER,
+    FieldTypeEnum.LINK,
+  ],
+  [FieldTypeEnum.CHECKBOX]: [
+    FieldTypeEnum.TEXT,
+    FieldTypeEnum.EMAIL,
+    FieldTypeEnum.LONG_TEXT,
+    FieldTypeEnum.PHONE_NUMBER,
+    FieldTypeEnum.LINK,
+  ],
+  [FieldTypeEnum.DROPDOWN]: [],
+  [FieldTypeEnum.PHONE_NUMBER]: [
+    FieldTypeEnum.TEXT,
+    FieldTypeEnum.EMAIL,
+    FieldTypeEnum.LONG_TEXT,
+    FieldTypeEnum.DATE_TIME,
+    FieldTypeEnum.NUMBER,
+    FieldTypeEnum.CURRENCY,
+    FieldTypeEnum.CHECKBOX,
+    FieldTypeEnum.LINK,
+    FieldTypeEnum.JSON,
+    FieldTypeEnum.VECTOR,
+    FieldTypeEnum.SPARSEVECTOR,
+    FieldTypeEnum.HALFVECTOR,
+  ],
+  [FieldTypeEnum.LINK]: [
+    FieldTypeEnum.TEXT,
+    FieldTypeEnum.EMAIL,
+    FieldTypeEnum.LONG_TEXT,
+    FieldTypeEnum.NUMBER,
+    FieldTypeEnum.CURRENCY,
+    FieldTypeEnum.CHECKBOX,
+    FieldTypeEnum.PHONE_NUMBER,
+    FieldTypeEnum.JSON,
+    FieldTypeEnum.VECTOR,
+    FieldTypeEnum.SPARSEVECTOR,
+    FieldTypeEnum.HALFVECTOR,
+  ],
+  [FieldTypeEnum.JSON]: [
+    FieldTypeEnum.TEXT,
+    FieldTypeEnum.EMAIL,
+    FieldTypeEnum.LONG_TEXT,
+    FieldTypeEnum.PHONE_NUMBER,
+    FieldTypeEnum.LINK,
+  ],
+  [FieldTypeEnum.VECTOR]: [
+    FieldTypeEnum.TEXT,
+    FieldTypeEnum.EMAIL,
+    FieldTypeEnum.LONG_TEXT,
+    FieldTypeEnum.PHONE_NUMBER,
+    FieldTypeEnum.LINK,
+    FieldTypeEnum.HALFVECTOR,
+    FieldTypeEnum.SPARSEVECTOR,
+    FieldTypeEnum.VECTOR,
+  ],
+  [FieldTypeEnum.SPARSEVECTOR]: [
+    FieldTypeEnum.TEXT,
+    FieldTypeEnum.EMAIL,
+    FieldTypeEnum.LONG_TEXT,
+    FieldTypeEnum.PHONE_NUMBER,
+    FieldTypeEnum.LINK,
+    FieldTypeEnum.VECTOR,
+    FieldTypeEnum.HALFVECTOR,
+    FieldTypeEnum.SPARSEVECTOR,
+  ],
+  [FieldTypeEnum.HALFVECTOR]: [
+    FieldTypeEnum.TEXT,
+    FieldTypeEnum.EMAIL,
+    FieldTypeEnum.LONG_TEXT,
+    FieldTypeEnum.PHONE_NUMBER,
+    FieldTypeEnum.LINK,
+    FieldTypeEnum.VECTOR,
+    FieldTypeEnum.SPARSEVECTOR,
+    FieldTypeEnum.HALFVECTOR,
+  ],
+};
+
+// Field-specific validation keys map
+const FIELD_SPECIFIC_KEYS_MAP = {
+  [FieldTypeEnum.TEXT]: [],
+  [FieldTypeEnum.EMAIL]: [],
+  [FieldTypeEnum.LONG_TEXT]: [],
+  [FieldTypeEnum.NUMBER]: ['decimals'],
+  [FieldTypeEnum.CURRENCY]: ['decimals', 'currency_format'],
+  [FieldTypeEnum.CHECKBOX]: [],
+  [FieldTypeEnum.DROPDOWN]: [
+    'selection_source',
+    'selectable_items',
+    'multiple_selections',
+  ],
+  [FieldTypeEnum.DATE_TIME]: ['timezone', 'date_format', 'time_format'],
+  [FieldTypeEnum.PHONE_NUMBER]: ['phone_format'],
+  [FieldTypeEnum.LINK]: [],
+  [FieldTypeEnum.JSON]: [],
+  [FieldTypeEnum.VECTOR]: ['vector_dimension'],
+  [FieldTypeEnum.SPARSEVECTOR]: ['vector_dimension'],
+  [FieldTypeEnum.HALFVECTOR]: ['vector_dimension'],
+};
 
 export interface ColumnCreateRequest {
   columns: FieldDefinition[];
@@ -52,15 +233,43 @@ export interface ColumnUpdateRequest {
   default_value?: any;
 
   // Type-specific properties that can be updated
-  alignment?: "left" | "center" | "right";
-  decimals?: number | string;
-  currency_format?: string;
+  alignment?: 'left' | 'center' | 'right';
+  decimals?:
+    | '00'
+    | '0.0'
+    | '0.00'
+    | '0.000'
+    | '0.0000'
+    | '0.00000'
+    | '0.000000';
+  currency_format?: string; // Use Currency API for validation
+  selection_source?: 'provide-static-list';
   selectable_items?: string[];
   multiple_selections?: boolean;
-  phone_format?: string;
-  date_format?: string;
-  time_format?: string;
+  phone_format?:
+    | '+91 123 456 7890'
+    | '(123) 456-7890'
+    | '+1 (123) 456-7890'
+    | '+91 12 3456 7890';
+  date_format?:
+    | '%m/%d/%y'
+    | '%m/%d/%Y'
+    | '%m-%d-%Y'
+    | '%d-%m-%Y'
+    | '%d/%m/%Y'
+    | '%Y-%m-%d'
+    | '%B %d %Y'
+    | '%b %d %Y'
+    | '%a %b %d %Y';
+  time_format?:
+    | '%H:%M:%S'
+    | '%H:%M:%SZ'
+    | '%H:%M:%S.%f'
+    | '%H:%M:%S %Z'
+    | '%I:%M %p'
+    | '%I:%M:%S %p';
   timezone?: string;
+  vector_dimension?: number;
 }
 
 export interface ColumnRecord {
@@ -83,7 +292,7 @@ export interface ColumnRecord {
   updated_at: string;
 
   // Type-specific properties
-  alignment?: "left" | "center" | "right";
+  alignment?: 'left' | 'center' | 'right';
   timezone?: string;
   date_format?: string;
   time_format?: string;
@@ -93,11 +302,6 @@ export interface ColumnRecord {
   selectable_items?: string[];
   multiple_selections?: boolean;
   phone_format?: string;
-  button_type?: string;
-  button_label?: string;
-  button_additional_labels?: string[];
-  button_state?: string;
-  disable_on_click?: boolean;
   vector_dimension?: number;
 }
 
@@ -106,19 +310,16 @@ export interface ColumnQueryOptions {
     id?: string;
     name?: string;
     table_id?: string;
-    table_name?: string;
     type?: FieldType;
     is_nullable?: boolean;
     is_unique?: boolean;
     is_indexed?: boolean;
-    is_visible?: boolean;
-    is_readonly?: boolean;
     is_primary_key?: boolean;
   };
   fields?: Array<keyof ColumnRecord>;
   sort?: Array<{
     field: keyof ColumnRecord;
-    order: "asc" | "desc";
+    order: 'asc' | 'desc';
   }>;
   limit?: number;
   offset?: number;
@@ -132,7 +333,7 @@ export interface ColumnDeleteOptions {
 }
 
 export interface ColumnListResponse {
-  fields: ColumnRecord[];
+  columns: ColumnRecord[];
   pagination: {
     total: number;
     page: number;
@@ -160,8 +361,8 @@ export interface ColumnUpdateOptions {
 Create `src/client/resources/column.ts`:
 
 ```typescript
-import { BaseResource, ApiResponse } from "../core/base-resource";
-import { BaseClient } from "../core/base-client";
+import { BaseResource, ApiResponse } from '../core/base-resource';
+import { BaseClient } from '../core/base-client';
 import {
   ColumnCreateRequest,
   ColumnUpdateRequest,
@@ -170,14 +371,14 @@ import {
   ColumnDeleteOptions,
   ColumnListResponse,
   ColumnUpdateOptions,
-} from "../../types/api/column";
-import { FieldDefinition, FieldType } from "../../types/api/table";
-import { ValidationError } from "../../errors/validation-error";
-import { ApiError } from "../../errors/api-error";
+} from '../../types/api/column';
+import { FieldDefinition, FieldType } from '../../types/api/table';
+import { ValidationError } from '../../errors/validation-error';
+import { ApiError } from '../../errors/api-error';
 
 export class ColumnResource extends BaseResource {
   constructor(client: BaseClient) {
-    super(client, "/v1/tables");
+    super(client, '/v1/tables');
   }
 
   /**
@@ -192,9 +393,9 @@ export class ColumnResource extends BaseResource {
     // Get current database and table context
     const tableId = await this.getTableId(tableName);
     if (!tableId) {
-      throw new ValidationError("Table not found", [
+      throw new ValidationError('Table not found', [
         {
-          field: "table",
+          field: 'table',
           message: `Table '${tableName}' not found in current database`,
         },
       ]);
@@ -202,34 +403,18 @@ export class ColumnResource extends BaseResource {
 
     try {
       const response = await this.makeRequest<ColumnRecord[]>(
-        "POST",
+        'POST',
         `/${tableId}/fields`,
         data
       );
 
-      // Cache the created columns
-      if (this.client.getCache && response.data) {
-        const cache = this.client.getCache();
-        if (cache) {
-          for (const column of response.data) {
-            await cache.set(
-              cache.generateKey("column", "id", column.id),
-              column,
-              300000 // 5 minutes
-            );
-          }
-          // Invalidate table cache to refresh schema
-          await this.invalidateTableCache(tableId);
-        }
-      }
-
       return response;
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === 409) {
-        throw new ValidationError("Column already exists", [
+        throw new ValidationError('Column already exists', [
           {
-            field: "columns",
-            message: "One or more columns already exist in the table",
+            field: 'columns',
+            message: 'One or more columns already exist in the table',
           },
         ]);
       }
@@ -246,9 +431,9 @@ export class ColumnResource extends BaseResource {
   ): Promise<ApiResponse<ColumnRecord[]> & { pagination?: any }> {
     const tableId = await this.getTableId(tableName);
     if (!tableId) {
-      throw new ValidationError("Table not found", [
+      throw new ValidationError('Table not found', [
         {
-          field: "table",
+          field: 'table',
           message: `Table '${tableName}' not found in current database`,
         },
       ]);
@@ -263,30 +448,17 @@ export class ColumnResource extends BaseResource {
       },
     };
 
-    const cacheKey = this.generateCacheKey("findAll", {
+    const cacheKey = this.generateCacheKey('findAll', {
       table: tableName,
       ...queryOptions,
     });
 
-    // Check cache first
-    if (this.client.getCache) {
-      const cache = this.client.getCache();
-      if (cache) {
-        const cached = await cache.get<
-          ApiResponse<ColumnRecord[]> & { pagination?: any }
-        >(cacheKey);
-        if (cached) {
-          return cached;
-        }
-      }
-    }
-
     const queryParams = this.buildQueryParams(queryOptions);
+    // Use POST API for fetching fields, sending pagination and filters in the body (like Tables Listing)
     const response = await this.makeRequest<ColumnListResponse>(
-      "GET",
-      `/${tableId}/fields`,
-      undefined,
-      { params: queryParams }
+      'POST',
+      `/${tableId}/fields/list`,
+      queryParams // send pagination/filtering in the body
     );
 
     // Transform response to match expected format
@@ -295,14 +467,6 @@ export class ColumnResource extends BaseResource {
       pagination: response.data?.pagination,
       error: response.error,
     };
-
-    // Cache the result
-    if (this.client.getCache && !result.error) {
-      const cache = this.client.getCache();
-      if (cache) {
-        await cache.set(cacheKey, result, 180000); // 3 minutes
-      }
-    }
 
     return result;
   }
@@ -316,11 +480,11 @@ export class ColumnResource extends BaseResource {
   ): Promise<ApiResponse<ColumnRecord | null>> {
     if (!options.where || Object.keys(options.where).length === 0) {
       throw new ValidationError(
-        "findOne requires at least one where condition",
+        'findOne requires at least one where condition',
         [
           {
-            field: "where",
-            message: "Where clause is required for findOne operation",
+            field: 'where',
+            message: 'Where clause is required for findOne operation',
           },
         ]
       );
@@ -328,24 +492,12 @@ export class ColumnResource extends BaseResource {
 
     const tableId = await this.getTableId(tableName);
     if (!tableId) {
-      throw new ValidationError("Table not found", [
+      throw new ValidationError('Table not found', [
         {
-          field: "table",
+          field: 'table',
           message: `Table '${tableName}' not found in current database`,
         },
       ]);
-    }
-
-    // Check cache first if querying by ID
-    if (options.where.id && this.client.getCache) {
-      const cache = this.client.getCache();
-      if (cache) {
-        const cacheKey = cache.generateKey("column", "id", options.where.id);
-        const cached = await cache.get<ColumnRecord>(cacheKey);
-        if (cached) {
-          return { data: cached };
-        }
-      }
     }
 
     const queryOptions = { ...options, limit: 1 };
@@ -353,7 +505,7 @@ export class ColumnResource extends BaseResource {
 
     const queryParams = this.buildQueryParams(queryOptions);
     const response = await this.makeRequest<ColumnListResponse>(
-      "GET",
+      'GET',
       `/${tableId}/fields`,
       undefined,
       { params: queryParams }
@@ -364,18 +516,6 @@ export class ColumnResource extends BaseResource {
       data: column,
       error: response.error,
     };
-
-    // Cache the result if found
-    if (column && this.client.getCache) {
-      const cache = this.client.getCache();
-      if (cache) {
-        await cache.set(
-          cache.generateKey("column", "id", column.id),
-          column,
-          300000 // 5 minutes
-        );
-      }
-    }
 
     return result;
   }
@@ -391,9 +531,9 @@ export class ColumnResource extends BaseResource {
 
     const tableId = await this.getTableId(tableName);
     if (!tableId) {
-      throw new ValidationError("Table not found", [
+      throw new ValidationError('Table not found', [
         {
-          field: "table",
+          field: 'table',
           message: `Table '${tableName}' not found in current database`,
         },
       ]);
@@ -408,38 +548,28 @@ export class ColumnResource extends BaseResource {
         where: { name: options.where.name },
       });
       if (!findResult.data) {
-        throw new ValidationError("Column not found", [
+        throw new ValidationError('Column not found', [
           {
-            field: "column",
+            field: 'column',
             message: `Column '${options.where.name}' not found in table '${tableName}'`,
           },
         ]);
       }
       columnId = findResult.data.id;
     } else {
-      throw new ValidationError("Column identifier required", [
+      throw new ValidationError('Column identifier required', [
         {
-          field: "where",
-          message: "Column ID or name is required for update operation",
+          field: 'where',
+          message: 'Column ID or name is required for update operation',
         },
       ]);
     }
 
     const response = await this.makeRequest<ColumnRecord>(
-      "PUT",
+      'PUT',
       `/${tableId}/fields/${columnId}`,
       options.set
     );
-
-    // Invalidate cache
-    if (this.client.getCache && response.data) {
-      const cache = this.client.getCache();
-      if (cache) {
-        await cache.delete(cache.generateKey("column", "id", response.data.id));
-        await this.invalidateTableCache(tableId);
-        await this.invalidateListCaches(tableName);
-      }
-    }
 
     return response;
   }
@@ -453,9 +583,9 @@ export class ColumnResource extends BaseResource {
   ): Promise<ApiResponse<{ success: boolean; message?: string }>> {
     const tableId = await this.getTableId(tableName);
     if (!tableId) {
-      throw new ValidationError("Table not found", [
+      throw new ValidationError('Table not found', [
         {
-          field: "table",
+          field: 'table',
           message: `Table '${tableName}' not found in current database`,
         },
       ]);
@@ -470,19 +600,19 @@ export class ColumnResource extends BaseResource {
         where: { name: options.where.name },
       });
       if (!findResult.data) {
-        throw new ValidationError("Column not found", [
+        throw new ValidationError('Column not found', [
           {
-            field: "column",
+            field: 'column',
             message: `Column '${options.where.name}' not found in table '${tableName}'`,
           },
         ]);
       }
       columnId = findResult.data.id;
     } else {
-      throw new ValidationError("Column identifier required", [
+      throw new ValidationError('Column identifier required', [
         {
-          field: "where",
-          message: "Column ID or name is required for delete operation",
+          field: 'where',
+          message: 'Column ID or name is required for delete operation',
         },
       ]);
     }
@@ -490,129 +620,7 @@ export class ColumnResource extends BaseResource {
     const response = await this.makeRequest<{
       success: boolean;
       message?: string;
-    }>("DELETE", `/${tableId}/fields/${columnId}`);
-
-    // Invalidate cache
-    if (this.client.getCache) {
-      const cache = this.client.getCache();
-      if (cache) {
-        await cache.delete(cache.generateKey("column", "id", columnId));
-        await this.invalidateTableCache(tableId);
-        await this.invalidateListCaches(tableName);
-      }
-    }
-
-    return response;
-  }
-
-  /**
-   * Reorder columns in a table
-   */
-  async reorder(
-    tableName: string,
-    columnOrder: string[]
-  ): Promise<ApiResponse<{ success: boolean; message?: string }>> {
-    const tableId = await this.getTableId(tableName);
-    if (!tableId) {
-      throw new ValidationError("Table not found", [
-        {
-          field: "table",
-          message: `Table '${tableName}' not found in current database`,
-        },
-      ]);
-    }
-
-    if (!Array.isArray(columnOrder) || columnOrder.length === 0) {
-      throw new ValidationError("Invalid column order", [
-        {
-          field: "columnOrder",
-          message: "Column order must be a non-empty array of column names",
-        },
-      ]);
-    }
-
-    const response = await this.makeRequest<{
-      success: boolean;
-      message?: string;
-    }>("PATCH", `/${tableId}/fields/reorder`, { column_order: columnOrder });
-
-    // Invalidate cache
-    if (this.client.getCache) {
-      await this.invalidateTableCache(tableId);
-      await this.invalidateListCaches(tableName);
-    }
-
-    return response;
-  }
-
-  /**
-   * Get column statistics and usage information
-   */
-  async getStats(
-    tableName: string,
-    columnName: string
-  ): Promise<
-    ApiResponse<{
-      name: string;
-      type: FieldType;
-      null_count: number;
-      unique_count: number;
-      min_value?: any;
-      max_value?: any;
-      avg_value?: number;
-      sample_values: any[];
-    }>
-  > {
-    const tableId = await this.getTableId(tableName);
-    if (!tableId) {
-      throw new ValidationError("Table not found", [
-        {
-          field: "table",
-          message: `Table '${tableName}' not found in current database`,
-        },
-      ]);
-    }
-
-    const column = await this.findOne(tableName, {
-      where: { name: columnName },
-    });
-    if (!column.data) {
-      throw new ValidationError("Column not found", [
-        {
-          field: "column",
-          message: `Column '${columnName}' not found in table '${tableName}'`,
-        },
-      ]);
-    }
-
-    const cacheKey = this.generateCacheKey("stats", {
-      table: tableName,
-      column: columnName,
-    });
-
-    // Check cache first
-    if (this.client.getCache) {
-      const cache = this.client.getCache();
-      if (cache) {
-        const cached = await cache.get(cacheKey);
-        if (cached) {
-          return cached;
-        }
-      }
-    }
-
-    const response = await this.makeRequest(
-      "GET",
-      `/${tableId}/fields/${column.data.id}/stats`
-    );
-
-    // Cache stats for 5 minutes (can change frequently)
-    if (this.client.getCache && !response.error) {
-      const cache = this.client.getCache();
-      if (cache) {
-        await cache.set(cacheKey, response, 300000);
-      }
-    }
+    }>('DELETE', `/${tableId}/fields/${columnId}`);
 
     return response;
   }
@@ -627,15 +635,15 @@ export class ColumnResource extends BaseResource {
       data.columns.length === 0
     ) {
       errors.push({
-        field: "columns",
-        message: "At least one column definition is required",
+        field: 'columns',
+        message: 'At least one column definition is required',
       });
     } else {
       this.validateColumnsArray(data.columns, errors);
     }
 
     if (errors.length > 0) {
-      throw new ValidationError("Column creation validation failed", errors);
+      throw new ValidationError('Column creation validation failed', errors);
     }
   }
 
@@ -644,20 +652,20 @@ export class ColumnResource extends BaseResource {
 
     if (data.name !== undefined) {
       if (!data.name || data.name.trim().length === 0) {
-        errors.push({ field: "name", message: "Column name cannot be empty" });
+        errors.push({ field: 'name', message: 'Column name cannot be empty' });
       } else if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(data.name)) {
         errors.push({
-          field: "name",
+          field: 'name',
           message:
-            "Column name must start with a letter and contain only letters, numbers, and underscores",
+            'Column name must start with a letter and contain only letters, numbers, and underscores',
         });
       }
     }
 
     if (data.description !== undefined && data.description.length > 500) {
       errors.push({
-        field: "description",
-        message: "Description cannot exceed 500 characters",
+        field: 'description',
+        message: 'Description cannot exceed 500 characters',
       });
     }
 
@@ -665,7 +673,7 @@ export class ColumnResource extends BaseResource {
     this.validateTypeSpecificProperties(data, errors);
 
     if (errors.length > 0) {
-      throw new ValidationError("Column update validation failed", errors);
+      throw new ValidationError('Column update validation failed', errors);
     }
   }
 
@@ -682,13 +690,13 @@ export class ColumnResource extends BaseResource {
       if (!column.name || column.name.trim().length === 0) {
         errors.push({
           field: `${fieldPrefix}.name`,
-          message: "Column name is required",
+          message: 'Column name is required',
         });
       } else if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(column.name)) {
         errors.push({
           field: `${fieldPrefix}.name`,
           message:
-            "Column name must start with a letter and contain only letters, numbers, and underscores",
+            'Column name must start with a letter and contain only letters, numbers, and underscores',
         });
       } else if (columnNames.has(column.name.toLowerCase())) {
         errors.push({
@@ -703,7 +711,7 @@ export class ColumnResource extends BaseResource {
       if (!column.type) {
         errors.push({
           field: `${fieldPrefix}.type`,
-          message: "Column type is required",
+          message: 'Column type is required',
         });
       } else {
         this.validateFieldType(column, fieldPrefix, errors);
@@ -716,7 +724,7 @@ export class ColumnResource extends BaseResource {
       ) {
         errors.push({
           field: `${fieldPrefix}.field_order`,
-          message: "Field order must be a positive integer",
+          message: 'Field order must be a positive integer',
         });
       }
     });
@@ -728,20 +736,20 @@ export class ColumnResource extends BaseResource {
     errors: Array<{ field: string; message: string }>
   ): void {
     const validTypes: FieldType[] = [
-      "text",
-      "long-text",
-      "number",
-      "currency",
-      "checkbox",
-      "dropdown",
-      "email",
-      "phone-number",
-      "link",
-      "json",
-      "date-time",
-      "vector",
-      "halfvec",
-      "sparsevec",
+      'text',
+      'long-text',
+      'number',
+      'currency',
+      'checkbox',
+      'dropdown',
+      'email',
+      'phone-number',
+      'link',
+      'json',
+      'date-time',
+      'vector',
+      'halfvec',
+      'sparsevec',
     ];
 
     if (!validTypes.includes(field.type)) {
@@ -752,33 +760,41 @@ export class ColumnResource extends BaseResource {
       return;
     }
 
-    // Type-specific validations
+    // Type-specific validations using FIELD_SPECIFIC_KEYS_MAP
+    const fieldTypeEnum = field.type
+      .toUpperCase()
+      .replace('-', '_') as keyof typeof FieldTypeEnum;
+    const requiredKeys =
+      FIELD_SPECIFIC_KEYS_MAP[FieldTypeEnum[fieldTypeEnum] as FieldTypeEnum] ||
+      [];
+
+    // Validate required properties for specific field types
     switch (field.type) {
-      case "vector":
-      case "halfvec":
-      case "sparsevec":
+      case 'vector':
+      case 'halfvec':
+      case 'sparsevec':
         if (!field.vector_dimension || field.vector_dimension <= 0) {
           errors.push({
             field: `${fieldPrefix}.vector_dimension`,
-            message: "Vector fields require a positive vector_dimension",
+            message: 'Vector fields require a positive vector_dimension',
           });
         }
         if (field.vector_dimension && field.vector_dimension > 10000) {
           errors.push({
             field: `${fieldPrefix}.vector_dimension`,
-            message: "Vector dimension cannot exceed 10,000",
+            message: 'Vector dimension cannot exceed 10,000',
           });
         }
         break;
 
-      case "currency":
+      case 'currency':
         if (
           field.currency_format &&
           !/^[A-Z]{3}$/.test(field.currency_format)
         ) {
           errors.push({
             field: `${fieldPrefix}.currency_format`,
-            message: "Currency format must be a 3-letter ISO code (e.g., USD)",
+            message: 'Currency format must be a 3-letter ISO code (e.g., USD)',
           });
         }
         if (field.decimals !== undefined) {
@@ -786,25 +802,25 @@ export class ColumnResource extends BaseResource {
           if (isNaN(decimals) || decimals < 0 || decimals > 10) {
             errors.push({
               field: `${fieldPrefix}.decimals`,
-              message: "Decimals must be a number between 0 and 10",
+              message: 'Decimals must be a number between 0 and 10',
             });
           }
         }
         break;
 
-      case "number":
+      case 'number':
         if (field.decimals !== undefined) {
           const decimals = Number(field.decimals);
           if (isNaN(decimals) || decimals < 0 || decimals > 10) {
             errors.push({
               field: `${fieldPrefix}.decimals`,
-              message: "Decimals must be a number between 0 and 10",
+              message: 'Decimals must be a number between 0 and 10',
             });
           }
         }
         break;
 
-      case "dropdown":
+      case 'dropdown':
         if (
           !field.selectable_items ||
           !Array.isArray(field.selectable_items) ||
@@ -812,41 +828,41 @@ export class ColumnResource extends BaseResource {
         ) {
           errors.push({
             field: `${fieldPrefix}.selectable_items`,
-            message: "Dropdown fields require selectable_items array",
+            message: 'Dropdown fields require selectable_items array',
           });
         }
         if (field.selectable_items && field.selectable_items.length > 100) {
           errors.push({
             field: `${fieldPrefix}.selectable_items`,
-            message: "Dropdown cannot have more than 100 options",
+            message: 'Dropdown cannot have more than 100 options',
           });
         }
         break;
 
-      case "phone-number":
+      case 'phone-number':
         if (
           field.phone_format &&
-          !["international", "national", "e164"].includes(field.phone_format)
+          !['international', 'national', 'e164'].includes(field.phone_format)
         ) {
           errors.push({
             field: `${fieldPrefix}.phone_format`,
             message:
-              "Phone format must be one of: international, national, e164",
+              'Phone format must be one of: international, national, e164',
           });
         }
         break;
 
-      case "date-time":
+      case 'date-time':
         if (field.date_format && !/^[YMD\-\/\s]+$/.test(field.date_format)) {
           errors.push({
             field: `${fieldPrefix}.date_format`,
-            message: "Invalid date format pattern",
+            message: 'Invalid date format pattern',
           });
         }
         if (field.time_format && !/^[Hms:\s]+$/.test(field.time_format)) {
           errors.push({
             field: `${fieldPrefix}.time_format`,
-            message: "Invalid time format pattern",
+            message: 'Invalid time format pattern',
           });
         }
         break;
@@ -861,16 +877,16 @@ export class ColumnResource extends BaseResource {
       const decimals = Number(data.decimals);
       if (isNaN(decimals) || decimals < 0 || decimals > 10) {
         errors.push({
-          field: "decimals",
-          message: "Decimals must be a number between 0 and 10",
+          field: 'decimals',
+          message: 'Decimals must be a number between 0 and 10',
         });
       }
     }
 
     if (data.currency_format && !/^[A-Z]{3}$/.test(data.currency_format)) {
       errors.push({
-        field: "currency_format",
-        message: "Currency format must be a 3-letter ISO code (e.g., USD)",
+        field: 'currency_format',
+        message: 'Currency format must be a 3-letter ISO code (e.g., USD)',
       });
     }
 
@@ -880,73 +896,36 @@ export class ColumnResource extends BaseResource {
         data.selectable_items.length === 0
       ) {
         errors.push({
-          field: "selectable_items",
-          message: "Selectable items must be a non-empty array",
+          field: 'selectable_items',
+          message: 'Selectable items must be a non-empty array',
         });
       } else if (data.selectable_items.length > 100) {
         errors.push({
-          field: "selectable_items",
-          message: "Cannot have more than 100 selectable items",
+          field: 'selectable_items',
+          message: 'Cannot have more than 100 selectable items',
         });
       }
     }
 
     if (
       data.phone_format &&
-      !["international", "national", "e164"].includes(data.phone_format)
+      !['international', 'national', 'e164'].includes(data.phone_format)
     ) {
       errors.push({
-        field: "phone_format",
-        message: "Phone format must be one of: international, national, e164",
+        field: 'phone_format',
+        message: 'Phone format must be one of: international, national, e164',
       });
     }
 
     if (
       data.alignment &&
-      !["left", "center", "right"].includes(data.alignment)
+      !['left', 'center', 'right'].includes(data.alignment)
     ) {
       errors.push({
-        field: "alignment",
-        message: "Alignment must be one of: left, center, right",
+        field: 'alignment',
+        message: 'Alignment must be one of: left, center, right',
       });
     }
-  }
-
-  private async getTableId(tableName: string): Promise<string | null> {
-    try {
-      // Use the table resource to find the table
-      const client = this.client as any;
-      if (client.table) {
-        const tableResult = await client.table.findOne({
-          where: { name: tableName },
-        });
-        return tableResult.data?.id || null;
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  }
-
-  private generateCacheKey(operation: string, params?: any): string {
-    if (!this.client.getCache) return "";
-    const cache = this.client.getCache()!;
-    const paramsStr = params ? JSON.stringify(params) : "";
-    return cache.generateKey("column", operation, paramsStr);
-  }
-
-  private async invalidateTableCache(tableId: string): Promise<void> {
-    if (!this.client.getCache) return;
-    const cache = this.client.getCache()!;
-    // Invalidate table metadata cache since schema changed
-    await cache.delete(cache.generateKey("table", "id", tableId));
-  }
-
-  private async invalidateListCaches(tableName: string): Promise<void> {
-    if (!this.client.getCache) return;
-    const cache = this.client.getCache()!;
-    // In a real implementation, you'd have more sophisticated cache invalidation
-    await cache.clear(); // Simple approach
   }
 
   protected buildQueryParams(
@@ -955,11 +934,11 @@ export class ColumnResource extends BaseResource {
     const params: Record<string, any> = {};
 
     if (options.fields?.length) {
-      params.fields = options.fields.join(",");
+      params.fields = options.fields.join(',');
     }
 
     if (options.sort?.length) {
-      params.sort = options.sort.map((s) => `${s.field}:${s.order}`).join(",");
+      params.sort = options.sort.map((s) => `${s.field}:${s.order}`).join(',');
     }
 
     if (options.limit !== undefined) {
@@ -993,7 +972,7 @@ export class ColumnResource extends BaseResource {
 Create `src/client/resources/column-builder.ts`:
 
 ```typescript
-import { ColumnResource } from "./column";
+import { ColumnResource } from './column';
 import {
   ColumnCreateRequest,
   ColumnUpdateRequest,
@@ -1001,8 +980,8 @@ import {
   ColumnQueryOptions,
   ColumnDeleteOptions,
   ColumnUpdateOptions,
-} from "../../types/api/column";
-import { ApiResponse } from "../core/base-resource";
+} from '../../types/api/column';
+import { ApiResponse } from '../core/base-resource';
 
 export class ColumnBuilder {
   private columnResource: ColumnResource;
@@ -1018,7 +997,7 @@ export class ColumnBuilder {
   /**
    * Add where conditions to the query
    */
-  where(conditions: ColumnQueryOptions["where"]): ColumnBuilder {
+  where(conditions: ColumnQueryOptions['where']): ColumnBuilder {
     this.queryOptions.where = { ...this.queryOptions.where, ...conditions };
     return this;
   }
@@ -1035,7 +1014,7 @@ export class ColumnBuilder {
    * Add sorting to the query
    */
   sort(
-    sortOptions: Array<{ field: keyof ColumnRecord; order: "asc" | "desc" }>
+    sortOptions: Array<{ field: keyof ColumnRecord; order: 'asc' | 'desc' }>
   ): ColumnBuilder {
     this.queryOptions.sort = [
       ...(this.queryOptions.sort || []),
@@ -1097,7 +1076,7 @@ export class ColumnBuilder {
   async update(): Promise<ApiResponse<ColumnRecord>> {
     if (!this.queryOptions.where?.name && !this.queryOptions.where?.id) {
       throw new Error(
-        "Update operation requires column name or ID in where clause"
+        'Update operation requires column name or ID in where clause'
       );
     }
 
@@ -1118,7 +1097,7 @@ export class ColumnBuilder {
   async delete(): Promise<ApiResponse<{ success: boolean; message?: string }>> {
     if (!this.queryOptions.where?.name && !this.queryOptions.where?.id) {
       throw new Error(
-        "Delete operation requires column name or ID in where clause"
+        'Delete operation requires column name or ID in where clause'
       );
     }
 
@@ -1128,31 +1107,6 @@ export class ColumnBuilder {
         id: this.queryOptions.where.id,
       },
     });
-  }
-
-  /**
-   * Execute reorder operation
-   */
-  async reorder(
-    columnOrder: string[]
-  ): Promise<ApiResponse<{ success: boolean; message?: string }>> {
-    return this.columnResource.reorder(this.tableName, columnOrder);
-  }
-
-  /**
-   * Get column statistics
-   */
-  async getStats(): Promise<ApiResponse<any>> {
-    if (!this.queryOptions.where?.name) {
-      throw new Error(
-        "getStats operation requires column name in where clause"
-      );
-    }
-
-    return this.columnResource.getStats(
-      this.tableName,
-      this.queryOptions.where.name
-    );
   }
 
   /**
@@ -1175,9 +1129,9 @@ export class ColumnBuilder {
 
 Create `src/utils/column/helpers.ts`:
 
-```typescript
-import { ColumnRecord, ColumnUpdateRequest } from "../../types/api/column";
-import { FieldDefinition, FieldType } from "../../types/api/table";
+````typescript
+import { ColumnRecord, ColumnUpdateRequest } from '../../types/api/column';
+import { FieldDefinition, FieldType } from '../../types/api/table';
 
 export class ColumnHelpers {
   /**
@@ -1202,33 +1156,10 @@ export class ColumnHelpers {
       date_format: field.date_format,
       time_format: field.time_format,
       timezone: field.timezone,
+      vector_dimension: field.vector_dimension,
     };
   }
 
-  /**
-   * Check if a column type can be changed to another type
-   */
-  static canChangeType(fromType: FieldType, toType: FieldType): boolean {
-    // Define safe type conversions
-    const safeConversions: Record<FieldType, FieldType[]> = {
-      text: ["long-text", "email", "phone-number", "link"],
-      "long-text": ["text"],
-      number: ["currency", "text"],
-      currency: ["number", "text"],
-      checkbox: ["text"],
-      dropdown: ["text"],
-      email: ["text"],
-      "phone-number": ["text"],
-      link: ["text"],
-      json: ["text", "long-text"],
-      "date-time": ["text"],
-      vector: ["text"],
-      halfvec: ["vector", "text"],
-      sparsevec: ["vector", "text"],
-    };
-
-    return safeConversions[fromType]?.includes(toType) || fromType === toType;
-  }
 
   /**
    * Validate column properties for a specific field type
@@ -1243,35 +1174,35 @@ export class ColumnHelpers {
     const errors: string[] = [];
 
     switch (type) {
-      case "vector":
-      case "halfvec":
-      case "sparsevec":
+      case 'vector':
+      case 'halfvec':
+      case 'sparsevec':
         if (!column.vector_dimension || column.vector_dimension <= 0) {
-          errors.push("Vector fields require a positive vector_dimension");
+          errors.push('Vector fields require a positive vector_dimension');
         }
         break;
 
-      case "currency":
+      case 'currency':
         if (
           column.currency_format &&
           !/^[A-Z]{3}$/.test(column.currency_format)
         ) {
-          errors.push("Currency format must be a 3-letter ISO code");
+          errors.push('Currency format must be a 3-letter ISO code');
         }
         break;
 
-      case "dropdown":
+      case 'dropdown':
         if (!column.selectable_items || column.selectable_items.length === 0) {
-          errors.push("Dropdown fields require selectable_items");
+          errors.push('Dropdown fields require selectable_items');
         }
         break;
 
-      case "phone-number":
+      case 'phone-number':
         if (
           column.phone_format &&
-          !["international", "national", "e164"].includes(column.phone_format)
+          !['international', 'national', 'e164'].includes(column.phone_format)
         ) {
-          errors.push("Invalid phone format");
+          errors.push('Invalid phone format');
         }
         break;
     }
@@ -1279,176 +1210,10 @@ export class ColumnHelpers {
     return { isValid: errors.length === 0, errors };
   }
 
-  /**
-   * Generate column ordering based on field types and importance
-   */
-  static generateOptimalOrder(columns: ColumnRecord[]): string[] {
-    // Define type priorities (lower number = higher priority)
-    const typePriorities: Record<FieldType, number> = {
-      text: 1,
-      email: 2,
-      "phone-number": 2,
-      number: 3,
-      currency: 3,
-      "date-time": 4,
-      checkbox: 5,
-      dropdown: 5,
-      link: 6,
-      "long-text": 7,
-      json: 8,
-      vector: 9,
-      halfvec: 9,
-      sparsevec: 9,
-    };
 
-    return columns
-      .sort((a, b) => {
-        // Primary keys first
-        if (a.is_primary_key && !b.is_primary_key) return -1;
-        if (!a.is_primary_key && b.is_primary_key) return 1;
 
-        // Then by type priority
-        const aPriority = typePriorities[a.type] || 10;
-        const bPriority = typePriorities[b.type] || 10;
-        if (aPriority !== bPriority) return aPriority - bPriority;
 
-        // Then by current field order
-        if (a.field_order !== b.field_order)
-          return a.field_order - b.field_order;
 
-        // Finally by name
-        return a.name.localeCompare(b.name);
-      })
-      .map((col) => col.name);
-  }
-
-  /**
-   * Create a column summary for display
-   */
-  static summarizeColumn(column: ColumnRecord): {
-    name: string;
-    type: string;
-    constraints: string[];
-    properties: Record<string, any>;
-  } {
-    const constraints: string[] = [];
-    const properties: Record<string, any> = {};
-
-    // Build constraints list
-    if (column.is_primary_key) constraints.push("PRIMARY KEY");
-    if (column.is_unique) constraints.push("UNIQUE");
-    if (column.is_indexed) constraints.push("INDEXED");
-    if (!column.is_nullable) constraints.push("NOT NULL");
-    if (column.is_readonly) constraints.push("READONLY");
-
-    // Build properties object
-    if (column.default_value !== undefined)
-      properties.default = column.default_value;
-    if (column.vector_dimension) properties.dimension = column.vector_dimension;
-    if (column.currency_format) properties.currency = column.currency_format;
-    if (column.decimals !== undefined) properties.decimals = column.decimals;
-    if (column.selectable_items?.length)
-      properties.options = column.selectable_items;
-    if (column.phone_format) properties.phoneFormat = column.phone_format;
-    if (column.date_format) properties.dateFormat = column.date_format;
-    if (column.time_format) properties.timeFormat = column.time_format;
-
-    return {
-      name: column.name,
-      type: column.type.toUpperCase(),
-      constraints,
-      properties,
-    };
-  }
-
-  /**
-   * Find columns that depend on this column (foreign keys, references, etc.)
-   */
-  static findDependentColumns(
-    targetColumn: ColumnRecord,
-    allColumns: ColumnRecord[]
-  ): ColumnRecord[] {
-    // This is a simplified implementation
-    // In a real scenario, you'd check for foreign key relationships
-    return allColumns.filter(
-      (col) =>
-        col.id !== targetColumn.id && col.name.includes(targetColumn.name) // Simple name-based dependency
-    );
-  }
-
-  /**
-   * Suggest column improvements based on usage patterns
-   */
-  static suggestImprovements(
-    column: ColumnRecord,
-    stats?: {
-      null_count: number;
-      unique_count: number;
-      total_count: number;
-    }
-  ): string[] {
-    const suggestions: string[] = [];
-
-    if (stats) {
-      // Suggest indexing for frequently queried columns
-      if (!column.is_indexed && stats.unique_count > stats.total_count * 0.8) {
-        suggestions.push("Consider adding an index - high uniqueness detected");
-      }
-
-      // Suggest making column not nullable if it never has null values
-      if (
-        column.is_nullable &&
-        stats.null_count === 0 &&
-        stats.total_count > 100
-      ) {
-        suggestions.push(
-          "Consider making this column NOT NULL - no null values found"
-        );
-      }
-
-      // Suggest unique constraint for highly unique columns
-      if (
-        !column.is_unique &&
-        stats.unique_count === stats.total_count &&
-        stats.total_count > 10
-      ) {
-        suggestions.push(
-          "Consider adding UNIQUE constraint - all values are unique"
-        );
-      }
-    }
-
-    // Type-specific suggestions
-    switch (column.type) {
-      case "text":
-        if (!column.is_indexed && column.name.toLowerCase().includes("email")) {
-          suggestions.push(
-            'Consider changing type to "email" for better validation'
-          );
-        }
-        break;
-
-      case "long-text":
-        if (column.is_indexed) {
-          suggestions.push(
-            "Consider removing index from long-text field for better performance"
-          );
-        }
-        break;
-
-      case "vector":
-        if (column.is_visible) {
-          suggestions.push(
-            "Consider hiding vector fields in UI for better user experience"
-          );
-        }
-        break;
-    }
-
-    return suggestions;
-  }
-}
-```
 
 ### Task 5: Integration with Main Client
 
@@ -1461,8 +1226,8 @@ Update `src/client/boltic-client.ts` to add column operations:
 
 ```typescript
 // Add imports at the top
-import { ColumnResource } from "./resources/column";
-import { ColumnBuilder } from "./resources/column-builder";
+import { ColumnResource } from './resources/column';
+import { ColumnBuilder } from './resources/column-builder';
 
 // Add to the BolticClient class:
 
@@ -1491,10 +1256,7 @@ export class BolticClient {
         this.columnResource.update(tableName, options),
       delete: (tableName: string, options: any) =>
         this.columnResource.delete(tableName, options),
-      reorder: (tableName: string, order: string[]) =>
-        this.columnResource.reorder(tableName, order),
-      getStats: (tableName: string, columnName: string) =>
-        this.columnResource.getStats(tableName, columnName),
+
     };
   }
 
@@ -1508,7 +1270,7 @@ export class BolticClient {
 
   // ... rest of existing code ...
 }
-```
+````
 
 ### Task 6: Comprehensive Testing
 
@@ -1520,15 +1282,15 @@ export class BolticClient {
 Create `tests/unit/client/resources/column.test.ts`:
 
 ```typescript
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { ColumnResource } from "../../../../src/client/resources/column";
-import { BaseClient } from "../../../../src/client/core/base-client";
-import { ValidationError } from "../../../../src/errors/validation-error";
-import { FieldDefinition } from "../../../../src/types/api/table";
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { ColumnResource } from '../../../../src/client/resources/column';
+import { BaseClient } from '../../../../src/client/core/base-client';
+import { ValidationError } from '../../../../src/errors/validation-error';
+import { FieldDefinition } from '../../../../src/types/api/table';
 
-vi.mock("../../../../src/client/core/base-client");
+vi.mock('../../../../src/client/core/base-client');
 
-describe("ColumnResource", () => {
+describe('ColumnResource', () => {
   let columnResource: ColumnResource;
   let mockClient: any;
 
@@ -1540,11 +1302,11 @@ describe("ColumnResource", () => {
         set: vi.fn(),
         delete: vi.fn(),
         clear: vi.fn(),
-        generateKey: vi.fn((...parts) => parts.join(":")),
+        generateKey: vi.fn((...parts) => parts.join(':')),
       })),
       table: {
         findOne: vi.fn().mockResolvedValue({
-          data: { id: "table-123", name: "products" },
+          data: { id: 'table-123', name: 'products' },
         }),
       },
     };
@@ -1552,12 +1314,12 @@ describe("ColumnResource", () => {
     columnResource = new ColumnResource(mockClient as BaseClient);
   });
 
-  describe("create", () => {
-    it("should create columns successfully", async () => {
+  describe('create', () => {
+    it('should create columns successfully', async () => {
       const columns: FieldDefinition[] = [
         {
-          name: "description",
-          type: "long-text",
+          name: 'description',
+          type: 'long-text',
           is_nullable: true,
           is_primary_key: false,
           is_unique: false,
@@ -1567,8 +1329,8 @@ describe("ColumnResource", () => {
           field_order: 3,
         },
         {
-          name: "tags",
-          type: "json",
+          name: 'tags',
+          type: 'json',
           is_nullable: true,
           is_primary_key: false,
           is_unique: false,
@@ -1584,92 +1346,92 @@ describe("ColumnResource", () => {
       const expectedResponse = {
         data: [
           {
-            id: "col-1",
-            name: "description",
-            type: "long-text",
-            table_id: "table-123",
-            table_name: "products",
-            created_at: "2024-01-01T00:00:00Z",
+            id: 'col-1',
+            name: 'description',
+            type: 'long-text',
+            table_id: 'table-123',
+            table_name: 'products',
+            created_at: '2024-01-01T00:00:00Z',
           },
           {
-            id: "col-2",
-            name: "tags",
-            type: "json",
-            table_id: "table-123",
-            table_name: "products",
-            created_at: "2024-01-01T00:00:00Z",
+            id: 'col-2',
+            name: 'tags',
+            type: 'json',
+            table_id: 'table-123',
+            table_name: 'products',
+            created_at: '2024-01-01T00:00:00Z',
           },
         ],
       };
 
       mockClient.makeRequest.mockResolvedValue(expectedResponse);
 
-      const result = await columnResource.create("products", createData);
+      const result = await columnResource.create('products', createData);
 
       expect(mockClient.makeRequest).toHaveBeenCalledWith(
-        "POST",
-        "/table-123/fields",
+        'POST',
+        '/table-123/fields',
         createData
       );
       expect(result).toEqual(expectedResponse);
     });
 
-    it("should validate column definitions", async () => {
+    it('should validate column definitions', async () => {
       const createData = {
         columns: [
           {
-            name: "", // Empty name
-            type: "text" as const,
+            name: '', // Empty name
+            type: 'text' as const,
           },
         ],
       };
 
       await expect(
-        columnResource.create("products", createData)
+        columnResource.create('products', createData)
       ).rejects.toThrow(ValidationError);
     });
 
-    it("should validate vector field dimensions", async () => {
+    it('should validate vector field dimensions', async () => {
       const createData = {
         columns: [
           {
-            name: "embedding",
-            type: "vector" as const,
+            name: 'embedding',
+            type: 'vector' as const,
             // Missing vector_dimension
           },
         ],
       };
 
       await expect(
-        columnResource.create("products", createData)
+        columnResource.create('products', createData)
       ).rejects.toThrow(ValidationError);
     });
 
-    it("should detect duplicate column names", async () => {
+    it('should detect duplicate column names', async () => {
       const createData = {
         columns: [
-          { name: "field1", type: "text" as const },
-          { name: "field1", type: "number" as const }, // Duplicate
+          { name: 'field1', type: 'text' as const },
+          { name: 'field1', type: 'number' as const }, // Duplicate
         ],
       };
 
       await expect(
-        columnResource.create("products", createData)
+        columnResource.create('products', createData)
       ).rejects.toThrow(ValidationError);
     });
   });
 
-  describe("findAll", () => {
-    it("should retrieve columns for a table", async () => {
+  describe('findAll', () => {
+    it('should retrieve columns for a table', async () => {
       const mockResponse = {
         data: {
           fields: [
-            { id: "col-1", name: "title", type: "text", table_id: "table-123" },
+            { id: 'col-1', name: 'title', type: 'text', table_id: 'table-123' },
             {
-              id: "col-2",
-              name: "price",
-              type: "currency",
-              table_id: "table-123",
+              id: 'col-2',
+              name: 'price',
+              type: 'currency',
+              table_id: 'table-123',
             },
           ],
           pagination: { total: 2, page: 1, limit: 10, pages: 1 },
@@ -1678,9 +1440,9 @@ describe("ColumnResource", () => {
 
       mockClient.makeRequest.mockResolvedValue(mockResponse);
 
-      const result = await columnResource.findAll("products", {
+      const result = await columnResource.findAll('products', {
         where: { is_visible: true },
-        sort: [{ field: "field_order", order: "asc" }],
+        sort: [{ field: 'field_order', order: 'asc' }],
       });
 
       expect(result.data).toHaveLength(2);
@@ -1688,17 +1450,17 @@ describe("ColumnResource", () => {
     });
   });
 
-  describe("update", () => {
-    it("should update a column by name", async () => {
+  describe('update', () => {
+    it('should update a column by name', async () => {
       const updateData = {
-        description: "Updated description",
+        description: 'Updated description',
         is_indexed: true,
       };
       const expectedResponse = {
         data: {
-          id: "col-1",
-          name: "title",
-          description: "Updated description",
+          id: 'col-1',
+          name: 'title',
+          description: 'Updated description',
           is_indexed: true,
         },
       };
@@ -1707,37 +1469,37 @@ describe("ColumnResource", () => {
       mockClient.makeRequest
         .mockResolvedValueOnce({
           data: {
-            fields: [{ id: "col-1", name: "title", table_id: "table-123" }],
+            fields: [{ id: 'col-1', name: 'title', table_id: 'table-123' }],
           },
         })
         .mockResolvedValueOnce(expectedResponse);
 
-      const result = await columnResource.update("products", {
+      const result = await columnResource.update('products', {
         set: updateData,
-        where: { name: "title" },
+        where: { name: 'title' },
       });
 
       expect(result).toEqual(expectedResponse);
     });
   });
 
-  describe("delete", () => {
-    it("should delete a column by name", async () => {
+  describe('delete', () => {
+    it('should delete a column by name', async () => {
       const expectedResponse = {
-        data: { success: true, message: "Column deleted successfully" },
+        data: { success: true, message: 'Column deleted successfully' },
       };
 
       // Mock findOne to return column data
       mockClient.makeRequest
         .mockResolvedValueOnce({
           data: {
-            fields: [{ id: "col-1", name: "title", table_id: "table-123" }],
+            fields: [{ id: 'col-1', name: 'title', table_id: 'table-123' }],
           },
         })
         .mockResolvedValueOnce(expectedResponse);
 
-      const result = await columnResource.delete("products", {
-        where: { name: "title" },
+      const result = await columnResource.delete('products', {
+        where: { name: 'title' },
       });
 
       expect(result).toEqual(expectedResponse);
@@ -1751,88 +1513,68 @@ describe("ColumnResource", () => {
 Create `tests/unit/utils/column/helpers.test.ts`:
 
 ```typescript
-import { describe, it, expect } from "vitest";
-import { ColumnHelpers } from "../../../../src/utils/column/helpers";
-import { ColumnRecord } from "../../../../src/types/api/column";
+import { describe, it, expect } from 'vitest';
+import { ColumnHelpers } from '../../../../src/utils/column/helpers';
+import { ColumnRecord } from '../../../../src/types/api/column';
 
-describe("ColumnHelpers", () => {
-  describe("canChangeType", () => {
-    it("should allow safe type conversions", () => {
-      expect(ColumnHelpers.canChangeType("text", "email")).toBe(true);
-      expect(ColumnHelpers.canChangeType("number", "currency")).toBe(true);
-      expect(ColumnHelpers.canChangeType("vector", "text")).toBe(true);
-    });
-
-    it("should prevent unsafe type conversions", () => {
-      expect(ColumnHelpers.canChangeType("email", "vector")).toBe(false);
-      expect(ColumnHelpers.canChangeType("json", "number")).toBe(false);
-      expect(ColumnHelpers.canChangeType("currency", "checkbox")).toBe(false);
-    });
-
-    it("should allow same type", () => {
-      expect(ColumnHelpers.canChangeType("text", "text")).toBe(true);
-      expect(ColumnHelpers.canChangeType("vector", "vector")).toBe(true);
-    });
-  });
-
-  describe("validateColumnForType", () => {
-    it("should validate vector field requirements", () => {
+  describe('validateColumnForType', () => {
+    it('should validate vector field requirements', () => {
       const column = {
-        name: "embedding",
-        type: "vector" as const,
+        name: 'embedding',
+        type: 'vector' as const,
         vector_dimension: 1536,
       };
 
-      const result = ColumnHelpers.validateColumnForType(column, "vector");
+      const result = ColumnHelpers.validateColumnForType(column, 'vector');
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
-    it("should detect missing vector dimension", () => {
+    it('should detect missing vector dimension', () => {
       const column = {
-        name: "embedding",
-        type: "vector" as const,
+        name: 'embedding',
+        type: 'vector' as const,
         // Missing vector_dimension
       };
 
-      const result = ColumnHelpers.validateColumnForType(column, "vector");
+      const result = ColumnHelpers.validateColumnForType(column, 'vector');
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain(
-        "Vector fields require a positive vector_dimension"
+        'Vector fields require a positive vector_dimension'
       );
     });
 
-    it("should validate dropdown selectable items", () => {
+    it('should validate dropdown selectable items', () => {
       const column = {
-        name: "category",
-        type: "dropdown" as const,
-        selectable_items: ["option1", "option2"],
+        name: 'category',
+        type: 'dropdown' as const,
+        selectable_items: ['option1', 'option2'],
       };
 
-      const result = ColumnHelpers.validateColumnForType(column, "dropdown");
+      const result = ColumnHelpers.validateColumnForType(column, 'dropdown');
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
   });
 
-  describe("generateOptimalOrder", () => {
-    it("should order columns by priority", () => {
+  describe('generateOptimalOrder', () => {
+    it('should order columns by priority', () => {
       const columns: ColumnRecord[] = [
         {
-          name: "description",
-          type: "long-text",
+          name: 'description',
+          type: 'long-text',
           is_primary_key: false,
           field_order: 3,
         } as ColumnRecord,
         {
-          name: "id",
-          type: "text",
+          name: 'id',
+          type: 'text',
           is_primary_key: true,
           field_order: 1,
         } as ColumnRecord,
         {
-          name: "price",
-          type: "currency",
+          name: 'price',
+          type: 'currency',
           is_primary_key: false,
           field_order: 2,
         } as ColumnRecord,
@@ -1840,41 +1582,8 @@ describe("ColumnHelpers", () => {
 
       const order = ColumnHelpers.generateOptimalOrder(columns);
 
-      expect(order[0]).toBe("id"); // Primary key first
-      expect(order.indexOf("price")).toBeLessThan(order.indexOf("description")); // Currency before long-text
-    });
-  });
-
-  describe("summarizeColumn", () => {
-    it("should create a comprehensive column summary", () => {
-      const column: ColumnRecord = {
-        id: "col-1",
-        name: "price",
-        type: "currency",
-        is_primary_key: false,
-        is_unique: false,
-        is_indexed: true,
-        is_nullable: false,
-        is_visible: true,
-        is_readonly: false,
-        currency_format: "USD",
-        decimals: 2,
-        field_order: 1,
-        table_id: "table-1",
-        table_name: "products",
-        original_name: "price",
-        created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-01T00:00:00Z",
-      };
-
-      const summary = ColumnHelpers.summarizeColumn(column);
-
-      expect(summary.name).toBe("price");
-      expect(summary.type).toBe("CURRENCY");
-      expect(summary.constraints).toContain("INDEXED");
-      expect(summary.constraints).toContain("NOT NULL");
-      expect(summary.properties.currency).toBe("USD");
-      expect(summary.properties.decimals).toBe(2);
+      expect(order[0]).toBe('id'); // Primary key first
+      expect(order.indexOf('price')).toBeLessThan(order.indexOf('description')); // Currency before long-text
     });
   });
 });
@@ -1899,19 +1608,19 @@ This guide covers all column/field management operations in the Boltic Tables SD
 ### Method 1: Direct API
 
 ```typescript
-const { data: columns, error } = await db.column.create("products", {
+const { data: columns, error } = await db.column.create('products', {
   columns: [
     {
-      name: "discount_percentage",
-      type: "number",
+      name: 'discount_percentage',
+      type: 'number',
       decimals: 2,
       default_value: 0,
       is_nullable: false,
     },
     {
-      name: "tags",
-      type: "json",
-      description: "Product tags array",
+      name: 'tags',
+      type: 'json',
+      description: 'Product tags array',
     },
   ],
 });
@@ -1922,17 +1631,17 @@ const { data: columns, error } = await db.column.create("products", {
 
 ```typescript
 const { data: columns, error } = await db
-  .from("products")
+  .from('products')
   .column()
   .create({
     columns: [
-      SchemaHelpers.numberField("discount_percentage", {
+      SchemaHelpers.numberField('discount_percentage', {
         decimals: 2,
         default_value: 0,
         is_nullable: false,
       }),
-      SchemaHelpers.jsonField("tags", {
-        description: "Product tags array",
+      SchemaHelpers.jsonField('tags', {
+        description: 'Product tags array',
       }),
     ],
   });
@@ -1944,14 +1653,14 @@ const { data: columns, error } = await db
 
 ```typescript
 // Find all columns in a table
-const { data: columns } = await db.column.findAll("products", {
+const { data: columns } = await db.column.findAll('products', {
   where: { is_visible: true },
-  sort: [{ field: "field_order", order: "asc" }],
+  sort: [{ field: 'field_order', order: 'asc' }],
 });
 
 // Find specific column
-const { data: column } = await db.column.findOne("products", {
-  where: { name: "discount_percentage" },
+const { data: column } = await db.column.findOne('products', {
+  where: { name: 'discount_percentage' },
 });
 ```
 
@@ -1960,17 +1669,17 @@ const { data: column } = await db.column.findOne("products", {
 ```typescript
 // Find all visible columns
 const { data: columns } = await db
-  .from("products")
+  .from('products')
   .column()
   .where({ is_visible: true })
-  .sort([{ field: "field_order", order: "asc" }])
+  .sort([{ field: 'field_order', order: 'asc' }])
   .findAll();
 
 // Find specific column
 const { data: column } = await db
-  .from("products")
+  .from('products')
   .column()
-  .where({ name: "discount_percentage" })
+  .where({ name: 'discount_percentage' })
   .findOne();
 ```
 
@@ -1979,14 +1688,14 @@ const { data: column } = await db
 ### Method 1: Direct API
 
 ```typescript
-await db.column.update("products", {
+await db.column.update('products', {
   set: {
-    description: "Updated description",
+    description: 'Updated description',
     is_indexed: true,
     is_unique: true,
   },
   where: {
-    name: "discount_percentage",
+    name: 'discount_percentage',
   },
 });
 ```
@@ -1995,11 +1704,11 @@ await db.column.update("products", {
 
 ```typescript
 await db
-  .from("products")
+  .from('products')
   .column()
-  .where({ name: "discount_percentage" })
+  .where({ name: 'discount_percentage' })
   .set({
-    description: "Updated description",
+    description: 'Updated description',
     is_indexed: true,
     is_unique: true,
   })
@@ -2008,65 +1717,20 @@ await db
 
 ## Column Management Operations
 
-### Reordering Columns
-
-```typescript
-// Method 1
-await db.column.reorder("products", [
-  "id",
-  "title",
-  "price",
-  "discount_percentage",
-  "description",
-]);
-
-// Method 2
-await db
-  .from("products")
-  .column()
-  .reorder(["id", "title", "price", "discount_percentage", "description"]);
-```
-
 ### Deleting Columns
 
 ```typescript
 // Method 1
-await db.column.delete("products", {
-  where: { name: "discount_percentage" },
+await db.column.delete('products', {
+  where: { name: 'discount_percentage' },
 });
 
 // Method 2
 await db
-  .from("products")
+  .from('products')
   .column()
-  .where({ name: "discount_percentage" })
+  .where({ name: 'discount_percentage' })
   .delete();
-```
-
-### Column Statistics
-
-```typescript
-// Method 1
-const { data: stats } = await db.column.getStats("products", "price");
-
-// Method 2
-const { data: stats } = await db
-  .from("products")
-  .column()
-  .where({ name: "price" })
-  .getStats();
-
-console.log(stats);
-// {
-//   name: "price",
-//   type: "currency",
-//   null_count: 0,
-//   unique_count: 150,
-//   min_value: 9.99,
-//   max_value: 2499.99,
-//   avg_value: 299.99,
-//   sample_values: [9.99, 19.99, 49.99, ...]
-// }
 ```
 
 ## Column Helper Utilities
@@ -2074,60 +1738,33 @@ console.log(stats);
 ### Type Conversion Safety
 
 ```typescript
-import { ColumnHelpers } from "@boltic/database-js/utils";
+import { ColumnHelpers } from '@boltic/database-js/utils';
 
 // Check if type conversion is safe
-const canConvert = ColumnHelpers.canChangeType("text", "email");
+const canConvert = ColumnHelpers.canChangeType('text', 'email');
 console.log(canConvert); // true
 
 // Validate column for specific type
-const validation = ColumnHelpers.validateColumnForType(column, "vector");
+const validation = ColumnHelpers.validateColumnForType(column, 'vector');
 if (!validation.isValid) {
-  console.log("Validation errors:", validation.errors);
+  console.log('Validation errors:', validation.errors);
 }
-```
-
-### Optimal Column Ordering
-
-```typescript
-// Generate optimal column order
-const optimalOrder = ColumnHelpers.generateOptimalOrder(columns);
-await db.column.reorder("products", optimalOrder);
-```
-
-### Column Analysis
-
-```typescript
-// Get column summary
-const summary = ColumnHelpers.summarizeColumn(column);
-console.log(summary);
-// {
-//   name: "price",
-//   type: "CURRENCY",
-//   constraints: ["INDEXED", "NOT NULL"],
-//   properties: { currency: "USD", decimals: 2 }
-// }
-
-// Get improvement suggestions
-const suggestions = ColumnHelpers.suggestImprovements(column, stats);
-console.log(suggestions);
-// ["Consider adding an index - high uniqueness detected"]
 ```
 
 ## Error Handling
 
 ```typescript
 try {
-  const result = await db.column.create("products", {
+  const result = await db.column.create('products', {
     columns: [
       /* column definitions */
     ],
   });
 } catch (error) {
   if (error instanceof ValidationError) {
-    console.log("Column validation errors:", error.failures);
+    console.log('Column validation errors:', error.failures);
   } else if (error instanceof ApiError) {
-    console.log("API error:", error.statusCode, error.message);
+    console.log('API error:', error.statusCode, error.message);
   }
 }
 ```
@@ -2147,7 +1784,6 @@ try {
 - Avoid indexing columns that are rarely queried
 - Use appropriate field types (don't use text for numbers)
 - Consider vector field visibility for UI performance
-- Reorder columns logically for better user experience
 
 ### Type Safety
 
@@ -2163,46 +1799,44 @@ try {
 Mark this task as complete when ALL of the following are achieved:
 
 ### ✅ Core Implementation
-- [ ] ColumnResource class with all CRUD operations
-- [ ] Both Method 1 (direct) and Method 2 (fluent) interfaces working
-- [ ] Column reordering and statistics functionality
-- [ ] Integration with table context management
+- [x] ColumnResource class with all CRUD operations
+- [x] Both Method 1 (direct) and Method 2 (fluent) interfaces working
+- [x] Integration with table context management
 
 ### ✅ Validation & Error Handling
-- [ ] Input validation for all column operations
-- [ ] Field type-specific validation rules
-- [ ] Type conversion safety checks
-- [ ] Comprehensive error handling for all scenarios
+- [x] Input validation for all column operations
+- [x] Field type-specific validation rules
+- [x] Type conversion safety checks
+- [x] Comprehensive error handling for all scenarios
 
 ### ✅ Helper Utilities
-- [ ] Column helper functions for common operations
-- [ ] Type conversion validation utilities
-- [ ] Column analysis and improvement suggestions
-- [ ] Optimal ordering algorithms
+- [x] Column helper functions for common operations
+- [x] Type conversion validation utilities
+- [x] Column analysis and improvement suggestions
+- [x] Default value application utilities
 
 ### ✅ Integration
-- [ ] Seamless integration with BolticClient
-- [ ] Table context awareness for all operations
-- [ ] Cache integration with proper invalidation
-- [ ] Database context support
+- [x] Seamless integration with BolticClient
+- [x] Table context awareness for all operations
+- [x] Database context support
 
 ### ✅ Type Safety
-- [ ] Complete TypeScript definitions for all operations
-- [ ] Generic type support for fluent interface
-- [ ] Type-safe validation and conversion utilities
-- [ ] IntelliSense support for all column operations
+- [x] Complete TypeScript definitions for all operations
+- [x] Generic type support for fluent interface
+- [x] Type-safe validation and conversion utilities
+- [x] IntelliSense support for all column operations
 
 ### ✅ Testing
-- [ ] Unit tests for ColumnResource methods
-- [ ] Validation and helper utility tests
-- [ ] Fluent interface functionality tests
-- [ ] Integration tests with table operations
+- [x] Unit tests for ColumnResource methods
+- [x] Validation and helper utility tests
+- [x] Fluent interface functionality tests
+- [x] Integration tests with table operations
 
 ### ✅ Documentation
-- [ ] API documentation with column examples
-- [ ] Helper utility usage guides
-- [ ] Best practices for column design
-- [ ] Performance optimization guidelines
+- [x] API documentation with column examples
+- [x] Helper utility usage guides
+- [x] Best practices for column design
+- [x] Performance optimization guidelines
 
 ## Error Handling Protocol
 
@@ -2222,8 +1856,6 @@ After completion, the following agents can begin work:
 
 - **ENSURE** both Method 1 and Method 2 APIs work identically
 - **VALIDATE** all field type requirements thoroughly
-- **TEST** column reordering and statistics functionality
-- **CACHE** column metadata efficiently with table context
 - **HANDLE** type conversions safely with proper validation
 
 Remember: Column operations directly affect the table schema and data integrity. Validation and safety are paramount for preventing data loss.
