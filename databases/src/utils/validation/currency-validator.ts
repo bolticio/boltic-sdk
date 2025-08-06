@@ -154,12 +154,6 @@ export class CurrencyValidator {
     };
   }
 
-  async validateCurrencyFormat(
-    currencyCode: string
-  ): Promise<CurrencyValidationResult> {
-    return this.validateCurrencyCode(currencyCode);
-  }
-
   async getAvailableCurrencies(): Promise<Currency[]> {
     return this.getCurrencies();
   }
