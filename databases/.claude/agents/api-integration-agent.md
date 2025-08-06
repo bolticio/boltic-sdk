@@ -2,385 +2,561 @@
 
 ## Agent Role and Responsibility
 
-You are the **API Integration Agent** responsible for implementing the actual HTTP communication layer that connects the Boltic Tables SDK to the real Boltic Tables API endpoints. Your mission is to create robust API endpoint mappings, implement authentication and headers management, handle environment-based routing, create resolver/transformation functions, and ensure seamless integration with the actual service infrastructure.
+You are the **API Integration Agent** responsible for implementing the actual HTTP communication layer that connects the Boltic SDK modules to their respective API endpoints. Your mission is to create robust API endpoint mappings, implement authentication and headers management, handle environment-based routing, create resolver/transformation functions, and ensure seamless integration with the actual service infrastructure.
 
 ## ✅ COMPLETED: Tables Module API Integration
 
 ### Implementation Status: COMPLETE ✅
 
-The Tables Module API integration has been successfully implemented with the following components:
+The Tables Module API integration has been successfully implemented and serves as the reference implementation for all other modules.
 
-#### 1. ✅ API Endpoints Configuration (`src/api/endpoints/tables.ts`)
+## 🏗️ GENERIC API INTEGRATION SCHEMA
 
-- Complete endpoint definitions for all table operations
-- Rate limiting configuration
-- Path parameter handling
-- Caching strategies per endpoint
+Based on the successful Tables Module implementation, here's the generic schema for implementing API integration across all modules:
 
-**Implemented Endpoints:**
-
-- `POST /tables/list` - List tables with filtering and pagination
-- `POST /tables` - Create new table
-- `GET /tables/{table_id}` - Get specific table
-- `PATCH /tables/{table_id}` - Update table
-- `DELETE /tables/{table_id}` - Delete table
-- `POST /tables/generate-schema` - AI-powered schema generation
-- `GET /tables/currencies` - Get available currencies
-
-#### 2. ✅ Filter Mapping System (`src/utils/filters/filter-mapper.ts`)
-
-- Complete implementation of PRD filter structure
-- Support for all filter operators:
-  - Relational: `=`, `!=`, `>`, `>=`, `<`, `<=`
-  - String patterns: `LIKE`, `ILIKE`, `STARTS WITH`
-  - Array/Set: `IN`, `@>`, `NOT @>`, `ANY`, `IS ONE OF`
-  - Range: `BETWEEN`, `WITHIN`
-  - Special: `IS EMPTY`, `DROPDOWN ITEM STARTS WITH`
-- SDK-to-API filter transformation
-- Date range validation for `WITHIN` operator
-- Filter validation and error handling
-
-#### 3. ✅ Currency Validation (`src/utils/validation/currency-validator.ts`)
-
-- API-based currency validation using `/tables/currencies`
-- Fallback to common currencies if API unavailable
-- Caching with 5-minute TTL
-- Detailed validation feedback with suggestions
-- Format validation (3-letter ISO codes)
-
-#### 4. ✅ Request/Response Transformers (`src/api/transformers/tables.ts`)
-
-- SDK to API request transformation
-- API to SDK response transformation
-- Field definition normalization
-- Pagination handling
-- Error response standardization
-
-#### 5. ✅ Tables API Client (`src/api/clients/tables-api-client.ts`)
-
-- Complete HTTP communication layer
-- Authentication header management
-- Error handling and formatting
-- Timeout and retry logic
-- Debug logging support
-
-**Key Features:**
-
-- ✅ Create tables with schema validation
-- ✅ AI-powered schema generation from prompts
-- ✅ List tables with advanced filtering
-- ✅ Get, update, and delete operations
-- ✅ Currency format validation
-- ✅ Real-time currency API integration
-
-#### 6. ✅ Table Builder Enhancement (`src/client/resources/table-builder.ts`)
-
-- Fluent API for table creation
-- AI schema generation integration
-- Field type helpers (text, number, currency, dropdown, etc.)
-- Vector field support for AI/ML operations
-- Builder pattern with validation
-
-#### 7. ✅ Updated Table Resource (`src/client/resources/table.ts`)
-
-- Integration with TablesApiClient
-- Added `generateSchema()` method
-- Added `getCurrencies()` method
-- Added `validateCurrencyFormat()` method
-- Builder method for fluent table creation
-- Maintained backward compatibility
-
-#### 8. ✅ Comprehensive Integration Tests (`tests/integration/tables-api-integration.test.ts`)
-
-- End-to-end testing with real API calls
-- Currency validation tests
-- AI schema generation tests
-- CRUD operation tests
-- Filter mapping tests
-- Error handling tests
-- Performance and pagination tests
-- Rate limiting tests
-
-**Test Coverage:**
-
-- ✅ Currency API integration
-- ✅ AI schema generation
-- ✅ Table CRUD operations
-- ✅ Filter mapping and querying
-- ✅ Table builder integration
-- ✅ Error handling scenarios
-- ✅ Performance and pagination
-- ✅ Complete workflow demonstration
-
-### Usage Examples
-
-#### 1. Basic Table Creation with Currency Validation
+### 1. Core Architecture Pattern
 
 ```typescript
-const tablesApiClient = new TablesApiClient(httpAdapter, {
-  apiKey: 'your-api-key',
-  baseURL: 'https://asia-south1.api.boltic.io/service/panel/boltic-tables',
-});
+// Generic API Client Structure
+export interface ModuleApiClientConfig {
+  apiKey: string;
+  environment?: Environment;
+  timeout?: number;
+  debug?: boolean;
+  retryAttempts?: number;
+  retryDelay?: number;
+  headers?: Record<string, string>;
+}
 
-const tableRequest: TableCreateRequest = {
-  name: 'products',
-  description: 'Product catalog',
-  fields: [
-    {
-      name: 'name',
-      type: 'text',
-      is_nullable: false,
-    },
-    {
-      name: 'price',
-      type: 'currency',
-      currency_format: 'USD', // Validated against /tables/currencies API
-      decimals: 2,
-      is_nullable: false,
-    },
-  ],
-};
+export interface ApiError {
+  code: string;
+  message: string;
+  details?: unknown;
+  statusCode?: number;
+}
 
-const result = await tablesApiClient.createTable(tableRequest);
-```
+export class ModuleApiClient {
+  private httpAdapter: HttpAdapter;
+  private config: ModuleApiClientConfig;
+  private baseURL: string;
 
-#### 2. AI-Powered Schema Generation
+  constructor(
+    apiKey: string,
+    config: Omit<ModuleApiClientConfig, 'apiKey'> = {}
+  ) {
+    this.config = { apiKey, ...config };
+    this.httpAdapter = createHttpAdapter();
+    this.baseURL = this.getBaseURL(config.environment || 'sit');
+  }
 
-```typescript
-const prompt =
-  'Create an employee table with name, email, department, salary, and hire date';
-const schemaResult = await tablesApiClient.generateSchema(prompt);
+  // Standard response pattern
+  async operationName(request: RequestType): Promise<{
+    data: ResponseType;
+    error?: ApiError;
+  }> {
+    try {
+      const endpoint = MODULE_ENDPOINTS.operationName;
+      const url = `${this.baseURL}${endpoint.path}`;
+      const transformedRequest = transformRequest(request);
 
-const tableRequest: TableCreateRequest = {
-  table_name: 'employees',
-  schema: schemaResult.data.fields,
-  description: 'AI-generated employee table',
-};
+      const response = await this.httpAdapter.request({
+        url,
+        method: endpoint.method,
+        headers: this.buildHeaders(),
+        data: transformedRequest,
+        timeout: this.config.timeout,
+      });
 
-const result = await tablesApiClient.createTable(tableRequest, {
-  isAiGenerated: true,
-});
-```
+      if (response.data) {
+        return {
+          data: transformResponse(response.data),
+        };
+      }
 
-#### 3. Advanced Filtering with Filter Mapping
+      throw new Error('Invalid response from API');
+    } catch (error) {
+      return {
+        data: {} as ResponseType,
+        error: this.formatError(error),
+      };
+    }
+  }
 
-```typescript
-const listResult = await tablesApiClient.listTables({
-  where: {
-    name: { $like: 'prod%' },
-    created_at: { $within: 'last_30_days' },
-    is_public: true,
-  },
-  sort: [{ field: 'created_at', order: 'desc' }],
-  page: 1,
-  pageSize: 20,
-});
-```
+  private buildHeaders(): Record<string, string> {
+    return {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'x-boltic-token': this.config.apiKey,
+      'User-Agent': '@boltic/database-js/1.0.0',
+    };
+  }
 
-#### 4. Fluent Table Builder
-
-```typescript
-const builder = createTableBuilder(
-  {
-    name: 'inventory',
-    description: 'Product inventory',
-  },
-  tablesApiClient
-);
-
-const result = await builder
-  .addTextField('product_name', { nullable: false })
-  .addCurrencyField('unit_price', { currencyFormat: 'USD' })
-  .addNumberField('quantity', { decimals: 0 })
-  .addDropdownField('category', { items: ['Electronics', 'Clothing'] })
-  .addCheckboxField('in_stock', { defaultValue: true })
-  .create();
-```
-
-#### 5. AI-Generated Table with Builder
-
-```typescript
-const builder = createTableBuilder(
-  {
-    name: 'blog_posts',
-  },
-  tablesApiClient
-);
-
-await builder.generateFromPrompt({
-  prompt:
-    'Create a blog management table with title, content, author, tags, and publish status',
-});
-
-const result = await builder.create({ isAiGenerated: true });
-```
-
-### Environment Configuration
-
-The implementation supports multiple environments:
-
-- **Production**: `https://asia-south1.api.boltic.io/service/panel/boltic-tables`
-- **UAT**: `https://asia-south1.api.uat.fcz0.de/service/panel/boltic-tables`
-- **SIT**: `https://asia-south1.api.fcz0.de/service/panel/boltic-tables`
-- **Local**: `http://localhost:8000`
-
-### Authentication
-
-All API calls use the `x-boltic-token` header for authentication:
-
-```typescript
-headers: {
-  'Content-Type': 'application/json',
-  'Accept': 'application/json',
-  'x-boltic-token': 'your-api-key',
-  'User-Agent': '@boltic/database-js/1.0.0',
+  private formatError(error: unknown): ApiError {
+    // Standard error formatting logic
+  }
 }
 ```
 
-### Error Handling
+### 2. File Structure Template
 
-Comprehensive error handling with proper error codes:
+```
+src/api/
+├── endpoints/
+│   └── {module}.ts              # Endpoint definitions
+├── transformers/
+│   └── {module}.ts              # Request/response transformers
+├── clients/
+│   └── {module}-api-client.ts   # API client implementation
+└── index.ts                     # Module exports
 
-- **Validation Errors**: Field validation failures
-- **API Errors**: Server-side errors with status codes
-- **Network Errors**: Connection and timeout issues
-- **Currency Validation Errors**: Invalid currency format errors
+src/utils/
+├── validation/
+│   └── {module}-validator.ts    # Module-specific validation
+├── filters/
+│   └── filter-mapper.ts         # Reusable filter mapping
+└── http/
+    └── adapter.ts               # HTTP adapter (reusable)
 
-### Performance Features
+src/client/resources/
+├── {module}.ts                  # Resource class
+└── {module}-builder.ts          # Builder pattern (if applicable)
 
-- ✅ Request/response caching
-- ✅ Rate limiting with automatic enforcement
-- ✅ Connection pooling
-- ✅ Request deduplication
-- ✅ Pagination support
-- ✅ Filtering optimization
+tests/integration/
+└── {module}-api-integration.test.ts
+```
 
-### Security Features
+### 3. Endpoint Configuration Pattern
 
-- ✅ API key authentication
-- ✅ Request validation
-- ✅ Input sanitization
-- ✅ Error message sanitization
-- ✅ Rate limiting protection
+```typescript
+// src/api/endpoints/{module}.ts
+export interface EndpointConfig {
+  path: string;
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  rateLimit?: {
+    requests: number;
+    window: number;
+  };
+  cache?: {
+    ttl: number;
+    key?: string;
+  };
+}
 
-## Next Steps for Other Modules
+export const MODULE_ENDPOINTS = {
+  list: {
+    path: '/{module}/list',
+    method: 'POST',
+    rateLimit: { requests: 100, window: 60000 },
+  },
+  create: {
+    path: '/{module}',
+    method: 'POST',
+  },
+  get: {
+    path: '/{module}/{id}',
+    method: 'GET',
+    cache: { ttl: 300000 }, // 5 minutes
+  },
+  update: {
+    path: '/{module}/{id}',
+    method: 'PATCH',
+  },
+  delete: {
+    path: '/{module}/{id}',
+    method: 'DELETE',
+  },
+  // Module-specific endpoints
+  customOperation: {
+    path: '/{module}/custom-operation',
+    method: 'POST',
+  },
+} as const;
 
-The Tables Module implementation provides a complete template for implementing other modules:
+export function buildEndpointPath(
+  endpoint: EndpointConfig,
+  params: Record<string, string>
+): string {
+  let path = endpoint.path;
+  for (const [key, value] of Object.entries(params)) {
+    path = path.replace(`{${key}}`, value);
+  }
+  return path;
+}
+```
 
-### 1. Database Module
+### 4. Request/Response Transformer Pattern
 
-- Follow the same pattern as Tables Module
-- Implement database-specific endpoints
-- Add database context management
+```typescript
+// src/api/transformers/{module}.ts
+export interface ModuleApiRequest {
+  // API-specific request format
+}
 
-### 2. Records Module
+export interface ModuleApiResponse {
+  // API-specific response format
+}
 
-- Implement record CRUD operations
-- Add bulk operations support
-- Implement vector search functionality
+export interface ModuleSdkRequest {
+  // SDK request format
+}
 
-### 3. SQL Module
+export interface ModuleSdkResponse {
+  // SDK response format
+}
+
+// Transform SDK request to API format
+export function transformRequest(
+  sdkRequest: ModuleSdkRequest
+): ModuleApiRequest {
+  return {
+    // Transform logic
+  };
+}
+
+// Transform API response to SDK format
+export function transformResponse(
+  apiResponse: ModuleApiResponse
+): ModuleSdkResponse {
+  return {
+    // Transform logic
+  };
+}
+
+// Transform list request with filtering
+export function transformListRequest(options: {
+  where?: Record<string, any>;
+  sort?: Array<{ field: string; order: 'asc' | 'desc' }>;
+  page?: number;
+  pageSize?: number;
+}): ModuleApiRequest {
+  return {
+    // Transform with filter mapping
+  };
+}
+
+// Transform list response with pagination
+export function transformListResponse(apiResponse: ModuleListApiResponse): {
+  items: ModuleSdkResponse[];
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+} {
+  return {
+    // Transform with pagination handling
+  };
+}
+```
+
+### 5. Validation Pattern
+
+```typescript
+// src/utils/validation/{module}-validator.ts
+export interface ValidationResult {
+  isValid: boolean;
+  error?: string;
+  suggestion?: string;
+}
+
+export class ModuleValidator {
+  private cache: Map<string, any> = new Map();
+  private cacheTTL = 5 * 60 * 1000; // 5 minutes
+
+  async validateFormat(value: string): Promise<ValidationResult> {
+    // Validation logic with caching
+  }
+
+  async getAvailableOptions(): Promise<any[]> {
+    // Fetch available options from API with caching
+  }
+
+  private async fetchFromAPI(endpoint: string): Promise<any> {
+    // API fetching logic
+  }
+}
+```
+
+### 6. Resource Integration Pattern
+
+```typescript
+// src/client/resources/{module}.ts
+export class Module {
+  private apiClient: ModuleApiClient;
+
+  constructor(apiClient: ModuleApiClient) {
+    this.apiClient = apiClient;
+  }
+
+  async create(request: ModuleSdkRequest): Promise<ModuleSdkResponse> {
+    const result = await this.apiClient.create(request);
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return result.data;
+  }
+
+  async list(options?: ListOptions): Promise<{
+    items: ModuleSdkResponse[];
+    pagination?: PaginationInfo;
+  }> {
+    const result = await this.apiClient.list(options);
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return result;
+  }
+
+  // Additional methods following the same pattern
+}
+```
+
+### 7. Builder Pattern (Optional)
+
+```typescript
+// src/client/resources/{module}-builder.ts
+export interface ModuleBuilderConfig {
+  name: string;
+  description?: string;
+}
+
+export function createModuleBuilder(
+  config: ModuleBuilderConfig,
+  apiClient: ModuleApiClient
+) {
+  return new ModuleBuilder(config, apiClient);
+}
+
+export class ModuleBuilder {
+  private config: ModuleBuilderConfig;
+  private apiClient: ModuleApiClient;
+  private fields: any[] = [];
+
+  constructor(config: ModuleBuilderConfig, apiClient: ModuleApiClient) {
+    this.config = config;
+    this.apiClient = apiClient;
+  }
+
+  addField(name: string, options: any): this {
+    // Add field logic
+    return this;
+  }
+
+  async create(options?: CreateOptions): Promise<ModuleSdkResponse> {
+    const request = {
+      ...this.config,
+      fields: this.fields,
+    };
+    return this.apiClient.create(request, options);
+  }
+}
+```
+
+### 8. Integration Test Pattern
+
+```typescript
+// tests/integration/{module}-api-integration.test.ts
+describe('Module API Integration', () => {
+  let apiClient: ModuleApiClient;
+
+  beforeEach(() => {
+    apiClient = new ModuleApiClient('test-api-key', {
+      environment: 'sit',
+      debug: true,
+    });
+  });
+
+  describe('CRUD Operations', () => {
+    it('should create a new item', async () => {
+      // Test creation
+    });
+
+    it('should list items with filtering', async () => {
+      // Test listing with filters
+    });
+
+    it('should get a specific item', async () => {
+      // Test retrieval
+    });
+
+    it('should update an item', async () => {
+      // Test update
+    });
+
+    it('should delete an item', async () => {
+      // Test deletion
+    });
+  });
+
+  describe('Validation', () => {
+    it('should validate input formats', async () => {
+      // Test validation
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle API errors gracefully', async () => {
+      // Test error scenarios
+    });
+  });
+});
+```
+
+### 9. Environment Configuration Pattern
+
+```typescript
+private getBaseURL(environment: Environment): string {
+  const envConfigs = {
+    local: 'http://localhost:8000',
+    sit: 'https://asia-south1.api.fcz0.de/service/panel/boltic-{module}/v1',
+    uat: 'https://asia-south1.api.uat.fcz0.de/service/panel/boltic-{module}/v1',
+    prod: 'https://asia-south1.api.boltic.io/service/panel/boltic-{module}/v1',
+  };
+  return envConfigs[environment];
+}
+```
+
+### 10. Standard Response Patterns
+
+```typescript
+// Single item operations
+async operationName(request: RequestType): Promise<{
+  data: ResponseType;
+  error?: ApiError;
+}>
+
+// List operations with pagination
+async listItems(options: ListOptions): Promise<{
+  data: ResponseType[];
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+  error?: ApiError;
+}>
+
+// Delete operations
+async deleteItem(id: string): Promise<{
+  success: boolean;
+  error?: ApiError;
+}>
+
+// Validation operations
+async validateFormat(value: string): Promise<{
+  isValid: boolean;
+  error?: string;
+  suggestion?: string;
+}>
+```
+
+## Implementation Checklist for New Modules
+
+### Phase 1: Foundation Setup
+
+- [ ] Create endpoint configuration (`src/api/endpoints/{module}.ts`)
+- [ ] Define API types (`src/types/api/{module}.ts`)
+- [ ] Create transformers (`src/api/transformers/{module}.ts`)
+- [ ] Implement API client (`src/api/clients/{module}-api-client.ts`)
+
+### Phase 2: Integration
+
+- [ ] Update resource class (`src/client/resources/{module}.ts`)
+- [ ] Add builder pattern if applicable (`src/client/resources/{module}-builder.ts`)
+- [ ] Implement validation utilities (`src/utils/validation/{module}-validator.ts`)
+
+### Phase 3: Testing
+
+- [ ] Create integration tests (`tests/integration/{module}-api-integration.test.ts`)
+- [ ] Add unit tests for transformers
+- [ ] Test error handling scenarios
+
+### Phase 4: Documentation
+
+- [ ] Update module documentation
+- [ ] Add usage examples
+- [ ] Document API endpoints
+
+## Reusable Components
+
+### 1. Filter Mapping System
+
+- **File**: `src/utils/filters/filter-mapper.ts`
+- **Usage**: Import and use for all modules requiring filtering
+- **Features**: Complete filter operator support, SDK-to-API transformation
+
+### 2. HTTP Adapter
+
+- **File**: `src/utils/http/adapter.ts`
+- **Usage**: Reusable across all modules
+- **Features**: Request/response handling, retry logic, timeout management
+
+### 3. Error Handling
+
+- **Pattern**: Standardized `ApiError` interface
+- **Usage**: Consistent error formatting across all modules
+
+### 4. Environment Configuration
+
+- **Pattern**: Standard environment mapping
+- **Usage**: Consistent base URL handling across modules
+
+## Best Practices
+
+1. **Consistent Naming**: Use `{module}-api-client.ts` pattern
+2. **Error Handling**: Always return `{ data, error? }` pattern
+3. **Validation**: Implement client-side validation before API calls
+4. **Caching**: Use appropriate caching strategies for read operations
+5. **Testing**: Comprehensive integration tests with real API calls
+6. **Documentation**: Clear examples and usage patterns
+7. **Type Safety**: Strong TypeScript typing throughout
+8. **Performance**: Implement rate limiting and request optimization
+
+## Module-Specific Considerations
+
+### For Records Module
+
+- Implement bulk operations
+- Add vector search capabilities
+- Handle large dataset pagination
+
+### For SQL Module
 
 - Implement query execution
 - Add parameterized query support
-- Implement query result streaming
+- Handle streaming responses
 
-### 4. Column/Fields Module
+### For Columns Module
 
-- Implement field management operations
-- Add field type validation
-- Implement schema migration support
+- Implement field type validation
+- Add schema migration support
+- Handle complex field relationships
 
-## Best Practices Established
+### For Database Module
 
-1. **Consistent Error Handling**: All API operations return standardized error responses
-2. **Request/Response Transformation**: Clean separation between SDK and API formats
-3. **Validation**: Client-side validation before API calls to reduce round trips
-4. **Caching**: Intelligent caching for read operations with appropriate TTL
-5. **Testing**: Comprehensive integration tests with real API calls
-6. **Documentation**: Clear examples and usage patterns
+- Implement database context management
+- Add connection pooling
+- Handle multi-database operations
 
-## Files Modified/Created
-
-### New Files Created:
-
-- `src/api/endpoints/tables.ts` - Table endpoints configuration
-- `src/utils/filters/filter-mapper.ts` - Filter mapping utilities
-- `src/utils/validation/currency-validator.ts` - Currency validation
-- `src/api/transformers/tables.ts` - Request/response transformers
-- `src/api/clients/tables-api-client.ts` - Tables API client
-- `tests/integration/tables-api-integration.test.ts` - Integration tests
-
-### Files Updated:
-
-- `src/client/resources/table.ts` - Added API integration
-- `src/client/resources/table-builder.ts` - Enhanced with API integration
-
-## Test Results Summary
-
-All integration tests pass with real API endpoints:
-
-✅ Currency validation and API integration  
-✅ AI schema generation functionality  
-✅ Table CRUD operations  
-✅ Advanced filtering and query mapping  
-✅ Table builder integration  
-✅ Error handling scenarios  
-✅ Performance and pagination  
-✅ Complete workflow demonstrations
-
-**The Tables Module is now fully integrated and ready for production use.**
+This generic schema ensures consistency across all modules while allowing for module-specific customizations. Each module should follow this pattern while adding its unique functionality as needed.
 
 ---
 
 ## Prerequisites
 
-Before starting work on other modules, ensure the following exist:
+Before implementing any module API integration:
 
-1. **Verify Dependencies**: Ensure Tables Module implementation is complete ✅
+1. **Verify Dependencies**: Ensure required modules are complete
 2. **Consult Documentation**: Read `/Docs/Implementation.md` for current stage
 3. **Follow Project Structure**: Maintain adherence to `/Docs/project_structure.md`
 4. **Check Bug Tracking**: Review `/Docs/Bug_tracking.md` for any known issues
-5. **Review PRD**: Study the API endpoints and authentication details in relevant module PRDs
+5. **Review PRD**: Study the API endpoints and authentication details
 
-## Dependencies
+## Completion Criteria
 
-This agent's work is now COMPLETE for Tables Module. Other agents can now:
-
-- Use Tables Module as a reference implementation
-- Build other modules following the same patterns
-- Leverage the established utilities (filter mapping, currency validation, etc.)
-- Use the integration testing patterns
-
-## Primary Tasks for Future Modules
-
-### Task 1: API Endpoint Mapping and Configuration
-
-Follow the pattern established in `src/api/endpoints/tables.ts`
-
-### Task 2: API Request/Response Transformers
-
-Follow the pattern established in `src/api/transformers/tables.ts`
-
-### Task 3: API Client Implementation
-
-Follow the pattern established in `src/api/clients/tables-api-client.ts`
-
-### Task 4: Resource Integration Updates
-
-Follow the pattern established in `src/client/resources/table.ts`
-
-### Task 5: Error Handling Enhancement
-
-Use established error handling patterns
-
-### Task 6: Integration Testing
-
-Follow the pattern established in `tests/integration/tables-api-integration.test.ts`
-
-## Completion Criteria for Future Modules
-
-Mark tasks as complete when ALL of the following are achieved:
+Mark module API integration as complete when ALL of the following are achieved:
 
 ### ✅ Core Implementation
 
@@ -417,4 +593,4 @@ Mark tasks as complete when ALL of the following are achieved:
 - [ ] Performance and pagination tests
 - [ ] Real API integration verification
 
-Remember: The Tables Module implementation is complete and serves as the reference implementation for all other modules. The established patterns, utilities, and testing approaches should be replicated for consistency across the entire SDK.
+Remember: Follow the established patterns from the Tables Module implementation to ensure consistency and maintainability across the entire SDK.

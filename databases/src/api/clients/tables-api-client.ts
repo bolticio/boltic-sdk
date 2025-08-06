@@ -10,7 +10,6 @@ import { HttpAdapter } from '../../utils/http/adapter';
 import {
   Currency,
   CurrencyValidator as CurrencyValidatorType,
-  createCurrencyValidator,
 } from '../../utils/validation/currency-validator';
 import { TABLE_ENDPOINTS, buildEndpointPath } from '../endpoints/tables';
 import {
@@ -72,10 +71,11 @@ export class TablesApiClient {
     const environment = config.environment || 'sit';
     this.baseURL = this.getBaseURL(environment);
 
-    this.currencyValidator = createCurrencyValidator(
+    // Initialize currency validator with required parameters
+    this.currencyValidator = new CurrencyValidatorType(
       this.httpAdapter,
       this.baseURL,
-      this.config.apiKey
+      apiKey
     );
   }
 

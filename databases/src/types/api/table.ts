@@ -19,10 +19,10 @@ export type AlignmentType = 'left' | 'right' | 'center';
 export interface FieldDefinition {
   name: string;
   type: FieldType;
-  is_nullable: boolean;
-  is_primary_key: boolean;
-  is_unique: boolean;
-  is_indexed: boolean;
+  is_nullable?: boolean;
+  is_primary_key?: boolean;
+  is_unique?: boolean;
+  is_indexed?: boolean;
   is_visible?: boolean;
   is_readonly?: boolean;
   field_order?: number;
@@ -40,11 +40,7 @@ export interface FieldDefinition {
   selectable_items?: string[];
   multiple_selections?: boolean;
   phone_format?: string;
-  button_type?: string;
-  button_label?: string;
-  button_additional_labels?: string;
-  button_state?: string;
-  disable_on_click?: boolean;
+
   vector_dimension?: number;
 }
 
