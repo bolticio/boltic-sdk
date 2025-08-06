@@ -1740,10 +1740,6 @@ await db
 ```typescript
 import { ColumnHelpers } from '@boltic/database-js/utils';
 
-// Check if type conversion is safe
-const canConvert = ColumnHelpers.canChangeType('text', 'email');
-console.log(canConvert); // true
-
 // Validate column for specific type
 const validation = ColumnHelpers.validateColumnForType(column, 'vector');
 if (!validation.isValid) {

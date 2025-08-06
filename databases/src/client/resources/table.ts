@@ -357,17 +357,6 @@ export class TableResource extends BaseResource {
   }
 
   /**
-   * Validate currency format
-   */
-  async validateCurrencyFormat(currencyCode: string): Promise<{
-    isValid: boolean;
-    error?: string;
-    suggestion?: string;
-  }> {
-    return this.tablesApiClient.validateCurrencyFormat(currencyCode);
-  }
-
-  /**
    * Create a table builder for fluent API
    */
   builder(options: {
