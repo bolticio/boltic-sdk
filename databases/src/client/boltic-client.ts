@@ -1,4 +1,10 @@
 import {
+  ColumnDeleteOptions,
+  ColumnQueryOptions,
+  ColumnUpdateOptions,
+} from '../types/api/column';
+import {
+  FieldDefinition,
   TableAccessRequest,
   TableCreateRequest,
   TableDeleteOptions,
@@ -13,6 +19,8 @@ import type { HttpRequestConfig, HttpResponse } from '../utils/http/adapter';
 import { AuthManager } from './core/auth-manager';
 import { BaseClient } from './core/base-client';
 import { ClientConfig, ConfigManager } from './core/config';
+import { ColumnResource } from './resources/column';
+import { ColumnBuilder } from './resources/column-builder';
 import { TableResource } from './resources/table';
 import { TableBuilder } from './resources/table-builder';
 
@@ -33,6 +41,7 @@ export class BolticClient {
   private authManager: AuthManager;
   private baseClient: BaseClient;
   private tableResource: TableResource;
+  private columnResource: ColumnResource;
   private currentDatabase: DatabaseContext | null = null;
 
   constructor(apiKey: string, options: ClientOptions = {}) {
@@ -55,6 +64,9 @@ export class BolticClient {
 
     // Initialize table operations
     this.tableResource = new TableResource(this.baseClient);
+
+    // Initialize column operations
+    this.columnResource = new ColumnResource(this.baseClient);
   }
 
   // Database context management
@@ -93,6 +105,22 @@ export class BolticClient {
     };
   }
 
+  // Method 1: Direct column operations
+  get columns() {
+    return {
+      create: (tableName: string, column: FieldDefinition) =>
+        this.columnResource.create(tableName, column),
+      findAll: (tableName: string, options?: ColumnQueryOptions) =>
+        this.columnResource.findAll(tableName, options),
+      findOne: (tableName: string, options: ColumnQueryOptions) =>
+        this.columnResource.findOne(tableName, options),
+      update: (tableName: string, options: ColumnUpdateOptions) =>
+        this.columnResource.update(tableName, options),
+      delete: (tableName: string, options: ColumnDeleteOptions) =>
+        this.columnResource.delete(tableName, options),
+    };
+  }
+
   // Method 2: Fluent table operations
   table(): TableBuilder {
     return new TableBuilder({
@@ -101,7 +129,15 @@ export class BolticClient {
     });
   }
 
-  // Configuration management
+  // Method 2: Fluent column operations with table context
+  from(tableName: string) {
+    return {
+      column: () => new ColumnBuilder(this.columnResource, tableName),
+      // This will be extended by Record Operations Agent
+    };
+  }
+
+  // Configuration and utility methods
   updateApiKey(newApiKey: string): void {
     this.configManager.updateConfig({ apiKey: newApiKey });
     this.authManager.updateApiKey(newApiKey);
@@ -109,14 +145,12 @@ export class BolticClient {
 
   updateConfig(updates: Partial<ClientConfig>): void {
     this.configManager.updateConfig(updates);
-    this.baseClient.updateConfig(this.configManager.getConfig());
   }
 
   getConfig(): ClientConfig {
     return this.configManager.getConfig();
   }
 
-  // Authentication management
   async validateApiKey(): Promise<boolean> {
     return this.authManager.validateApiKeyAsync();
   }
@@ -125,12 +159,10 @@ export class BolticClient {
     return this.authManager.isAuthenticated();
   }
 
-  // HTTP client access
   getHttpClient(): BaseClient {
     return this.baseClient;
   }
 
-  // Interceptor management
   addRequestInterceptor(
     interceptor: (config: HttpRequestConfig) => HttpRequestConfig
   ): number {
@@ -147,6 +179,10 @@ export class BolticClient {
   }
 
   removeInterceptor(type: 'request' | 'response', id: number): void {
-    this.baseClient.getInterceptors()[type].eject(id);
+    if (type === 'request') {
+      this.baseClient.getInterceptors().request.eject(id);
+    } else {
+      this.baseClient.getInterceptors().response.eject(id);
+    }
   }
 }
