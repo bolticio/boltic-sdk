@@ -7,10 +7,6 @@ import {
 import type { Environment } from '../../types/config/environment';
 import { createHttpAdapter } from '../../utils/http';
 import { HttpAdapter } from '../../utils/http/adapter';
-import {
-  Currency,
-  CurrencyValidator as CurrencyValidatorType,
-} from '../../utils/validation/currency-validator';
 import { TABLE_ENDPOINTS, buildEndpointPath } from '../endpoints/tables';
 import {
   TableApiResponse,
@@ -57,7 +53,6 @@ export interface ApiError {
 export class TablesApiClient {
   private httpAdapter: HttpAdapter;
   private config: TablesApiClientConfig;
-  private currencyValidator: CurrencyValidatorType;
   private baseURL: string;
 
   constructor(
@@ -70,13 +65,6 @@ export class TablesApiClient {
     // Set baseURL based on environment
     const environment = config.environment || 'sit';
     this.baseURL = this.getBaseURL(environment);
-
-    // Initialize currency validator with required parameters
-    this.currencyValidator = new CurrencyValidatorType(
-      this.httpAdapter,
-      this.baseURL,
-      apiKey
-    );
   }
 
   private getBaseURL(environment: Environment): string {
@@ -97,9 +85,6 @@ export class TablesApiClient {
     options: TableCreateOptions = {}
   ): Promise<{ data: TableCreateResponse; error?: ApiError }> {
     try {
-      // Validate currency formats if any
-      await this.validateCurrencyFormats(request.fields);
-
       const endpoint = TABLE_ENDPOINTS.create;
       const url = `${this.baseURL}${endpoint.path}`;
       const transformedRequest = transformTableCreateRequest(request, options);
@@ -358,24 +343,6 @@ export class TablesApiClient {
     }
   }
 
-  /**
-   * Validate currency format using the currencies API
-   */
-  async validateCurrencyFormat(currencyCode: string): Promise<{
-    isValid: boolean;
-    error?: string;
-    suggestion?: string;
-  }> {
-    return this.currencyValidator.validateCurrencyFormat(currencyCode);
-  }
-
-  /**
-   * Get available currencies (with caching)
-   */
-  async getAvailableCurrencies(): Promise<Currency[]> {
-    return this.currencyValidator.getAvailableCurrencies();
-  }
-
   // Private helper methods
 
   private buildHeaders(): Record<string, string> {
@@ -426,24 +393,5 @@ export class TablesApiClient {
       message: 'An unexpected error occurred',
       details: error,
     };
-  }
-
-  private async validateCurrencyFormats(
-    schema: Array<{ type: string; currency_format?: string; name: string }>
-  ): Promise<void> {
-    const currencyFields = schema.filter(
-      (field) => field.type === 'currency' && field.currency_format
-    );
-
-    for (const field of currencyFields) {
-      const validation = await this.currencyValidator.validateCurrencyFormat(
-        field.currency_format!
-      );
-      if (!validation.isValid) {
-        throw new Error(
-          `Invalid currency format in field '${field.name}': ${validation.error}. ${validation.suggestion || ''}`
-        );
-      }
-    }
   }
 }
