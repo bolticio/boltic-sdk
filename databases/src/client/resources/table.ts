@@ -43,13 +43,39 @@ export class TableResource extends BaseResource {
     try {
       this.validateCreateRequest(data);
       const result = await this.tablesApiClient.createTable(data);
-
       if (result.error) {
+        let errorMessage = 'Unknown error';
+
+        if (typeof result.error === 'string') {
+          errorMessage = result.error;
+        } else if (result.error.message) {
+          errorMessage = result.error.message;
+        } else if (
+          result.error.details &&
+          Array.isArray(result.error.details)
+        ) {
+          errorMessage = result.error.details.join(', ');
+        } else if (
+          result.error.details &&
+          typeof result.error.details === 'string'
+        ) {
+          errorMessage = result.error.details;
+        } else if (
+          (result.error as { meta?: unknown }).meta &&
+          Array.isArray((result.error as { meta?: unknown }).meta)
+        ) {
+          errorMessage = (
+            (result.error as { meta?: unknown }).meta as string[]
+          ).join(', ');
+        } else if (
+          (result.error as { meta?: unknown }).meta &&
+          typeof (result.error as { meta?: unknown }).meta === 'string'
+        ) {
+          errorMessage = (result.error as { meta?: string }).meta || '';
+        }
+
         return {
-          error:
-            typeof result.error === 'string'
-              ? result.error
-              : result.error.message || 'Unknown error',
+          error: errorMessage,
         };
       }
 
@@ -401,9 +427,9 @@ export class TableResource extends BaseResource {
       throw new ValidationError('Table name must be 64 characters or less');
     }
 
-    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    if (!/^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(name)) {
       throw new ValidationError(
-        'Table name must start with a letter or underscore and contain only letters, numbers, and underscores'
+        'Table name must start with a letter or underscore and contain only letters, numbers, underscores, and hyphens'
       );
     }
   }

@@ -22,5 +22,6 @@
         "url": "https://github.com/bolticio/boltic-sdk.git"
     },
     "author": "Boltic",
-    "license": "MIT"
+    "license": "MIT",
+    "type": "module"
 }

@@ -7,6 +7,31 @@ import {
 } from '../../types/api/column';
 import { FieldDefinition, FieldType } from '../../types/api/table';
 
+// Date format transformation map
+const DateFormatMap = Object.freeze({
+  '%m/%d/%y': 'MM/dd/yy',
+  '%m/%d/%Y': 'MM/dd/yyyy',
+  '%m-%d-%Y': 'MM-dd-yyyy',
+  '%d-%m-%Y': 'dd-MM-yyyy',
+  '%d/%m/%Y': 'dd/MM/yyyy',
+  '%d/%m/%y': 'dd/MM/yy',
+  '%Y-%m-%d': 'yyyy-MM-dd',
+  '%B %d %Y': 'MMMM dd yyyy',
+  '%b %d %Y': 'MMM dd yyyy',
+  '%a %b %d %Y': 'ccc MMM dd yyyy',
+});
+
+// Time format transformation map
+const TimeFormatMap = Object.freeze({
+  '%H:%M:%S': 'HH:mm:ss',
+  '%H:%M:%SZ': 'HH:mm:ssXXX',
+  '%H:%M:%S.%f': 'HH:mm:ss.SSS',
+  '%H:%M:%S %Z': 'HH:mm:ss z',
+  '%I:%M:%S %p': 'hh:mm:ss a',
+  '%H:%M': 'HH:mm',
+  '%I:%M %p': 'hh:mm a',
+});
+
 export class ColumnValidator {
   /**
    * Validate column creation request
@@ -323,24 +348,36 @@ export class ColumnValidator {
       });
     }
 
-    if (
-      data.date_format &&
-      !this.isValidDateFormat(data.date_format as string)
-    ) {
-      errors.push({
-        field: 'date_format',
-        message: 'Invalid date format',
-      });
+    if (data.date_format) {
+      const dateFormat = data.date_format as string;
+      if (!this.isValidDateFormat(dateFormat)) {
+        errors.push({
+          field: 'date_format',
+          message: 'Invalid date format',
+        });
+      } else {
+        // Transform the format to API format
+        const transformedFormat = this.transformUserDateFormat(dateFormat);
+        if (transformedFormat) {
+          data.date_format = transformedFormat;
+        }
+      }
     }
 
-    if (
-      data.time_format &&
-      !this.isValidTimeFormat(data.time_format as string)
-    ) {
-      errors.push({
-        field: 'time_format',
-        message: 'Invalid time format',
-      });
+    if (data.time_format) {
+      const timeFormat = data.time_format as string;
+      if (!this.isValidTimeFormat(timeFormat)) {
+        errors.push({
+          field: 'time_format',
+          message: 'Invalid time format',
+        });
+      } else {
+        // Transform the format to API format
+        const transformedFormat = this.transformUserTimeFormat(timeFormat);
+        if (transformedFormat) {
+          data.time_format = transformedFormat;
+        }
+      }
     }
   }
 
@@ -395,14 +432,28 @@ export class ColumnValidator {
    * Validate date format
    */
   private static isValidDateFormat(format: string): boolean {
-    return Object.keys(DateFormatEnum).includes(format);
+    // Check if it's a valid enum key
+    if (Object.keys(DateFormatEnum).includes(format)) {
+      return true;
+    }
+
+    // Check if it's a user-friendly format that can be transformed
+    const transformedFormat = this.transformUserDateFormat(format);
+    return transformedFormat !== null;
   }
 
   /**
    * Validate time format
    */
   private static isValidTimeFormat(format: string): boolean {
-    return Object.keys(TimeFormatEnum).includes(format);
+    // Check if it's a valid enum key
+    if (Object.keys(TimeFormatEnum).includes(format)) {
+      return true;
+    }
+
+    // Check if it's a user-friendly format that can be transformed
+    const transformedFormat = this.transformUserTimeFormat(format);
+    return transformedFormat !== null;
   }
 
   /**
@@ -417,5 +468,55 @@ export class ColumnValidator {
    */
   static transformTimeFormat(userFormat: keyof typeof TimeFormatEnum): string {
     return TimeFormatEnum[userFormat];
+  }
+
+  /**
+   * Transform user-friendly date format to API format
+   */
+  private static transformUserDateFormat(userFormat: string): string | null {
+    // Check if it's already a valid enum key
+    if (Object.keys(DateFormatEnum).includes(userFormat)) {
+      return DateFormatEnum[userFormat as keyof typeof DateFormatEnum];
+    }
+
+    // Check if it's a user-friendly format that needs transformation
+    const apiFormat = Object.values(DateFormatMap).find(
+      (value) => value === userFormat
+    );
+
+    if (apiFormat) {
+      // Find the corresponding API format
+      const apiKey = Object.keys(DateFormatMap).find(
+        (key) => DateFormatMap[key as keyof typeof DateFormatMap] === userFormat
+      );
+      return apiKey || null;
+    }
+
+    return null;
+  }
+
+  /**
+   * Transform user-friendly time format to API format
+   */
+  private static transformUserTimeFormat(userFormat: string): string | null {
+    // Check if it's already a valid enum key
+    if (Object.keys(TimeFormatEnum).includes(userFormat)) {
+      return TimeFormatEnum[userFormat as keyof typeof TimeFormatEnum];
+    }
+
+    // Check if it's a user-friendly format that needs transformation
+    const apiFormat = Object.values(TimeFormatMap).find(
+      (value) => value === userFormat
+    );
+
+    if (apiFormat) {
+      // Find the corresponding API format
+      const apiKey = Object.keys(TimeFormatMap).find(
+        (key) => TimeFormatMap[key as keyof typeof TimeFormatMap] === userFormat
+      );
+      return apiKey || null;
+    }
+
+    return null;
   }
 }
