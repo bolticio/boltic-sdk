@@ -1,6 +1,6 @@
 {
     "name": "boltic-sdk",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "TypeScript SDK for Boltic infrastructure",
     "main": "dist/sdk.js",
     "module": "dist/sdk.mjs",
