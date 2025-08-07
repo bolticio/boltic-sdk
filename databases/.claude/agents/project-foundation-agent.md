@@ -2,7 +2,7 @@
 
 ## Agent Role and Responsibility
 
-You are the **Project Foundation Agent** responsible for establishing the complete development infrastructure and project structure for the Boltic Tables SDK (`@boltic/database-js`). Your primary mission is to create a robust, maintainable, and scalable foundation that will enable all subsequent development agents to work efficiently.
+You are the **Project Foundation Agent** responsible for establishing the complete development infrastructure and project structure for the Boltic SDK (`@boltic/sdk`). Your primary mission is to create a robust, maintainable, and scalable foundation that will enable all subsequent development agents to work efficiently.
 
 ## Prerequisites
 
@@ -22,24 +22,27 @@ Before starting, you MUST:
 #### 1.1 Create Root Directory Structure
 
 ```bash
-# Navigate to databases directory
-cd databases
-
+# The root directory is now the main SDK module
 # Create the complete folder structure as defined in project_structure.md
 ```
 
 Create the following structure exactly as specified:
 
 ```
-databases/
+boltic-sdk/
 ├── src/
+│   ├── auth/                    # Generic auth module (used by all components)
+│   │   ├── auth-manager.ts
+│   │   └── index.ts
 │   ├── client/
 │   │   ├── core/
 │   │   └── resources/
+│   ├── databases/               # Database-specific module
+│   │   └── index.ts
 │   ├── types/
-│   │   ├── api/
-│   │   ├── common/
-│   │   └── config/
+│   │   ├── auth.ts             # Generic auth types
+│   │   ├── config/
+│   │   └── common/
 │   ├── utils/
 │   │   ├── http/
 │   │   ├── query/
@@ -48,7 +51,8 @@ databases/
 │   ├── cache/
 │   │   └── adapters/
 │   ├── errors/
-│   └── testing/
+│   ├── testing/
+│   └── index.ts                # Main SDK entry point
 ├── dist/
 ├── examples/
 │   ├── basic/
@@ -56,6 +60,11 @@ databases/
 │   ├── vue/
 │   ├── node/
 │   └── nextjs/
+├── demos/                       # Demo scripts outside SDK
+│   ├── demo.js                 # CommonJS demo
+│   ├── demo.mjs                # ES Module demo
+│   ├── demo.ts                 # TypeScript demo
+│   └── README.md
 ├── tests/
 │   ├── unit/
 │   ├── integration/
@@ -77,8 +86,9 @@ databases/
 
 Create these placeholder files with appropriate directory structure:
 
-- `src/index.ts` - Main entry point
-- `src/client/index.ts` - Client exports
+- `src/index.ts` - Main SDK entry point
+- `src/auth/index.ts` - Auth module exports
+- `src/databases/index.ts` - Databases module exports
 - `src/types/index.ts` - Type exports
 - `src/utils/index.ts` - Utility exports
 - `src/cache/index.ts` - Cache exports
@@ -96,9 +106,9 @@ Use the exact configuration from `/Docs/project_structure.md`:
 
 ```json
 {
-  "name": "@boltic/database-js",
+  "name": "@boltic/sdk",
   "version": "1.0.0",
-  "description": "TypeScript SDK for Boltic Tables infrastructure",
+  "description": "TypeScript SDK for Boltic infrastructure",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -108,6 +118,16 @@ Use the exact configuration from `/Docs/project_structure.md`:
       "require": "./dist/cjs/index.js",
       "types": "./dist/types/index.d.ts"
     },
+    "./auth": {
+      "import": "./dist/esm/auth/index.js",
+      "require": "./dist/cjs/auth/index.js",
+      "types": "./dist/types/auth/index.d.ts"
+    },
+    "./databases": {
+      "import": "./dist/esm/databases/index.js",
+      "require": "./dist/cjs/databases/index.js",
+      "types": "./dist/types/databases/index.d.ts"
+    },
     "./testing": {
       "import": "./dist/esm/testing/index.js",
       "require": "./dist/cjs/testing/index.js",
@@ -116,7 +136,7 @@ Use the exact configuration from `/Docs/project_structure.md`:
   },
   "files": ["dist/", "README.md", "LICENSE"],
   "sideEffects": false,
-  "keywords": ["boltic", "database", "sdk", "typescript", "api"],
+  "keywords": ["boltic", "sdk", "typescript", "api", "database", "auth"],
   "repository": {
     "type": "git",
     "url": "https://github.com/bolticio/boltic-sdk.git"
@@ -208,7 +228,7 @@ Use the exact configuration from `/Docs/project_structure.md`:
     "removeComments": false
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "tests", "examples"]
+  "exclude": ["node_modules", "dist", "tests", "examples", "demos"]
 }
 ```
 
@@ -236,10 +256,12 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
+        auth: resolve(__dirname, 'src/auth/index.ts'),
+        databases: resolve(__dirname, 'src/databases/index.ts'),
         testing: resolve(__dirname, 'src/testing/index.ts'),
       },
       formats: ['es', 'cjs', 'umd'],
-      name: 'BolticDatabase',
+      name: 'BolticSDK',
     },
     rollupOptions: {
       external: ['axios'],
@@ -280,6 +302,7 @@ export default defineConfig({
         'dist/',
         'tests/',
         'examples/',
+        'demos/',
         '**/*.test.ts',
         '**/*.spec.ts',
       ],
@@ -399,90 +422,139 @@ afterEach(() => {
 
 Create placeholder test files:
 
-- `tests/unit/client/core/base-client.test.ts`
-- `tests/integration/api-flows/database-lifecycle.test.ts`
+- `tests/unit/auth/auth-manager.test.ts`
+- `tests/unit/errors/utils.test.ts`
+- `tests/integration/auth-flows/authentication.test.ts`
 
-### Task 7: Environment Configuration
+### Task 7: Generic Auth Module
 
 **Duration**: 1 day
-**Priority**: High
+**Priority**: Critical
 
-#### 7.1 Create Environment Types
+#### 7.1 Create Generic Auth Manager
 
-Create `src/types/config/environment.ts`:
-
-```typescript
-export type Environment = 'local' | 'sit' | 'uat' | 'prod';
-
-export interface EnvironmentConfig {
-  baseURL: string;
-  timeout: number;
-  retryAttempts?: number;
-  debug?: boolean;
-}
-
-export const ENV_CONFIGS: Record<Environment, EnvironmentConfig> = {
-  local: {
-    baseURL: 'http://localhost:8000',
-    timeout: 30000,
-    debug: true,
-  },
-  sit: {
-    baseURL: 'https://asia-south1.api.fcz0.de/service/panel/boltic-tables',
-    timeout: 15000,
-  },
-  uat: {
-    baseURL: 'https://asia-south1.api.uat.fcz0.de/service/panel/boltic-tables',
-    timeout: 15000,
-  },
-  prod: {
-    baseURL: 'https://asia-south1.api.boltic.io/service/panel/boltic-tables',
-    timeout: 10000,
-  },
-};
-```
-
-#### 7.2 Create Base Configuration
-
-Create `src/client/core/config.ts`:
+Create `src/auth/auth-manager.ts`:
 
 ```typescript
-import {
-  Environment,
-  EnvironmentConfig,
-  ENV_CONFIGS,
-} from '../../types/config/environment';
+import { createErrorWithContext } from '../errors';
+import { AuthConfig, AuthHeaders, TokenInfo } from '../types/auth';
 
-export interface ClientConfig extends EnvironmentConfig {
-  apiKey: string;
-  environment: Environment;
-  headers?: Record<string, string>;
-}
+export class AuthManager {
+  private config: AuthConfig;
+  private tokenInfo: TokenInfo | null = null;
 
-export class ConfigManager {
-  private config: ClientConfig;
+  constructor(config: AuthConfig) {
+    this.config = config;
+    this.validateApiKey(config.apiKey);
+  }
 
-  constructor(
-    apiKey: string,
-    environment: Environment = 'prod',
-    overrides?: Partial<EnvironmentConfig>
-  ) {
-    const envConfig = ENV_CONFIGS[environment];
-    this.config = {
-      apiKey,
-      environment,
-      ...envConfig,
-      ...overrides,
+  private validateApiKey(apiKey: string): void {
+    if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
+      throw createErrorWithContext(
+        'API key is required and must be a non-empty string',
+        {
+          name: 'AuthenticationError',
+          code: 'INVALID_API_KEY',
+        }
+      );
+    }
+
+    // Basic format validation (adjust based on actual key format)
+    if (apiKey.length < 10) {
+      throw createErrorWithContext(
+        'API key appears to be invalid (too short)',
+        {
+          name: 'AuthenticationError',
+          code: 'INVALID_API_KEY_FORMAT',
+        }
+      );
+    }
+  }
+
+  getAuthHeaders(): AuthHeaders {
+    return {
+      'x-boltic-token': this.config.apiKey,
     };
   }
 
-  getConfig(): ClientConfig {
-    return { ...this.config };
+  updateApiKey(newApiKey: string): void {
+    this.validateApiKey(newApiKey);
+    this.config.apiKey = newApiKey;
+    this.tokenInfo = null; // Reset token info
   }
 
-  updateConfig(updates: Partial<ClientConfig>): void {
-    this.config = { ...this.config, ...updates };
+  isAuthenticated(): boolean {
+    return !!this.config.apiKey;
   }
+
+  async validateApiKeyAsync(): Promise<boolean> {
+    // TODO: Implement actual API key validation endpoint call
+    // For now, return basic validation
+    try {
+      this.validateApiKey(this.config.apiKey);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  getTokenInfo(): TokenInfo | null {
+    return this.tokenInfo ? { ...this.tokenInfo } : null;
+  }
+
+  // Generic method to get headers for any Boltic service
+  getServiceHeaders(service?: string): AuthHeaders {
+    const headers = this.getAuthHeaders();
+
+    if (service) {
+      headers['x-boltic-service'] = service;
+    }
+
+    return headers;
+  }
+
+  // Method to validate API key for specific service
+  async validateForService(service: string): Promise<boolean> {
+    try {
+      const isValid = await this.validateApiKeyAsync();
+      if (isValid) {
+        // TODO: Add service-specific validation logic
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+}
+```
+
+#### 7.2 Create Auth Types
+
+Create `src/types/auth.ts`:
+
+```typescript
+export interface AuthConfig {
+  apiKey: string;
+  tokenRefreshThreshold?: number; // seconds before expiry to refresh
+  maxRetries?: number;
+}
+
+export interface AuthHeaders {
+  'x-boltic-token': string;
+  'x-boltic-service'?: string;
+  [key: string]: string | undefined;
+}
+
+export interface TokenInfo {
+  token: string;
+  expiresAt?: Date;
+  isValid: boolean;
+}
+
+export interface ServiceAuthConfig extends AuthConfig {
+  service: string;
+  serviceEndpoint?: string;
 }
 ```
 
@@ -493,7 +565,7 @@ export class ConfigManager {
 
 #### 8.1 Create Error Utility Functions
 
-Create `src/errors/utils.ts`:
+Create `src/errors/index.ts`:
 
 ```typescript
 /**
@@ -577,23 +649,36 @@ export function formatError(error: unknown): string {
 }
 ```
 
-#### 8.2 Create Error Index
+### Task 9: Demo Scripts
 
-Create `src/errors/index.ts`:
+**Duration**: 1 day
+**Priority**: High
 
-```typescript
-export * from './utils';
+#### 9.1 Create Demo Scripts
 
-// Re-export standard Error types for convenience
-export { Error, TypeError, RangeError, ReferenceError } from 'global';
-```
+Create demo scripts in the `demos/` directory:
 
-### Task 9: CI/CD Pipeline Setup
+- `demos/demo.js` - CommonJS demo
+- `demos/demo.mjs` - ES Module demo
+- `demos/demo.ts` - TypeScript demo
+- `demos/README.md` - Demo documentation
+
+#### 9.2 Demo Features
+
+Each demo should demonstrate:
+
+- SDK import in different formats
+- Authentication setup
+- Error handling
+- Type safety (TypeScript)
+- Service-specific usage
+
+### Task 10: CI/CD Pipeline Setup
 
 **Duration**: 1 day
 **Priority**: Medium
 
-#### 9.1 Create GitHub Actions Workflow
+#### 10.1 Create GitHub Actions Workflow
 
 Create `.github/workflows/ci.yml`:
 
@@ -664,32 +749,32 @@ jobs:
           path: dist/
 ```
 
-### Task 10: Documentation Structure
+### Task 11: Documentation Structure
 
 **Duration**: 0.5 days
 **Priority**: Medium
 
-#### 10.1 Create README.md
+#### 11.1 Create README.md
 
 ````markdown
-# @boltic/database-js
+# @boltic/sdk
 
-TypeScript SDK for Boltic Tables infrastructure
+TypeScript SDK for Boltic infrastructure
 
 ## Installation
 
 ```bash
-npm install @boltic/database-js
+npm install @boltic/sdk
 ```
 ````
 
 ## Quick Start
 
 ```typescript
-import { createClient } from '@boltic/database-js';
+import { AuthManager } from '@boltic/sdk';
 
-const boltic = createClient('your-api-key', {
-  environment: 'prod',
+const authManager = new AuthManager({
+  apiKey: 'your-api-key',
 });
 
 // Use the SDK...
@@ -700,6 +785,7 @@ const boltic = createClient('your-api-key', {
 - [API Reference](./docs/api/)
 - [Getting Started Guide](./docs/guides/getting-started.md)
 - [Examples](./examples/)
+- [Demos](./demos/)
 
 ## License
 
@@ -707,49 +793,49 @@ MIT
 
 ````
 
-#### 10.2 Create Basic Documentation Structure
+#### 11.2 Create Basic Documentation Structure
 Create placeholder files:
 - `docs/guides/getting-started.md`
 - `docs/guides/configuration.md`
 - `LICENSE` file
 - `.gitignore` file
 
-### Task 11: Create Main Entry Points
+### Task 12: Create Main Entry Points
 **Duration**: 0.5 days
 **Priority**: Critical
 
-#### 11.1 Create src/index.ts
+#### 12.1 Create src/index.ts
 ```typescript
 // Main SDK exports
-export { createClient } from './client';
-export * from './types';
+export * from './auth';
+export * from './types/auth';
 export * from './errors';
 
 // Version information
 export const VERSION = '1.0.0';
+
+// Re-export databases module when available
+// export * from './databases';
 ````
 
-#### 11.2 Create src/client/index.ts
+#### 12.2 Create src/auth/index.ts
 
 ```typescript
-import { ConfigManager } from './core/config';
-import type {
-  Environment,
-  EnvironmentConfig,
-} from '../types/config/environment';
+export { AuthManager } from './auth-manager';
+export * from '../types/auth';
+```
 
-export interface ClientOptions extends Partial<EnvironmentConfig> {
-  environment?: Environment;
-}
+#### 12.3 Create src/databases/index.ts
 
-export function createClient(apiKey: string, options: ClientOptions = {}) {
-  const { environment = 'prod', ...configOverrides } = options;
-  const configManager = new ConfigManager(apiKey, environment, configOverrides);
+```typescript
+// Databases module exports
+// This will be populated when the databases module is implemented
 
-  // TODO: Implement actual client
-  return {
-    config: configManager.getConfig(),
-  };
+export const DATABASES_VERSION = '1.0.0';
+
+// Placeholder for future database exports
+export interface DatabaseClient {
+  // TODO: Implement database client interface
 }
 ```
 
@@ -784,6 +870,14 @@ Mark this task as complete when ALL of the following are achieved:
 - [x] README.md provides clear setup instructions
 - [x] TypeDoc configuration generates documentation
 - [x] All placeholder files have appropriate basic content
+- [x] Demo scripts are created and documented
+
+### ✅ Multi-Format Support
+
+- [x] SDK works when imported in .js files (CommonJS)
+- [x] SDK works when imported in .mjs files (ES Modules)
+- [x] SDK works when imported in .ts files (TypeScript)
+- [x] All demo scripts demonstrate proper usage
 
 ## Error Handling Protocol
 
@@ -800,6 +894,7 @@ After completion, the following agents can begin work:
 
 - **Core Infrastructure Agent** (depends on this foundation)
 - **API Integration Agent** (can work on HTTP client structure)
+- **Database Module Agent** (can work on database-specific features)
 
 ## Critical Notes
 
@@ -807,5 +902,7 @@ After completion, the following agents can begin work:
 - **DO NOT** skip any build configuration steps
 - **ALWAYS** test each configuration as you implement it
 - **ENSURE** all scripts in package.json work before marking complete
+- **VERIFY** multi-format support works correctly
+- **TEST** all demo scripts before completion
 
-Remember: You are building the foundation that all other agents will depend on. Quality and completeness are critical.
+Remember: You are building the foundation that all other agents will depend on. Quality and completeness are critical. The SDK must work across all supported formats (.js, .mjs, .ts).
