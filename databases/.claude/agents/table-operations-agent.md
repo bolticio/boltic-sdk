@@ -184,8 +184,6 @@ import {
   FieldDefinition,
   FieldType,
 } from '../../types/api/table';
-import { ValidationError } from '../../errors/validation-error';
-import { ApiError } from '../../errors/api-error';
 
 export class TableResource extends BaseResource {
   constructor(client: BaseClient) {
@@ -196,44 +194,11 @@ export class TableResource extends BaseResource {
    * Create a new table with schema
    */
   async create(data: TableCreateRequest): Promise<ApiResponse<TableRecord>> {
-    this.validateCreateRequest(data);
-
-    // Get current database context
-    const databaseId = this.getCurrentDatabaseId();
-    if (!databaseId) {
-      throw new ValidationError(
-        'No database selected. Use useDatabase() first.',
-        [
-          {
-            field: 'database',
-            message: 'Database context is required for table operations',
-          },
-        ]
-      );
-    }
-
-    const requestData = {
-      ...data,
-      database_id: databaseId,
-    };
-
     try {
-      const response = await this.makeRequest<TableRecord>(
-        'POST',
-        '',
-        requestData
-      );
+      const response = await this.makeRequest<TableRecord>('POST', '', data);
 
       return response;
     } catch (error) {
-      if (error instanceof ApiError && error.statusCode === 409) {
-        throw new ValidationError('Table already exists', [
-          {
-            field: 'table_name',
-            message: 'A table with this name already exists in the database',
-          },
-        ]);
-      }
       throw error;
     }
   }
@@ -280,18 +245,6 @@ export class TableResource extends BaseResource {
   async findOne(
     options: TableQueryOptions
   ): Promise<ApiResponse<TableRecord | null>> {
-    if (!options.where || Object.keys(options.where).length === 0) {
-      throw new ValidationError(
-        'findOne requires at least one where condition',
-        [
-          {
-            field: 'where',
-            message: 'Where clause is required for findOne operation',
-          },
-        ]
-      );
-    }
-
     // Auto-add current database filter if not specified
     const databaseId = this.getCurrentDatabaseId();
     if (databaseId && !options.where.db_id) {
@@ -332,24 +285,12 @@ export class TableResource extends BaseResource {
       // Find table by name to get ID
       const findResult = await this.findOne({ where: { name: identifier } });
       if (!findResult.data) {
-        throw new ValidationError('Table not found', [
-          { field: 'identifier', message: `Table '${identifier}' not found` },
-        ]);
+        return { error: 'Table not found' };
       }
       tableId = findResult.data.id;
     } else {
-      throw new ValidationError(
-        'Table updates must specify a table name or ID',
-        [
-          {
-            field: 'identifier',
-            message: 'Table identifier is required for updates',
-          },
-        ]
-      );
+      return { error: 'Table identifier is required for updates' };
     }
-
-    this.validateUpdateRequest(updateData);
 
     const response = await this.makeRequest<TableRecord>(
       'PUT',
@@ -367,8 +308,6 @@ export class TableResource extends BaseResource {
     oldName: string,
     newName: string
   ): Promise<ApiResponse<TableRecord>> {
-    this.validateTableName(newName);
-
     return this.update(oldName, { name: newName });
   }
 
@@ -397,9 +336,7 @@ export class TableResource extends BaseResource {
       // Delete by table name
       const findResult = await this.findOne({ where: { name: options } });
       if (!findResult.data) {
-        throw new ValidationError('Table not found', [
-          { field: 'table', message: `Table '${options}' not found` },
-        ]);
+        return { error: 'Table not found' };
       }
       tableId = findResult.data.id;
       whereClause = { id: tableId };
@@ -416,9 +353,7 @@ export class TableResource extends BaseResource {
     }
 
     if (!tableId) {
-      throw new ValidationError('Table not found for deletion', [
-        { field: 'identifier', message: 'Could not resolve table identifier' },
-      ]);
+      return { error: 'Table not found for deletion' };
     }
 
     const response = await this.makeRequest<{
@@ -438,9 +373,7 @@ export class TableResource extends BaseResource {
     });
 
     if (!response.data) {
-      throw new ValidationError('Table not found', [
-        { field: 'table_name', message: `Table '${tableName}' not found` },
-      ]);
+      return { error: 'Table not found' };
     }
 
     return {
@@ -450,230 +383,6 @@ export class TableResource extends BaseResource {
   }
 
   // Private helper methods
-  private validateCreateRequest(data: TableCreateRequest): void {
-    const errors: Array<{ field: string; message: string }> = [];
-
-    if (!data.table_name || data.table_name.trim().length === 0) {
-      errors.push({ field: 'table_name', message: 'Table name is required' });
-    } else {
-      this.validateTableName(data.table_name);
-    }
-
-    if (
-      !data.schema ||
-      !Array.isArray(data.schema) ||
-      data.schema.length === 0
-    ) {
-      errors.push({
-        field: 'schema',
-        message: 'Table schema is required and must contain at least one field',
-      });
-    } else {
-      this.validateSchema(data.schema);
-    }
-
-    if (data.description && data.description.length > 1000) {
-      errors.push({
-        field: 'description',
-        message: 'Description cannot exceed 1000 characters',
-      });
-    }
-
-    if (errors.length > 0) {
-      throw new ValidationError('Table creation validation failed', errors);
-    }
-  }
-
-  private validateUpdateRequest(data: TableUpdateRequest): void {
-    const errors: Array<{ field: string; message: string }> = [];
-
-    if (data.name !== undefined) {
-      if (!data.name || data.name.trim().length === 0) {
-        errors.push({ field: 'name', message: 'Table name cannot be empty' });
-      } else {
-        this.validateTableName(data.name);
-      }
-    }
-
-    if (errors.length > 0) {
-      throw new ValidationError('Table update validation failed', errors);
-    }
-  }
-
-  private validateTableName(name: string): void {
-    // Table name validation rules
-    if (!/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(name)) {
-      throw new ValidationError('Invalid table name', [
-        {
-          field: 'table_name',
-          message:
-            'Table name must start with a letter and contain only letters, numbers, hyphens, and underscores',
-        },
-      ]);
-    }
-
-    if (name.length > 100) {
-      throw new ValidationError('Table name too long', [
-        {
-          field: 'table_name',
-          message: 'Table name cannot exceed 100 characters',
-        },
-      ]);
-    }
-
-    // Reserved words check
-    const reservedWords = [
-      'table',
-      'index',
-      'view',
-      'database',
-      'schema',
-      'select',
-      'insert',
-      'update',
-      'delete',
-      'vector',
-    ];
-    if (reservedWords.includes(name.toLowerCase())) {
-      throw new ValidationError('Reserved table name', [
-        {
-          field: 'table_name',
-          message: `'${name}' is a reserved word and cannot be used as a table name`,
-        },
-      ]);
-    }
-  }
-
-  private validateSchema(schema: FieldDefinition[]): void {
-    const errors: Array<{ field: string; message: string }> = [];
-    const fieldNames = new Set<string>();
-
-    schema.forEach((field, index) => {
-      const fieldPrefix = `schema[${index}]`;
-
-      // Validate field name
-      if (!field.name || field.name.trim().length === 0) {
-        errors.push({
-          field: `${fieldPrefix}.name`,
-          message: 'Field name is required',
-        });
-      } else if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(field.name)) {
-        errors.push({
-          field: `${fieldPrefix}.name`,
-          message:
-            'Field name must start with a letter and contain only letters, numbers, and underscores',
-        });
-      } else if (fieldNames.has(field.name.toLowerCase())) {
-        errors.push({
-          field: `${fieldPrefix}.name`,
-          message: `Duplicate field name: ${field.name}`,
-        });
-      } else {
-        fieldNames.add(field.name.toLowerCase());
-      }
-
-      // Validate field type
-      if (!field.type) {
-        errors.push({
-          field: `${fieldPrefix}.type`,
-          message: 'Field type is required',
-        });
-      } else {
-        this.validateFieldType(field, fieldPrefix, errors);
-      }
-    });
-
-    if (errors.length > 0) {
-      throw new ValidationError('Schema validation failed', errors);
-    }
-  }
-
-  private validateFieldType(
-    field: FieldDefinition,
-    fieldPrefix: string,
-    errors: Array<{ field: string; message: string }>
-  ): void {
-    const validTypes: FieldType[] = [
-      'text',
-      'long-text',
-      'number',
-      'currency',
-      'checkbox',
-      'dropdown',
-      'email',
-      'phone-number',
-      'link',
-      'json',
-      'date-time',
-      'vector',
-      'halfvec',
-      'sparsevec',
-    ];
-
-    if (!validTypes.includes(field.type)) {
-      errors.push({
-        field: `${fieldPrefix}.type`,
-        message: `Invalid field type: ${field.type}`,
-      });
-      return;
-    }
-
-    // Type-specific validations
-    switch (field.type) {
-      case 'vector':
-      case 'halfvec':
-      case 'sparsevec':
-        if (!field.vector_dimension || field.vector_dimension <= 0) {
-          errors.push({
-            field: `${fieldPrefix}.vector_dimension`,
-            message: 'Vector fields require a positive vector_dimension',
-          });
-        }
-        break;
-
-      case 'currency':
-        if (
-          field.currency_format &&
-          !/^[A-Z]{3}$/.test(field.currency_format)
-        ) {
-          errors.push({
-            field: `${fieldPrefix}.currency_format`,
-            message: 'Currency format must be a 3-letter ISO code (e.g., USD)',
-          });
-        }
-        break;
-
-      case 'dropdown':
-        if (
-          !field.selectable_items ||
-          !Array.isArray(field.selectable_items) ||
-          field.selectable_items.length === 0
-        ) {
-          errors.push({
-            field: `${fieldPrefix}.selectable_items`,
-            message: 'Dropdown fields require selectable_items array',
-          });
-        }
-        break;
-
-      case 'email':
-        // Email fields don't need additional validation
-        break;
-
-      case 'phone-number':
-        if (
-          field.phone_format &&
-          !['international', 'national', 'e164'].includes(field.phone_format)
-        ) {
-          errors.push({
-            field: `${fieldPrefix}.phone_format`,
-            message:
-              'Phone format must be one of: international, national, e164',
-          });
-        }
-        break;
-    }
-  }
 
   private getCurrentDatabaseId(): string | null {
     // Get database context from client
@@ -1706,20 +1415,21 @@ await db
 
 ## Error Handling
 
+**Important**: API errors should be passed through without modification. Do not transform, format, or modify error responses from the API layer. All validation is handled by the API.
+
 ```typescript
-try {
-  const result = await db.table.create({
-    table_name: 'test_table',
-    schema: [
-      /* schema definition */
-    ],
-  });
-} catch (error) {
-  if (error instanceof ValidationError) {
-    console.log('Schema validation errors:', error.failures);
-  } else if (error instanceof ApiError) {
-    console.log('API error:', error.statusCode, error.message);
-  }
+const result = await db.table.create({
+  table_name: 'test_table',
+  schema: [
+    /* schema definition */
+  ],
+});
+
+if (result.error) {
+  // Handle API error (structure depends on API response)
+  console.log('API returned error:', result.error);
+} else {
+  console.log('Table created successfully:', result.data);
 }
 ```
 
@@ -1742,11 +1452,9 @@ Mark this task as complete when ALL of the following are achieved:
 - [x] Support for all field types: text, long-text, number, currency, checkbox, dropdown, email, phone-number, link, json, date-time, vector, halfvec, sparsevec
 - [x] Advanced validation rules for each field type (vector dimensions, phone formats, etc.)
 
-### ✅ Validation & Error Handling
-- [x] Input validation for table creation and updates
-- [x] Schema validation with detailed error messages
-- [x] Field type-specific validation rules
-- [x] Comprehensive error handling for all scenarios
+### ✅ Error Handling
+- [x] Pass through API errors without modification
+- [x] Handle network and client errors appropriately
 
 ### ✅ Performance
 - [x] Performance optimizations for large table lists

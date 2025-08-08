@@ -20,6 +20,10 @@ export default defineConfig({
         // Ensure we get a single bundle
         manualChunks: undefined,
       },
+      // Include the databases module in the bundle
+      input: {
+        index: resolve(__dirname, 'src/index.ts'),
+      },
     },
     sourcemap: true,
     minify: false,

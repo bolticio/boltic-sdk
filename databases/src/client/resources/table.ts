@@ -1,7 +1,5 @@
-import { TablesApiClient } from '../../api/clients/tables-api-client';
-import { ValidationError } from '../../errors';
+import { ApiError, TablesApiClient } from '../../api/clients/tables-api-client';
 import {
-  FieldDefinition,
   TableAccessRequest,
   TableCreateRequest,
   TableDeleteOptions,
@@ -41,41 +39,11 @@ export class TableResource extends BaseResource {
    */
   async create(data: TableCreateRequest): Promise<ApiResponse<TableRecord>> {
     try {
-      this.validateCreateRequest(data);
       const result = await this.tablesApiClient.createTable(data);
+
       if (result.error) {
-        let errorMessage = 'Unknown error';
-
-        if (typeof result.error === 'string') {
-          errorMessage = result.error;
-        } else if (result.error.message) {
-          errorMessage = result.error.message;
-        } else if (
-          result.error.details &&
-          Array.isArray(result.error.details)
-        ) {
-          errorMessage = result.error.details.join(', ');
-        } else if (
-          result.error.details &&
-          typeof result.error.details === 'string'
-        ) {
-          errorMessage = result.error.details;
-        } else if (
-          (result.error as { meta?: unknown }).meta &&
-          Array.isArray((result.error as { meta?: unknown }).meta)
-        ) {
-          errorMessage = (
-            (result.error as { meta?: unknown }).meta as string[]
-          ).join(', ');
-        } else if (
-          (result.error as { meta?: unknown }).meta &&
-          typeof (result.error as { meta?: unknown }).meta === 'string'
-        ) {
-          errorMessage = (result.error as { meta?: string }).meta || '';
-        }
-
         return {
-          error: errorMessage,
+          error: this.formatApiError(result.error),
         };
       }
 
@@ -100,10 +68,7 @@ export class TableResource extends BaseResource {
 
       if (result.error) {
         return {
-          error:
-            typeof result.error === 'string'
-              ? result.error
-              : result.error.message || 'Unknown error',
+          error: this.formatApiError(result.error),
         };
       }
 
@@ -172,10 +137,7 @@ export class TableResource extends BaseResource {
 
       if (result.error) {
         return {
-          error:
-            typeof result.error === 'string'
-              ? result.error
-              : result.error.message || 'Unknown error',
+          error: this.formatApiError(result.error),
         };
       }
 
@@ -220,10 +182,7 @@ export class TableResource extends BaseResource {
 
       if (result.error) {
         return {
-          error:
-            typeof result.error === 'string'
-              ? result.error
-              : result.error.message || 'Unknown error',
+          error: this.formatApiError(result.error),
         };
       }
 
@@ -278,10 +237,7 @@ export class TableResource extends BaseResource {
 
       if (result.error) {
         return {
-          error:
-            typeof result.error === 'string'
-              ? result.error
-              : result.error.message || 'Unknown error',
+          error: this.formatApiError(result.error),
         };
       }
 
@@ -321,10 +277,7 @@ export class TableResource extends BaseResource {
 
       if (result.error) {
         return {
-          error:
-            typeof result.error === 'string'
-              ? result.error
-              : result.error.message || 'Unknown error',
+          error: this.formatApiError(result.error),
         };
       }
 
@@ -365,10 +318,7 @@ export class TableResource extends BaseResource {
 
       if (result.error) {
         return {
-          error:
-            typeof result.error === 'string'
-              ? result.error
-              : result.error.message || 'Unknown error',
+          error: this.formatApiError(result.error),
         };
       }
 
@@ -395,126 +345,16 @@ export class TableResource extends BaseResource {
 
   // Private helper methods
 
-  private validateCreateRequest(data: TableCreateRequest): void {
-    const errors: Array<{ field: string; message: string }> = [];
-
-    if (!data.name || data.name.trim().length === 0) {
-      errors.push({ field: 'name', message: 'Table name is required' });
-    } else {
-      this.validateTableName(data.name);
-    }
-
-    if (
-      !data.fields ||
-      !Array.isArray(data.fields) ||
-      data.fields.length === 0
-    ) {
-      errors.push({
-        field: 'fields',
-        message: 'Fields are required and must be a non-empty array',
-      });
-    } else {
-      this.validateSchema(data.fields, errors);
-    }
-
-    if (errors.length > 0) {
-      throw new ValidationError('Table creation validation failed', errors);
-    }
-  }
-
-  private validateTableName(name: string): void {
-    if (name.length > 64) {
-      throw new ValidationError('Table name must be 64 characters or less');
-    }
-
-    if (!/^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(name)) {
-      throw new ValidationError(
-        'Table name must start with a letter or underscore and contain only letters, numbers, underscores, and hyphens'
-      );
-    }
-  }
-
-  private validateSchema(
-    schema: FieldDefinition[],
-    errors: Array<{ field: string; message: string }>
-  ): void {
-    const fieldNames = new Set<string>();
-
-    schema.forEach((field, index) => {
-      // Check for duplicate field names
-      if (fieldNames.has(field.name)) {
-        errors.push({
-          field: `fields[${index}].name`,
-          message: `Duplicate field name: ${field.name}`,
-        });
-      } else {
-        fieldNames.add(field.name);
-      }
-
-      // Validate field name
-      if (!field.name || field.name.trim().length === 0) {
-        errors.push({
-          field: `fields[${index}].name`,
-          message: 'Field name is required',
-        });
-      } else if (field.name.length > 64) {
-        errors.push({
-          field: `fields[${index}].name`,
-          message: 'Field name must be 64 characters or less',
-        });
-      } else if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(field.name)) {
-        errors.push({
-          field: `fields[${index}].name`,
-          message:
-            'Field name must start with a letter or underscore and contain only letters, numbers, and underscores',
-        });
-      }
-
-      // Validate field type
-      if (!field.type) {
-        errors.push({
-          field: `fields[${index}].type`,
-          message: 'Field type is required',
-        });
-      }
-
-      // Validate required boolean fields
-      if (typeof field.is_nullable !== 'boolean') {
-        errors.push({
-          field: `fields[${index}].is_nullable`,
-          message: 'is_nullable must be a boolean',
-        });
-      }
-      if (typeof field.is_primary_key !== 'boolean') {
-        errors.push({
-          field: `fields[${index}].is_primary_key`,
-          message: 'is_primary_key must be a boolean',
-        });
-      }
-      if (typeof field.is_unique !== 'boolean') {
-        errors.push({
-          field: `fields[${index}].is_unique`,
-          message: 'is_unique must be a boolean',
-        });
-      }
-      if (typeof field.is_indexed !== 'boolean') {
-        errors.push({
-          field: `fields[${index}].is_indexed`,
-          message: 'is_indexed must be a boolean',
-        });
-      }
-    });
-  }
-
   private formatError(error: unknown): string {
-    if (error instanceof ValidationError) {
-      return error.message;
-    }
-
     if (error instanceof Error) {
       return error.message;
     }
 
     return 'An unexpected error occurred';
+  }
+
+  private formatApiError(apiError: ApiError): string {
+    // Pass through the API error message, or stringify the object if needed
+    return apiError.message || JSON.stringify(apiError);
   }
 }

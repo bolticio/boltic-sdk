@@ -3,7 +3,14 @@
 
 export const UTILS_VERSION = '1.0.0';
 
-// Placeholder for future utility exports
-export interface Utils {
-  // TODO: Implement utility functions
+// Common utility functions that may be useful for SDK users
+export function isValidApiKey(apiKey: string): boolean {
+  return typeof apiKey === 'string' && apiKey.length > 0;
+}
+
+export function createErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
 }
