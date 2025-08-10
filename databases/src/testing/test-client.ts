@@ -4,6 +4,7 @@ import { PaginationInfo } from '../types/common/operations';
 export interface MockClientOptions {
   apiKey?: string;
   environment?: 'local' | 'sit' | 'uat' | 'prod';
+  region?: 'asia-south1' | 'us-central1';
   mockResponses?: Record<string, unknown>;
   debug?: boolean;
 }
@@ -13,7 +14,7 @@ export function createTestClient(
 ): BolticClient {
   return new BolticClient(options.apiKey || 'test-api-key-12345', {
     environment: 'local',
-    baseURL: 'http://localhost:8000',
+    region: 'asia-south1',
     debug: options.debug ?? true,
     timeout: 30000,
     ...options,

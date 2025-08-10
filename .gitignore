@@ -60,4 +60,7 @@ coverage.data
 test-results/
 
 # Husky
-.husky/_ 
+.husky/_
+
+# SDK Test folder
+sdk-test/ 

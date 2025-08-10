@@ -12,6 +12,11 @@ export abstract class BaseResource {
     this.basePath = basePath;
   }
 
+  // Public getter for basePath
+  getBasePath(): string {
+    return this.basePath;
+  }
+
   protected async makeRequest<T>(
     method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     path: string,

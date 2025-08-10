@@ -99,43 +99,70 @@ export class BaseClient {
   async request<T = unknown>(
     config: HttpRequestConfig
   ): Promise<HttpResponse<T>> {
-    try {
-      // Add base URL if not absolute
-      if (!config.url.startsWith('http')) {
-        config.url = `${this.config.baseURL}${config.url}`;
+    let lastError: unknown;
+    const maxRetries = this.config.maxRetries;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        // Add base URL if not absolute
+        if (!config.url.startsWith('http')) {
+          config.url = `${this.config.baseURL}${config.url}`;
+        }
+
+        // Set default timeout
+        if (!config.timeout) {
+          config.timeout = this.config.timeout;
+        }
+
+        // Execute request interceptors
+        const requestConfig =
+          await this.interceptors.executeRequestInterceptors(config);
+
+        // Make the request
+        const response = await this.httpAdapter.request<T>(requestConfig);
+
+        // Check for HTTP errors (non-2xx status codes)
+        if (response.status >= 400) {
+          const error = createErrorWithContext(
+            `HTTP ${response.status} error`,
+            {
+              name: 'ApiError',
+              statusCode: response.status,
+              response: response.data,
+              statusText: response.statusText,
+            }
+          );
+          throw await this.interceptors.executeErrorInterceptors(error);
+        }
+
+        // Execute response interceptors
+        return (await this.interceptors.executeResponseInterceptors(
+          response
+        )) as HttpResponse<T>;
+      } catch (error) {
+        lastError = error;
+
+        // Don't retry on client errors (4xx) or if we've exhausted retries
+        if (attempt === maxRetries) {
+          break;
+        }
+
+        const statusCode = getHttpStatusCode(error);
+        if (statusCode && statusCode >= 400 && statusCode < 500) {
+          // Don't retry client errors
+          break;
+        }
+
+        // Wait before retrying (exponential backoff)
+        if (attempt < maxRetries) {
+          const delay = this.config.retryDelay * Math.pow(2, attempt);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
       }
-
-      // Set default timeout
-      if (!config.timeout) {
-        config.timeout = this.config.timeout;
-      }
-
-      // Execute request interceptors
-      const requestConfig =
-        await this.interceptors.executeRequestInterceptors(config);
-
-      // Make the request
-      const response = await this.httpAdapter.request<T>(requestConfig);
-
-      // Check for HTTP errors (non-2xx status codes)
-      if (response.status >= 400) {
-        const error = createErrorWithContext(`HTTP ${response.status} error`, {
-          name: 'ApiError',
-          statusCode: response.status,
-          response: response.data,
-          statusText: response.statusText,
-        });
-        throw await this.interceptors.executeErrorInterceptors(error);
-      }
-
-      // Execute response interceptors
-      return (await this.interceptors.executeResponseInterceptors(
-        response
-      )) as HttpResponse<T>;
-    } catch (error) {
-      // Execute error interceptors
-      throw await this.interceptors.executeErrorInterceptors(error);
     }
+
+    // Execute error interceptors and throw the last error
+    throw await this.interceptors.executeErrorInterceptors(lastError);
   }
 
   get<T = unknown>(
