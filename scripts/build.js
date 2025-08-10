@@ -57,14 +57,23 @@ console.log('Build organization complete!');
 console.log('🔧 Post-build: Integrating actual BolticClient implementation...');
 
 // Check if databases module is built, if not build it
-const databasesDistPath = path.join(__dirname, '..', 'databases', 'dist');
+const databasesDistPath = path.join(
+  __dirname,
+  '..',
+  'src',
+  'services',
+  'databases',
+  'dist'
+);
 const databasesIndexPath = path.join(databasesDistPath, 'index.js');
 
 if (!fs.existsSync(databasesIndexPath)) {
   console.log('⚠️  Databases module not built, building it now...');
 
   try {
-    execSync('cd databases && npm run build', { stdio: 'inherit' });
+    execSync('cd src/services/databases && npm run build', {
+      stdio: 'inherit',
+    });
     console.log('✅ Built databases module');
   } catch (error) {
     console.error('❌ Failed to build databases module:', error.message);
@@ -75,7 +84,14 @@ if (!fs.existsSync(databasesIndexPath)) {
 const distPath = path.join(__dirname, '..', 'dist');
 
 // Copy only the databases dist folder to our dist folder for bundling
-const srcDatabasesDistPath = path.join(__dirname, '..', 'databases', 'dist');
+const srcDatabasesDistPath = path.join(
+  __dirname,
+  '..',
+  'src',
+  'services',
+  'databases',
+  'dist'
+);
 const destDatabasesPath = path.join(distPath, 'databases');
 
 try {

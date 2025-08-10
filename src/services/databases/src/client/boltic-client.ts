@@ -152,6 +152,7 @@ export class BolticClient {
   getConfig(): Omit<ClientConfig, 'apiKey'> {
     const config = this.configManager.getConfig();
     const safeConfig = { ...config };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (safeConfig as any).apiKey;
     return safeConfig;
   }
