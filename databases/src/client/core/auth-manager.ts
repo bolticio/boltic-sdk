@@ -6,7 +6,10 @@ export class AuthManager {
   private tokenInfo: TokenInfo | null = null;
 
   constructor(config: AuthConfig) {
-    this.config = config;
+    this.config = {
+      maxRetries: 3,
+      ...config,
+    };
     this.validateApiKey(config.apiKey);
   }
 
@@ -62,5 +65,9 @@ export class AuthManager {
 
   getTokenInfo(): TokenInfo | null {
     return this.tokenInfo ? { ...this.tokenInfo } : null;
+  }
+
+  getMaxRetries(): number {
+    return this.config.maxRetries || 3;
   }
 }

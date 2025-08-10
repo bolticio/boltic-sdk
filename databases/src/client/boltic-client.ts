@@ -11,10 +11,7 @@ import {
   TableQueryOptions,
   TableUpdateRequest,
 } from '../types/api/table';
-import type {
-  Environment,
-  EnvironmentConfig,
-} from '../types/config/environment';
+import type { Environment, Region } from '../types/config/environment';
 import type { HttpRequestConfig, HttpResponse } from '../utils/http/adapter';
 import { AuthManager } from './core/auth-manager';
 import { BaseClient } from './core/base-client';
@@ -24,10 +21,14 @@ import { ColumnBuilder } from './resources/column-builder';
 import { TableResource } from './resources/table';
 import { TableBuilder } from './resources/table-builder';
 
-export interface ClientOptions extends Partial<EnvironmentConfig> {
+export interface ClientOptions {
   environment?: Environment;
+  region?: Region;
   retryAttempts?: number;
   retryDelay?: number;
+  maxRetries?: number;
+  timeout?: number;
+  debug?: boolean;
   headers?: Record<string, string>;
 }
 
@@ -48,7 +49,8 @@ export class BolticClient {
     // Initialize configuration
     this.configManager = new ConfigManager(
       apiKey,
-      options.environment,
+      options.environment || 'prod',
+      options.region || 'asia-south1',
       options
     );
     const config = this.configManager.getConfig();
@@ -56,7 +58,7 @@ export class BolticClient {
     // Initialize authentication
     this.authManager = new AuthManager({
       apiKey: config.apiKey,
-      maxRetries: config.retryAttempts,
+      maxRetries: config.maxRetries,
     });
 
     // Initialize HTTP client
@@ -147,8 +149,11 @@ export class BolticClient {
     this.configManager.updateConfig(updates);
   }
 
-  getConfig(): ClientConfig {
-    return this.configManager.getConfig();
+  getConfig(): Omit<ClientConfig, 'apiKey'> {
+    const config = this.configManager.getConfig();
+    const safeConfig = { ...config };
+    delete (safeConfig as any).apiKey;
+    return safeConfig;
   }
 
   async validateApiKey(): Promise<boolean> {
@@ -184,5 +189,71 @@ export class BolticClient {
     } else {
       this.baseClient.getInterceptors().response.eject(id);
     }
+  }
+
+  // Public client information (safe to expose)
+  get info() {
+    const config = this.configManager.getConfig();
+    return {
+      environment: config.environment,
+      region: config.region,
+      isAuthenticated: this.isAuthenticated(),
+      currentDatabase: this.currentDatabase,
+      resources: {
+        tables: {
+          basePath: this.tableResource.getBasePath(),
+          available: true,
+          operations: [
+            'create',
+            'findAll',
+            'findOne',
+            'update',
+            'rename',
+            'setAccess',
+            'delete',
+            'getMetadata',
+          ],
+        },
+        columns: {
+          basePath: this.columnResource.getBasePath(),
+          available: true,
+          operations: ['create', 'findAll', 'findOne', 'update', 'delete'],
+        },
+      },
+    };
+  }
+
+  // Override toString to show only safe information
+  toString(): string {
+    return `BolticClient {
+  environment: '${this.configManager.getConfig().environment}',
+  region: '${this.configManager.getConfig().region}',
+  isAuthenticated: ${this.isAuthenticated()},
+  currentDatabase: ${this.currentDatabase ? `'${this.currentDatabase.databaseName}'` : 'null'},
+  resources: {
+    tables: { available: true, operations: [create, findAll, findOne, update, rename, setAccess, delete, getMetadata] },
+    columns: { available: true, operations: [create, findAll, findOne, update, delete] }
+  }
+}`;
+  }
+
+  // Override console.log behavior
+  [Symbol.for('nodejs.util.inspect.custom')]() {
+    return this.info;
+  }
+
+  // Custom inspect method for Node.js
+  [Symbol.for('util.inspect.custom')]() {
+    return this.info;
+  }
+
+  // Override valueOf to return safe info
+  valueOf() {
+    return this.info;
+  }
+
+  // Override toJSON to return safe info
+  toJSON() {
+    return this.info;
   }
 }
