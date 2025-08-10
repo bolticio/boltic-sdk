@@ -87,7 +87,7 @@ export interface RecordQueryOptions {
   fields?: string[];
   sort?: Array<{
     field: string;
-    order: "asc" | "desc";
+    order: 'asc' | 'desc';
   }>;
   limit?: number;
   offset?: number;
@@ -114,7 +114,7 @@ export interface RecordAggregateOptions {
   having?: WhereCondition;
   sort?: Array<{
     field: string;
-    order: "asc" | "desc";
+    order: 'asc' | 'desc';
   }>;
   limit?: number;
 }
@@ -123,7 +123,7 @@ export interface VectorSearchOptions {
   vector_field: string;
   query_vector: number[] | string;
   limit?: number;
-  distance_metric?: "cosine" | "euclidean" | "dot_product";
+  distance_metric?: 'cosine' | 'euclidean' | 'dot_product';
   threshold?: number;
   where?: WhereCondition;
 }
@@ -211,8 +211,8 @@ export interface SqlQueryOptions {
 Create `src/client/resources/record.ts`:
 
 ```typescript
-import { BaseResource, ApiResponse } from "../core/base-resource";
-import { BaseClient } from "../core/base-client";
+import { BaseResource, ApiResponse } from '../core/base-resource';
+import { BaseClient } from '../core/base-client';
 import {
   RecordCreateRequest,
   RecordBulkCreateRequest,
@@ -229,13 +229,13 @@ import {
   BulkOperationResponse,
   RecordDeleteResponse,
   WhereCondition,
-} from "../../types/api/record";
-import { ValidationError } from "../../errors/validation-error";
-import { ApiError } from "../../errors/api-error";
+} from '../../types/api/record';
+import { ValidationError } from '../../errors/validation-error';
+import { ApiError } from '../../errors/api-error';
 
 export class RecordResource extends BaseResource {
   constructor(client: BaseClient) {
-    super(client, "/v1/tables");
+    super(client, '/v1/tables');
   }
 
   /**
@@ -249,9 +249,9 @@ export class RecordResource extends BaseResource {
 
     const tableId = await this.getTableId(tableName);
     if (!tableId) {
-      throw new ValidationError("Table not found", [
+      throw new ValidationError('Table not found', [
         {
-          field: "table",
+          field: 'table',
           message: `Table '${tableName}' not found in current database`,
         },
       ]);
@@ -259,7 +259,7 @@ export class RecordResource extends BaseResource {
 
     try {
       const response = await this.makeRequest<RecordWithId>(
-        "POST",
+        'POST',
         `/${tableId}/records`,
         { data }
       );
@@ -269,7 +269,7 @@ export class RecordResource extends BaseResource {
         const cache = this.client.getCache();
         if (cache) {
           await cache.set(
-            cache.generateKey("record", tableId, response.data.id),
+            cache.generateKey('record', tableId, response.data.id),
             response.data,
             180000 // 3 minutes
           );
@@ -279,8 +279,8 @@ export class RecordResource extends BaseResource {
       return response;
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === 422) {
-        throw new ValidationError("Record validation failed", [
-          { field: "data", message: "Record data does not match table schema" },
+        throw new ValidationError('Record validation failed', [
+          { field: 'data', message: 'Record data does not match table schema' },
         ]);
       }
       throw error;
@@ -299,8 +299,8 @@ export class RecordResource extends BaseResource {
       !Array.isArray(request.data) ||
       request.data.length === 0
     ) {
-      throw new ValidationError("Bulk insert requires data array", [
-        { field: "data", message: "Data must be a non-empty array of records" },
+      throw new ValidationError('Bulk insert requires data array', [
+        { field: 'data', message: 'Data must be a non-empty array of records' },
       ]);
     }
 
@@ -323,16 +323,16 @@ export class RecordResource extends BaseResource {
 
     const tableId = await this.getTableId(tableName);
     if (!tableId) {
-      throw new ValidationError("Table not found", [
+      throw new ValidationError('Table not found', [
         {
-          field: "table",
+          field: 'table',
           message: `Table '${tableName}' not found in current database`,
         },
       ]);
     }
 
     const response = await this.makeRequest<BulkOperationResponse>(
-      "POST",
+      'POST',
       `/${tableId}/records/bulk`,
       request
     );
@@ -343,7 +343,7 @@ export class RecordResource extends BaseResource {
       if (cache) {
         for (const record of response.data.success) {
           await cache.set(
-            cache.generateKey("record", tableId, record.id),
+            cache.generateKey('record', tableId, record.id),
             record,
             180000 // 3 minutes
           );
@@ -363,9 +363,9 @@ export class RecordResource extends BaseResource {
   ): Promise<ApiResponse<RecordWithId[]> & { pagination?: any }> {
     const tableId = await this.getTableId(tableName);
     if (!tableId) {
-      throw new ValidationError("Table not found", [
+      throw new ValidationError('Table not found', [
         {
-          field: "table",
+          field: 'table',
           message: `Table '${tableName}' not found in current database`,
         },
       ]);
@@ -373,7 +373,7 @@ export class RecordResource extends BaseResource {
 
     this.validateQueryOptions(options);
 
-    const cacheKey = this.generateCacheKey("findAll", {
+    const cacheKey = this.generateCacheKey('findAll', {
       table: tableName,
       ...options,
     });
@@ -393,7 +393,7 @@ export class RecordResource extends BaseResource {
 
     const queryParams = this.buildQueryParams(options);
     const response = await this.makeRequest<RecordListResponse>(
-      "GET",
+      'GET',
       `/${tableId}/records`,
       undefined,
       { params: queryParams }
@@ -426,11 +426,11 @@ export class RecordResource extends BaseResource {
   ): Promise<ApiResponse<RecordWithId | null>> {
     if (!options.where || Object.keys(options.where).length === 0) {
       throw new ValidationError(
-        "findOne requires at least one where condition",
+        'findOne requires at least one where condition',
         [
           {
-            field: "where",
-            message: "Where clause is required for findOne operation",
+            field: 'where',
+            message: 'Where clause is required for findOne operation',
           },
         ]
       );
@@ -438,9 +438,9 @@ export class RecordResource extends BaseResource {
 
     const tableId = await this.getTableId(tableName);
     if (!tableId) {
-      throw new ValidationError("Table not found", [
+      throw new ValidationError('Table not found', [
         {
-          field: "table",
+          field: 'table',
           message: `Table '${tableName}' not found in current database`,
         },
       ]);
@@ -450,7 +450,7 @@ export class RecordResource extends BaseResource {
     if (options.where.id && this.client.getCache) {
       const cache = this.client.getCache();
       if (cache) {
-        const cacheKey = cache.generateKey("record", tableId, options.where.id);
+        const cacheKey = cache.generateKey('record', tableId, options.where.id);
         const cached = await cache.get<RecordWithId>(cacheKey);
         if (cached) {
           return { data: cached };
@@ -461,7 +461,7 @@ export class RecordResource extends BaseResource {
     const queryOptions = { ...options, limit: 1 };
     const queryParams = this.buildQueryParams(queryOptions);
     const response = await this.makeRequest<RecordListResponse>(
-      "GET",
+      'GET',
       `/${tableId}/records`,
       undefined,
       { params: queryParams }
@@ -478,7 +478,7 @@ export class RecordResource extends BaseResource {
       const cache = this.client.getCache();
       if (cache) {
         await cache.set(
-          cache.generateKey("record", tableId, record.id),
+          cache.generateKey('record', tableId, record.id),
           record,
           180000 // 3 minutes
         );
@@ -500,9 +500,9 @@ export class RecordResource extends BaseResource {
 
     const tableId = await this.getTableId(tableName);
     if (!tableId) {
-      throw new ValidationError("Table not found", [
+      throw new ValidationError('Table not found', [
         {
-          field: "table",
+          field: 'table',
           message: `Table '${tableName}' not found in current database`,
         },
       ]);
@@ -515,7 +515,7 @@ export class RecordResource extends BaseResource {
     };
 
     const response = await this.makeRequest<RecordWithId[]>(
-      "PATCH",
+      'PATCH',
       `/${tableId}/records`,
       requestData
     );
@@ -525,7 +525,7 @@ export class RecordResource extends BaseResource {
       const cache = this.client.getCache();
       if (cache) {
         for (const record of response.data) {
-          await cache.delete(cache.generateKey("record", tableId, record.id));
+          await cache.delete(cache.generateKey('record', tableId, record.id));
         }
         await this.invalidateListCaches(tableName);
       }
@@ -546,10 +546,10 @@ export class RecordResource extends BaseResource {
       !Array.isArray(request.data) ||
       request.data.length === 0
     ) {
-      throw new ValidationError("Bulk update requires data array", [
+      throw new ValidationError('Bulk update requires data array', [
         {
-          field: "data",
-          message: "Data must be a non-empty array of update operations",
+          field: 'data',
+          message: 'Data must be a non-empty array of update operations',
         },
       ]);
     }
@@ -560,7 +560,7 @@ export class RecordResource extends BaseResource {
         throw new ValidationError(`Update at index ${index} missing ID`, [
           {
             field: `data[${index}].id`,
-            message: "Record ID is required for updates",
+            message: 'Record ID is required for updates',
           },
         ]);
       }
@@ -569,16 +569,16 @@ export class RecordResource extends BaseResource {
 
     const tableId = await this.getTableId(tableName);
     if (!tableId) {
-      throw new ValidationError("Table not found", [
+      throw new ValidationError('Table not found', [
         {
-          field: "table",
+          field: 'table',
           message: `Table '${tableName}' not found in current database`,
         },
       ]);
     }
 
     const response = await this.makeRequest<BulkOperationResponse>(
-      "PATCH",
+      'PATCH',
       `/${tableId}/records/bulk`,
       request
     );
@@ -588,7 +588,7 @@ export class RecordResource extends BaseResource {
       const cache = this.client.getCache();
       if (cache) {
         for (const record of response.data.success) {
-          await cache.delete(cache.generateKey("record", tableId, record.id));
+          await cache.delete(cache.generateKey('record', tableId, record.id));
         }
         await this.invalidateListCaches(tableName);
       }
@@ -608,9 +608,9 @@ export class RecordResource extends BaseResource {
 
     const tableId = await this.getTableId(tableName);
     if (!tableId) {
-      throw new ValidationError("Table not found", [
+      throw new ValidationError('Table not found', [
         {
-          field: "table",
+          field: 'table',
           message: `Table '${tableName}' not found in current database`,
         },
       ]);
@@ -622,7 +622,7 @@ export class RecordResource extends BaseResource {
     };
 
     const response = await this.makeRequest<RecordDeleteResponse>(
-      "DELETE",
+      'DELETE',
       `/${tableId}/records`,
       undefined,
       { params: queryParams }
@@ -633,7 +633,7 @@ export class RecordResource extends BaseResource {
       const cache = this.client.getCache();
       if (cache) {
         for (const recordId of response.data.deleted_ids) {
-          await cache.delete(cache.generateKey("record", tableId, recordId));
+          await cache.delete(cache.generateKey('record', tableId, recordId));
         }
         await this.invalidateListCaches(tableName);
       }
@@ -653,15 +653,15 @@ export class RecordResource extends BaseResource {
 
     const tableId = await this.getTableId(tableName);
     if (!tableId) {
-      throw new ValidationError("Table not found", [
+      throw new ValidationError('Table not found', [
         {
-          field: "table",
+          field: 'table',
           message: `Table '${tableName}' not found in current database`,
         },
       ]);
     }
 
-    const cacheKey = this.generateCacheKey("aggregate", {
+    const cacheKey = this.generateCacheKey('aggregate', {
       table: tableName,
       ...options,
     });
@@ -670,9 +670,8 @@ export class RecordResource extends BaseResource {
     if (this.client.getCache) {
       const cache = this.client.getCache();
       if (cache) {
-        const cached = await cache.get<ApiResponse<RecordAggregateResponse>>(
-          cacheKey
-        );
+        const cached =
+          await cache.get<ApiResponse<RecordAggregateResponse>>(cacheKey);
         if (cached) {
           return cached;
         }
@@ -680,7 +679,7 @@ export class RecordResource extends BaseResource {
     }
 
     const response = await this.makeRequest<RecordAggregateResponse>(
-      "POST",
+      'POST',
       `/${tableId}/records/aggregate`,
       options
     );
@@ -707,15 +706,15 @@ export class RecordResource extends BaseResource {
 
     const tableId = await this.getTableId(tableName);
     if (!tableId) {
-      throw new ValidationError("Table not found", [
+      throw new ValidationError('Table not found', [
         {
-          field: "table",
+          field: 'table',
           message: `Table '${tableName}' not found in current database`,
         },
       ]);
     }
 
-    const cacheKey = this.generateCacheKey("vectorSearch", {
+    const cacheKey = this.generateCacheKey('vectorSearch', {
       table: tableName,
       ...options,
     });
@@ -732,7 +731,7 @@ export class RecordResource extends BaseResource {
     }
 
     const response = await this.makeRequest<RecordWithId[]>(
-      "POST",
+      'POST',
       `/${tableId}/records/vector-search`,
       options
     );
@@ -750,14 +749,14 @@ export class RecordResource extends BaseResource {
 
   // Private helper methods
   private validateRecordData(data: Partial<RecordData>): void {
-    if (!data || typeof data !== "object" || Array.isArray(data)) {
-      throw new ValidationError("Invalid record data", [
-        { field: "data", message: "Record data must be a non-null object" },
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      throw new ValidationError('Invalid record data', [
+        { field: 'data', message: 'Record data must be a non-null object' },
       ]);
     }
 
     // Validate reserved field names
-    const reservedFields = ["id", "created_at", "updated_at"];
+    const reservedFields = ['id', 'created_at', 'updated_at'];
     const errors: Array<{ field: string; message: string }> = [];
 
     Object.keys(data).forEach((fieldName) => {
@@ -773,29 +772,29 @@ export class RecordResource extends BaseResource {
         errors.push({
           field: fieldName,
           message:
-            "Field names must start with a letter and contain only letters, numbers, and underscores",
+            'Field names must start with a letter and contain only letters, numbers, and underscores',
         });
       }
     });
 
     if (errors.length > 0) {
-      throw new ValidationError("Record data validation failed", errors);
+      throw new ValidationError('Record data validation failed', errors);
     }
   }
 
   private validateWhereCondition(where: WhereCondition): void {
-    if (!where || typeof where !== "object" || Array.isArray(where)) {
-      throw new ValidationError("Invalid where condition", [
+    if (!where || typeof where !== 'object' || Array.isArray(where)) {
+      throw new ValidationError('Invalid where condition', [
         {
-          field: "where",
-          message: "Where condition must be a non-null object",
+          field: 'where',
+          message: 'Where condition must be a non-null object',
         },
       ]);
     }
 
     if (Object.keys(where).length === 0) {
-      throw new ValidationError("Empty where condition", [
-        { field: "where", message: "Where condition cannot be empty" },
+      throw new ValidationError('Empty where condition', [
+        { field: 'where', message: 'Where condition cannot be empty' },
       ]);
     }
   }
@@ -805,43 +804,43 @@ export class RecordResource extends BaseResource {
       options.limit !== undefined &&
       (options.limit < 1 || options.limit > 1000)
     ) {
-      throw new ValidationError("Invalid limit", [
-        { field: "limit", message: "Limit must be between 1 and 1000" },
+      throw new ValidationError('Invalid limit', [
+        { field: 'limit', message: 'Limit must be between 1 and 1000' },
       ]);
     }
 
     if (options.offset !== undefined && options.offset < 0) {
-      throw new ValidationError("Invalid offset", [
-        { field: "offset", message: "Offset must be non-negative" },
+      throw new ValidationError('Invalid offset', [
+        { field: 'offset', message: 'Offset must be non-negative' },
       ]);
     }
   }
 
   private validateAggregateOptions(options: RecordAggregateOptions): void {
     if (!options.aggregates || Object.keys(options.aggregates).length === 0) {
-      throw new ValidationError("Missing aggregates", [
+      throw new ValidationError('Missing aggregates', [
         {
-          field: "aggregates",
-          message: "At least one aggregate function is required",
+          field: 'aggregates',
+          message: 'At least one aggregate function is required',
         },
       ]);
     }
 
-    const validAggregates = ["$sum", "$avg", "$count", "$min", "$max"];
+    const validAggregates = ['$sum', '$avg', '$count', '$min', '$max'];
     Object.entries(options.aggregates).forEach(([alias, aggregate]) => {
       const aggregateKeys = Object.keys(aggregate);
       if (aggregateKeys.length !== 1) {
-        throw new ValidationError("Invalid aggregate", [
+        throw new ValidationError('Invalid aggregate', [
           {
             field: `aggregates.${alias}`,
-            message: "Each aggregate must have exactly one function",
+            message: 'Each aggregate must have exactly one function',
           },
         ]);
       }
 
       const aggregateFunction = aggregateKeys[0];
       if (!validAggregates.includes(aggregateFunction)) {
-        throw new ValidationError("Invalid aggregate function", [
+        throw new ValidationError('Invalid aggregate function', [
           {
             field: `aggregates.${alias}`,
             message: `Invalid aggregate function: ${aggregateFunction}`,
@@ -853,33 +852,33 @@ export class RecordResource extends BaseResource {
 
   private validateVectorSearchOptions(options: VectorSearchOptions): void {
     if (!options.vector_field) {
-      throw new ValidationError("Missing vector field", [
-        { field: "vector_field", message: "Vector field name is required" },
+      throw new ValidationError('Missing vector field', [
+        { field: 'vector_field', message: 'Vector field name is required' },
       ]);
     }
 
     if (!options.query_vector) {
-      throw new ValidationError("Missing query vector", [
-        { field: "query_vector", message: "Query vector is required" },
+      throw new ValidationError('Missing query vector', [
+        { field: 'query_vector', message: 'Query vector is required' },
       ]);
     }
 
     if (Array.isArray(options.query_vector)) {
       if (options.query_vector.length === 0) {
-        throw new ValidationError("Empty query vector", [
-          { field: "query_vector", message: "Query vector cannot be empty" },
+        throw new ValidationError('Empty query vector', [
+          { field: 'query_vector', message: 'Query vector cannot be empty' },
         ]);
       }
 
       // Validate vector values
       const invalidValues = options.query_vector.filter(
-        (val) => typeof val !== "number" || !isFinite(val)
+        (val) => typeof val !== 'number' || !isFinite(val)
       );
       if (invalidValues.length > 0) {
-        throw new ValidationError("Invalid vector values", [
+        throw new ValidationError('Invalid vector values', [
           {
-            field: "query_vector",
-            message: "All vector values must be finite numbers",
+            field: 'query_vector',
+            message: 'All vector values must be finite numbers',
           },
         ]);
       }
@@ -887,13 +886,13 @@ export class RecordResource extends BaseResource {
 
     if (
       options.distance_metric &&
-      !["cosine", "euclidean", "dot_product"].includes(options.distance_metric)
+      !['cosine', 'euclidean', 'dot_product'].includes(options.distance_metric)
     ) {
-      throw new ValidationError("Invalid distance metric", [
+      throw new ValidationError('Invalid distance metric', [
         {
-          field: "distance_metric",
+          field: 'distance_metric',
           message:
-            "Distance metric must be one of: cosine, euclidean, dot_product",
+            'Distance metric must be one of: cosine, euclidean, dot_product',
         },
       ]);
     }
@@ -902,8 +901,8 @@ export class RecordResource extends BaseResource {
       options.threshold !== undefined &&
       (options.threshold < 0 || options.threshold > 1)
     ) {
-      throw new ValidationError("Invalid threshold", [
-        { field: "threshold", message: "Threshold must be between 0 and 1" },
+      throw new ValidationError('Invalid threshold', [
+        { field: 'threshold', message: 'Threshold must be between 0 and 1' },
       ]);
     }
   }
@@ -925,10 +924,10 @@ export class RecordResource extends BaseResource {
   }
 
   private generateCacheKey(operation: string, params?: any): string {
-    if (!this.client.getCache) return "";
+    if (!this.client.getCache) return '';
     const cache = this.client.getCache()!;
-    const paramsStr = params ? JSON.stringify(params) : "";
-    return cache.generateKey("record", operation, paramsStr);
+    const paramsStr = params ? JSON.stringify(params) : '';
+    return cache.generateKey('record', operation, paramsStr);
   }
 
   private async invalidateListCaches(tableName: string): Promise<void> {
@@ -944,11 +943,11 @@ export class RecordResource extends BaseResource {
     const params: Record<string, any> = {};
 
     if (options.fields?.length) {
-      params.fields = options.fields.join(",");
+      params.fields = options.fields.join(',');
     }
 
     if (options.sort?.length) {
-      params.sort = options.sort.map((s) => `${s.field}:${s.order}`).join(",");
+      params.sort = options.sort.map((s) => `${s.field}:${s.order}`).join(',');
     }
 
     if (options.limit !== undefined) {
@@ -982,18 +981,18 @@ export class RecordResource extends BaseResource {
 Create `src/client/resources/sql.ts`:
 
 ```typescript
-import { BaseResource, ApiResponse } from "../core/base-resource";
-import { BaseClient } from "../core/base-client";
+import { BaseResource, ApiResponse } from '../core/base-resource';
+import { BaseClient } from '../core/base-client';
 import {
   SqlQueryRequest,
   SqlQueryResponse,
   SqlQueryOptions,
-} from "../../types/api/sql";
-import { ValidationError } from "../../errors/validation-error";
+} from '../../types/api/sql';
+import { ValidationError } from '../../errors/validation-error';
 
 export class SqlResource extends BaseResource {
   constructor(client: BaseClient) {
-    super(client, "/v1/tables/query");
+    super(client, '/v1/tables/query');
   }
 
   /**
@@ -1009,18 +1008,18 @@ export class SqlResource extends BaseResource {
     if (!request.database_id) {
       const databaseId = this.getCurrentDatabaseId();
       if (!databaseId) {
-        throw new ValidationError("Database context required", [
+        throw new ValidationError('Database context required', [
           {
-            field: "database",
+            field: 'database',
             message:
-              "No database selected. Use useDatabase() first or provide database_id",
+              'No database selected. Use useDatabase() first or provide database_id',
           },
         ]);
       }
       request.database_id = databaseId;
     }
 
-    const cacheKey = this.generateCacheKey("execute", {
+    const cacheKey = this.generateCacheKey('execute', {
       ...request,
       ...options,
     });
@@ -1044,8 +1043,8 @@ export class SqlResource extends BaseResource {
     };
 
     const response = await this.makeRequest<SqlQueryResponse>(
-      "POST",
-      "",
+      'POST',
+      '',
       requestData
     );
 
@@ -1090,12 +1089,12 @@ export class SqlResource extends BaseResource {
 
     if (
       !request.query ||
-      typeof request.query !== "string" ||
+      typeof request.query !== 'string' ||
       request.query.trim().length === 0
     ) {
       errors.push({
-        field: "query",
-        message: "SQL query is required and must be a non-empty string",
+        field: 'query',
+        message: 'SQL query is required and must be a non-empty string',
       });
     } else {
       // Basic SQL injection prevention
@@ -1105,17 +1104,17 @@ export class SqlResource extends BaseResource {
     if (request.params !== undefined) {
       if (
         !Array.isArray(request.params) &&
-        typeof request.params !== "object"
+        typeof request.params !== 'object'
       ) {
         errors.push({
-          field: "params",
-          message: "Parameters must be an array or object",
+          field: 'params',
+          message: 'Parameters must be an array or object',
         });
       }
     }
 
     if (errors.length > 0) {
-      throw new ValidationError("SQL query validation failed", errors);
+      throw new ValidationError('SQL query validation failed', errors);
     }
   }
 
@@ -1125,9 +1124,9 @@ export class SqlResource extends BaseResource {
   ): void {
     // Remove comments and normalize whitespace
     const normalizedQuery = query
-      .replace(/--.*$/gm, "") // Remove line comments
-      .replace(/\/\*[\s\S]*?\*\//g, "") // Remove block comments
-      .replace(/\s+/g, " ")
+      .replace(/--.*$/gm, '') // Remove line comments
+      .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
+      .replace(/\s+/g, ' ')
       .trim()
       .toLowerCase();
 
@@ -1143,9 +1142,9 @@ export class SqlResource extends BaseResource {
     for (const pattern of dangerousPatterns) {
       if (pattern.test(normalizedQuery)) {
         errors.push({
-          field: "query",
+          field: 'query',
           message:
-            "Query contains potentially dangerous operations. Only SELECT queries are recommended.",
+            'Query contains potentially dangerous operations. Only SELECT queries are recommended.',
         });
         break;
       }
@@ -1153,12 +1152,12 @@ export class SqlResource extends BaseResource {
 
     // Warn about non-SELECT queries
     if (
-      !normalizedQuery.startsWith("select") &&
-      !normalizedQuery.startsWith("with")
+      !normalizedQuery.startsWith('select') &&
+      !normalizedQuery.startsWith('with')
     ) {
       errors.push({
-        field: "query",
-        message: "Only SELECT and WITH queries are recommended for safety",
+        field: 'query',
+        message: 'Only SELECT and WITH queries are recommended for safety',
       });
     }
   }
@@ -1166,7 +1165,7 @@ export class SqlResource extends BaseResource {
   private isCacheableQuery(query: string): boolean {
     const normalizedQuery = query.trim().toLowerCase();
     return (
-      normalizedQuery.startsWith("select") || normalizedQuery.startsWith("with")
+      normalizedQuery.startsWith('select') || normalizedQuery.startsWith('with')
     );
   }
 
@@ -1181,10 +1180,10 @@ export class SqlResource extends BaseResource {
   }
 
   private generateCacheKey(operation: string, params?: any): string {
-    if (!this.client.getCache) return "";
+    if (!this.client.getCache) return '';
     const cache = this.client.getCache()!;
-    const paramsStr = params ? JSON.stringify(params) : "";
-    return cache.generateKey("sql", operation, paramsStr);
+    const paramsStr = params ? JSON.stringify(params) : '';
+    return cache.generateKey('sql', operation, paramsStr);
   }
 }
 ```
@@ -1199,8 +1198,8 @@ export class SqlResource extends BaseResource {
 Create `src/client/resources/record-builder.ts`:
 
 ```typescript
-import { RecordResource } from "./record";
-import { SqlResource } from "./sql";
+import { RecordResource } from './record';
+import { SqlResource } from './sql';
 import {
   RecordData,
   RecordQueryOptions,
@@ -1209,8 +1208,8 @@ import {
   RecordWithId,
   WhereCondition,
   QueryOperator,
-} from "../../types/api/record";
-import { ApiResponse } from "../core/base-resource";
+} from '../../types/api/record';
+import { ApiResponse } from '../core/base-resource';
 
 export class RecordBuilder {
   private recordResource: RecordResource;
@@ -1240,7 +1239,7 @@ export class RecordBuilder {
     operator?: string | any,
     value?: any
   ): RecordBuilder {
-    if (typeof fieldOrConditions === "string") {
+    if (typeof fieldOrConditions === 'string') {
       // Handle individual field conditions
       if (value === undefined) {
         // where('field', value) syntax
@@ -1279,7 +1278,7 @@ export class RecordBuilder {
     // For simplicity, we'll add OR conditions as $or operator
     // This would need more sophisticated handling in a real implementation
     const newCondition =
-      typeof fieldOrConditions === "string"
+      typeof fieldOrConditions === 'string'
         ? {
             [fieldOrConditions]:
               value === undefined
@@ -1310,7 +1309,7 @@ export class RecordBuilder {
   /**
    * Add sorting to the query
    */
-  orderBy(field: string, order: "asc" | "desc" = "asc"): RecordBuilder {
+  orderBy(field: string, order: 'asc' | 'desc' = 'asc'): RecordBuilder {
     if (!this.queryOptions.sort) {
       this.queryOptions.sort = [];
     }
@@ -1361,7 +1360,7 @@ export class RecordBuilder {
   /**
    * Add aggregate functions
    */
-  aggregate(aggregates: RecordAggregateOptions["aggregates"]): RecordBuilder {
+  aggregate(aggregates: RecordAggregateOptions['aggregates']): RecordBuilder {
     this.aggregateOptions.aggregates = {
       ...this.aggregateOptions.aggregates,
       ...aggregates,
@@ -1416,7 +1415,7 @@ export class RecordBuilder {
       !this.queryOptions.where ||
       Object.keys(this.queryOptions.where).length === 0
     ) {
-      throw new Error("Update operation requires where conditions");
+      throw new Error('Update operation requires where conditions');
     }
 
     return this.recordResource.update(this.tableName, {
@@ -1434,7 +1433,7 @@ export class RecordBuilder {
       !this.queryOptions.where ||
       Object.keys(this.queryOptions.where).length === 0
     ) {
-      throw new Error("Delete operation requires where conditions");
+      throw new Error('Delete operation requires where conditions');
     }
 
     return this.recordResource.delete(this.tableName, {
@@ -1451,7 +1450,7 @@ export class RecordBuilder {
       !this.aggregateOptions.aggregates ||
       Object.keys(this.aggregateOptions.aggregates).length === 0
     ) {
-      throw new Error("Aggregate operation requires aggregate functions");
+      throw new Error('Aggregate operation requires aggregate functions');
     }
 
     const options: RecordAggregateOptions = {
@@ -1473,7 +1472,7 @@ export class RecordBuilder {
     vectorField: string,
     queryVector: number[] | string,
     options?: {
-      distance_metric?: "cosine" | "euclidean" | "dot_product";
+      distance_metric?: 'cosine' | 'euclidean' | 'dot_product';
       threshold?: number;
     }
   ): Promise<ApiResponse<RecordWithId[]>> {
@@ -1501,43 +1500,43 @@ export class RecordBuilder {
   // Private helper methods
   private buildOperatorCondition(operator: string, value: any): QueryOperator {
     switch (operator.toLowerCase()) {
-      case "=":
-      case "eq":
+      case '=':
+      case 'eq':
         return { $eq: value };
-      case "!=":
-      case "<>":
-      case "ne":
+      case '!=':
+      case '<>':
+      case 'ne':
         return { $ne: value };
-      case ">":
-      case "gt":
+      case '>':
+      case 'gt':
         return { $gt: value };
-      case ">=":
-      case "gte":
+      case '>=':
+      case 'gte':
         return { $gte: value };
-      case "<":
-      case "lt":
+      case '<':
+      case 'lt':
         return { $lt: value };
-      case "<=":
-      case "lte":
+      case '<=':
+      case 'lte':
         return { $lte: value };
-      case "in":
+      case 'in':
         return { $in: Array.isArray(value) ? value : [value] };
-      case "not in":
-      case "nin":
+      case 'not in':
+      case 'nin':
         return { $nin: Array.isArray(value) ? value : [value] };
-      case "like":
+      case 'like':
         return { $like: value };
-      case "ilike":
+      case 'ilike':
         return { $ilike: value };
-      case "between":
+      case 'between':
         return { $between: value };
-      case "is null":
+      case 'is null':
         return { $null: true };
-      case "is not null":
+      case 'is not null':
         return { $null: false };
-      case "exists":
+      case 'exists':
         return { $exists: true };
-      case "not exists":
+      case 'not exists':
         return { $exists: false };
       default:
         throw new Error(`Unsupported operator: ${operator}`);
@@ -1596,9 +1595,9 @@ Update `src/client/boltic-client.ts` to add record operations:
 
 ```typescript
 // Add imports at the top
-import { RecordResource } from "./resources/record";
-import { SqlResource } from "./resources/sql";
-import { RecordBuilder, SqlBuilder } from "./resources/record-builder";
+import { RecordResource } from './resources/record';
+import { SqlResource } from './resources/sql';
+import { RecordBuilder, SqlBuilder } from './resources/record-builder';
 
 // Add to the BolticClient class:
 
@@ -1709,7 +1708,7 @@ import {
   RecordData,
   RecordWithId,
   WhereCondition,
-} from "../../types/api/record";
+} from '../../types/api/record';
 
 export class RecordHelpers {
   /**
@@ -1728,7 +1727,7 @@ export class RecordHelpers {
    */
   static sanitizeRecord(record: RecordData): RecordData {
     const sanitized: RecordData = {};
-    const reservedFields = ["id", "created_at", "updated_at"];
+    const reservedFields = ['id', 'created_at', 'updated_at'];
 
     Object.entries(record).forEach(([key, value]) => {
       // Skip reserved fields
@@ -1760,54 +1759,54 @@ export class RecordHelpers {
 
     Object.entries(conditions).forEach(([field, condition]) => {
       if (
-        typeof condition === "object" &&
+        typeof condition === 'object' &&
         condition !== null &&
         !Array.isArray(condition)
       ) {
         // Handle operator conditions
         Object.entries(condition).forEach(([operator, value]) => {
           switch (operator) {
-            case "$eq":
+            case '$eq':
               clauses.push(`${field} = ${this.formatValue(value)}`);
               break;
-            case "$ne":
+            case '$ne':
               clauses.push(`${field} != ${this.formatValue(value)}`);
               break;
-            case "$gt":
+            case '$gt':
               clauses.push(`${field} > ${this.formatValue(value)}`);
               break;
-            case "$gte":
+            case '$gte':
               clauses.push(`${field} >= ${this.formatValue(value)}`);
               break;
-            case "$lt":
+            case '$lt':
               clauses.push(`${field} < ${this.formatValue(value)}`);
               break;
-            case "$lte":
+            case '$lte':
               clauses.push(`${field} <= ${this.formatValue(value)}`);
               break;
-            case "$in":
+            case '$in':
               const inValues = Array.isArray(value) ? value : [value];
               clauses.push(
                 `${field} IN (${inValues
                   .map((v) => this.formatValue(v))
-                  .join(", ")})`
+                  .join(', ')})`
               );
               break;
-            case "$nin":
+            case '$nin':
               const ninValues = Array.isArray(value) ? value : [value];
               clauses.push(
                 `${field} NOT IN (${ninValues
                   .map((v) => this.formatValue(v))
-                  .join(", ")})`
+                  .join(', ')})`
               );
               break;
-            case "$like":
+            case '$like':
               clauses.push(`${field} LIKE ${this.formatValue(value)}`);
               break;
-            case "$ilike":
+            case '$ilike':
               clauses.push(`${field} ILIKE ${this.formatValue(value)}`);
               break;
-            case "$between":
+            case '$between':
               if (Array.isArray(value) && value.length === 2) {
                 clauses.push(
                   `${field} BETWEEN ${this.formatValue(
@@ -1816,7 +1815,7 @@ export class RecordHelpers {
                 );
               }
               break;
-            case "$null":
+            case '$null':
               clauses.push(value ? `${field} IS NULL` : `${field} IS NOT NULL`);
               break;
           }
@@ -1827,17 +1826,17 @@ export class RecordHelpers {
       }
     });
 
-    return clauses.join(" AND ");
+    return clauses.join(' AND ');
   }
 
   /**
    * Format value for SQL query
    */
   private static formatValue(value: any): string {
-    if (value === null) return "NULL";
-    if (typeof value === "string") return `'${value.replace(/'/g, "''")}'`;
-    if (typeof value === "number") return value.toString();
-    if (typeof value === "boolean") return value.toString();
+    if (value === null) return 'NULL';
+    if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
+    if (typeof value === 'number') return value.toString();
+    if (typeof value === 'boolean') return value.toString();
     if (value instanceof Date) return `'${value.toISOString()}'`;
     return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
   }
@@ -1882,7 +1881,7 @@ export class RecordHelpers {
 
       if (val1 === val2) {
         matches++;
-      } else if (typeof val1 === "string" && typeof val2 === "string") {
+      } else if (typeof val1 === 'string' && typeof val2 === 'string') {
         // Simple string similarity
         const similarity = this.stringSimilarity(val1, val2);
         matches += similarity;
@@ -1934,35 +1933,35 @@ export class RecordHelpers {
    * Convert records to CSV format
    */
   static recordsToCSV(records: RecordWithId[]): string {
-    if (records.length === 0) return "";
+    if (records.length === 0) return '';
 
     const headers = Object.keys(records[0]);
-    const csvHeaders = headers.join(",");
+    const csvHeaders = headers.join(',');
 
     const csvRows = records.map((record) =>
       headers
         .map((header) => {
           const value = record[header];
-          if (value === null || value === undefined) return "";
-          if (typeof value === "string" && value.includes(",")) {
+          if (value === null || value === undefined) return '';
+          if (typeof value === 'string' && value.includes(',')) {
             return `"${value.replace(/"/g, '""')}"`;
           }
           return String(value);
         })
-        .join(",")
+        .join(',')
     );
 
-    return [csvHeaders, ...csvRows].join("\n");
+    return [csvHeaders, ...csvRows].join('\n');
   }
 
   /**
    * Parse CSV data to records
    */
   static csvToRecords(csvData: string): RecordData[] {
-    const lines = csvData.split("\n").filter((line) => line.trim());
+    const lines = csvData.split('\n').filter((line) => line.trim());
     if (lines.length < 2) return [];
 
-    const headers = lines[0].split(",").map((h) => h.trim());
+    const headers = lines[0].split(',').map((h) => h.trim());
     const records: RecordData[] = [];
 
     for (let i = 1; i < lines.length; i++) {
@@ -1986,7 +1985,7 @@ export class RecordHelpers {
    */
   private static parseCSVLine(line: string): string[] {
     const result: string[] = [];
-    let current = "";
+    let current = '';
     let inQuotes = false;
 
     for (let i = 0; i < line.length; i++) {
@@ -1999,9 +1998,9 @@ export class RecordHelpers {
         } else {
           inQuotes = !inQuotes;
         }
-      } else if (char === "," && !inQuotes) {
+      } else if (char === ',' && !inQuotes) {
         result.push(current.trim());
-        current = "";
+        current = '';
       } else {
         current += char;
       }
@@ -2015,7 +2014,7 @@ export class RecordHelpers {
    * Parse CSV value to appropriate type
    */
   private static parseCSVValue(value: string): any {
-    if (value === "") return null;
+    if (value === '') return null;
 
     // Try to parse as number
     if (/^-?\d*\.?\d+$/.test(value)) {
@@ -2023,8 +2022,8 @@ export class RecordHelpers {
     }
 
     // Try to parse as boolean
-    if (value.toLowerCase() === "true") return true;
-    if (value.toLowerCase() === "false") return false;
+    if (value.toLowerCase() === 'true') return true;
+    if (value.toLowerCase() === 'false') return false;
 
     // Try to parse as date
     if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
@@ -2048,14 +2047,14 @@ export class RecordHelpers {
 Create `tests/unit/client/resources/record.test.ts`:
 
 ```typescript
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { RecordResource } from "../../../../src/client/resources/record";
-import { BaseClient } from "../../../../src/client/core/base-client";
-import { ValidationError } from "../../../../src/errors/validation-error";
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { RecordResource } from '../../../../src/client/resources/record';
+import { BaseClient } from '../../../../src/client/core/base-client';
+import { ValidationError } from '../../../../src/errors/validation-error';
 
-vi.mock("../../../../src/client/core/base-client");
+vi.mock('../../../../src/client/core/base-client');
 
-describe("RecordResource", () => {
+describe('RecordResource', () => {
   let recordResource: RecordResource;
   let mockClient: any;
 
@@ -2067,11 +2066,11 @@ describe("RecordResource", () => {
         set: vi.fn(),
         delete: vi.fn(),
         clear: vi.fn(),
-        generateKey: vi.fn((...parts) => parts.join(":")),
+        generateKey: vi.fn((...parts) => parts.join(':')),
       })),
       table: {
         findOne: vi.fn().mockResolvedValue({
-          data: { id: "table-123", name: "products" },
+          data: { id: 'table-123', name: 'products' },
         }),
       },
     };
@@ -2079,68 +2078,68 @@ describe("RecordResource", () => {
     recordResource = new RecordResource(mockClient as BaseClient);
   });
 
-  describe("insert", () => {
-    it("should insert a record successfully", async () => {
+  describe('insert', () => {
+    it('should insert a record successfully', async () => {
       const recordData = {
-        title: "MacBook Pro",
+        title: 'MacBook Pro',
         price: 2499.99,
         category_id: 1,
-        metadata: { color: "silver", storage: "512GB" },
+        metadata: { color: 'silver', storage: '512GB' },
       };
 
       const expectedResponse = {
         data: {
-          id: "record-123",
-          title: "MacBook Pro",
+          id: 'record-123',
+          title: 'MacBook Pro',
           price: 2499.99,
           category_id: 1,
-          metadata: { color: "silver", storage: "512GB" },
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
+          metadata: { color: 'silver', storage: '512GB' },
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
         },
       };
 
       mockClient.makeRequest.mockResolvedValue(expectedResponse);
 
-      const result = await recordResource.insert("products", recordData);
+      const result = await recordResource.insert('products', recordData);
 
       expect(mockClient.makeRequest).toHaveBeenCalledWith(
-        "POST",
-        "/table-123/records",
+        'POST',
+        '/table-123/records',
         { data: recordData }
       );
       expect(result).toEqual(expectedResponse);
     });
 
-    it("should validate record data", async () => {
+    it('should validate record data', async () => {
       const invalidData = {
-        id: "should-not-be-set", // Reserved field
-        title: "Test Product",
+        id: 'should-not-be-set', // Reserved field
+        title: 'Test Product',
       };
 
       await expect(
-        recordResource.insert("products", invalidData)
+        recordResource.insert('products', invalidData)
       ).rejects.toThrow(ValidationError);
     });
 
-    it("should require table context", async () => {
+    it('should require table context', async () => {
       mockClient.table.findOne.mockResolvedValue({ data: null });
 
-      const recordData = { title: "Test Product" };
+      const recordData = { title: 'Test Product' };
 
       await expect(
-        recordResource.insert("nonexistent", recordData)
+        recordResource.insert('nonexistent', recordData)
       ).rejects.toThrow(ValidationError);
     });
   });
 
-  describe("findAll", () => {
-    it("should retrieve records with pagination", async () => {
+  describe('findAll', () => {
+    it('should retrieve records with pagination', async () => {
       const mockResponse = {
         data: {
           records: [
-            { id: "rec-1", title: "Product 1", price: 99.99 },
-            { id: "rec-2", title: "Product 2", price: 199.99 },
+            { id: 'rec-1', title: 'Product 1', price: 99.99 },
+            { id: 'rec-2', title: 'Product 2', price: 199.99 },
           ],
           pagination: {
             total: 2,
@@ -2155,7 +2154,7 @@ describe("RecordResource", () => {
 
       mockClient.makeRequest.mockResolvedValue(mockResponse);
 
-      const result = await recordResource.findAll("products", {
+      const result = await recordResource.findAll('products', {
         where: { price: { $gt: 50 } },
         limit: 10,
       });
@@ -2165,18 +2164,18 @@ describe("RecordResource", () => {
     });
   });
 
-  describe("bulkInsert", () => {
-    it("should insert multiple records", async () => {
+  describe('bulkInsert', () => {
+    it('should insert multiple records', async () => {
       const recordsData = [
-        { title: "Product 1", price: 99.99 },
-        { title: "Product 2", price: 199.99 },
+        { title: 'Product 1', price: 99.99 },
+        { title: 'Product 2', price: 199.99 },
       ];
 
       const expectedResponse = {
         data: {
           success: [
-            { id: "rec-1", title: "Product 1", price: 99.99 },
-            { id: "rec-2", title: "Product 2", price: 199.99 },
+            { id: 'rec-1', title: 'Product 1', price: 99.99 },
+            { id: 'rec-2', title: 'Product 2', price: 199.99 },
           ],
           failed: [],
           summary: { total: 2, successful: 2, failed: 0 },
@@ -2185,7 +2184,7 @@ describe("RecordResource", () => {
 
       mockClient.makeRequest.mockResolvedValue(expectedResponse);
 
-      const result = await recordResource.bulkInsert("products", {
+      const result = await recordResource.bulkInsert('products', {
         data: recordsData,
       });
 
@@ -2193,32 +2192,32 @@ describe("RecordResource", () => {
       expect(result.data.failed).toHaveLength(0);
     });
 
-    it("should validate bulk insert data", async () => {
+    it('should validate bulk insert data', async () => {
       await expect(
-        recordResource.bulkInsert("products", { data: [] })
+        recordResource.bulkInsert('products', { data: [] })
       ).rejects.toThrow(ValidationError);
     });
   });
 
-  describe("update", () => {
-    it("should update records with where condition", async () => {
+  describe('update', () => {
+    it('should update records with where condition', async () => {
       const updateData = { price: 2299.99, updated_at: new Date() };
-      const whereCondition = { id: "record-123" };
+      const whereCondition = { id: 'record-123' };
 
       const expectedResponse = {
         data: [
           {
-            id: "record-123",
-            title: "MacBook Pro",
+            id: 'record-123',
+            title: 'MacBook Pro',
             price: 2299.99,
-            updated_at: "2024-01-01T12:00:00Z",
+            updated_at: '2024-01-01T12:00:00Z',
           },
         ],
       };
 
       mockClient.makeRequest.mockResolvedValue(expectedResponse);
 
-      const result = await recordResource.update("products", {
+      const result = await recordResource.update('products', {
         set: updateData,
         where: whereCondition,
       });
@@ -2228,57 +2227,57 @@ describe("RecordResource", () => {
     });
   });
 
-  describe("vectorSearch", () => {
-    it("should perform vector similarity search", async () => {
+  describe('vectorSearch', () => {
+    it('should perform vector similarity search', async () => {
       const searchOptions = {
-        vector_field: "embedding",
+        vector_field: 'embedding',
         query_vector: [0.1, 0.2, 0.3, 0.4],
         limit: 5,
-        distance_metric: "cosine" as const,
+        distance_metric: 'cosine' as const,
       };
 
       const expectedResponse = {
         data: [
-          { id: "rec-1", title: "Similar Product 1", similarity: 0.95 },
-          { id: "rec-2", title: "Similar Product 2", similarity: 0.89 },
+          { id: 'rec-1', title: 'Similar Product 1', similarity: 0.95 },
+          { id: 'rec-2', title: 'Similar Product 2', similarity: 0.89 },
         ],
       };
 
       mockClient.makeRequest.mockResolvedValue(expectedResponse);
 
       const result = await recordResource.vectorSearch(
-        "products",
+        'products',
         searchOptions
       );
 
       expect(mockClient.makeRequest).toHaveBeenCalledWith(
-        "POST",
-        "/table-123/records/vector-search",
+        'POST',
+        '/table-123/records/vector-search',
         searchOptions
       );
       expect(result).toEqual(expectedResponse);
     });
 
-    it("should validate vector search options", async () => {
+    it('should validate vector search options', async () => {
       const invalidOptions = {
-        vector_field: "", // Empty field name
+        vector_field: '', // Empty field name
         query_vector: [],
       };
 
       await expect(
-        recordResource.vectorSearch("products", invalidOptions)
+        recordResource.vectorSearch('products', invalidOptions)
       ).rejects.toThrow(ValidationError);
     });
   });
 
-  describe("aggregate", () => {
-    it("should perform aggregation queries", async () => {
+  describe('aggregate', () => {
+    it('should perform aggregation queries', async () => {
       const aggregateOptions = {
-        groupBy: ["category_id"],
+        groupBy: ['category_id'],
         aggregates: {
-          total_price: { $sum: "price" },
-          avg_price: { $avg: "price" },
-          count: { $count: "*" },
+          total_price: { $sum: 'price' },
+          avg_price: { $avg: 'price' },
+          count: { $count: '*' },
         },
         where: { price: { $gt: 100 } },
       };
@@ -2296,7 +2295,7 @@ describe("RecordResource", () => {
       mockClient.makeRequest.mockResolvedValue(expectedResponse);
 
       const result = await recordResource.aggregate(
-        "products",
+        'products',
         aggregateOptions
       );
 
@@ -2312,15 +2311,15 @@ describe("RecordResource", () => {
 Create `tests/unit/client/resources/record-builder.test.ts`:
 
 ```typescript
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { RecordBuilder } from "../../../../src/client/resources/record-builder";
-import { RecordResource } from "../../../../src/client/resources/record";
-import { SqlResource } from "../../../../src/client/resources/sql";
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { RecordBuilder } from '../../../../src/client/resources/record-builder';
+import { RecordResource } from '../../../../src/client/resources/record';
+import { SqlResource } from '../../../../src/client/resources/sql';
 
-vi.mock("../../../../src/client/resources/record");
-vi.mock("../../../../src/client/resources/sql");
+vi.mock('../../../../src/client/resources/record');
+vi.mock('../../../../src/client/resources/sql');
 
-describe("RecordBuilder", () => {
+describe('RecordBuilder', () => {
   let builder: RecordBuilder;
   let mockRecordResource: any;
   let mockSqlResource: any;
@@ -2344,85 +2343,85 @@ describe("RecordBuilder", () => {
     builder = new RecordBuilder(
       mockRecordResource,
       mockSqlResource,
-      "products"
+      'products'
     );
   });
 
-  describe("fluent interface", () => {
-    it("should chain where conditions", () => {
-      const result = builder.where("price", ">", 100).where({ category_id: 1 });
+  describe('fluent interface', () => {
+    it('should chain where conditions', () => {
+      const result = builder.where('price', '>', 100).where({ category_id: 1 });
 
       expect(result).toBe(builder);
     });
 
-    it("should chain multiple operations", () => {
+    it('should chain multiple operations', () => {
       const result = builder
-        .where("price", ">", 100)
-        .select(["id", "title", "price"])
-        .orderBy("price", "desc")
+        .where('price', '>', 100)
+        .select(['id', 'title', 'price'])
+        .orderBy('price', 'desc')
         .limit(10)
         .offset(5);
 
       expect(result).toBe(builder);
     });
 
-    it("should build complex where conditions", () => {
+    it('should build complex where conditions', () => {
       builder
-        .where("price", "between", [100, 500])
-        .where("category_id", "in", [1, 2, 3])
-        .orWhere("featured", "=", true);
+        .where('price', 'between', [100, 500])
+        .where('category_id', 'in', [1, 2, 3])
+        .orWhere('featured', '=', true);
 
       // Verify internal query options are built correctly
       expect(builder).toBeDefined();
     });
   });
 
-  describe("execute operations", () => {
-    it("should execute findAll with built query options", async () => {
+  describe('execute operations', () => {
+    it('should execute findAll with built query options', async () => {
       const expectedOptions = {
         where: { price: { $gt: 100 } },
-        fields: ["id", "title"],
+        fields: ['id', 'title'],
         limit: 10,
       };
 
-      builder.where("price", ">", 100).select(["id", "title"]).limit(10);
+      builder.where('price', '>', 100).select(['id', 'title']).limit(10);
 
       await builder.findAll();
 
       expect(mockRecordResource.findAll).toHaveBeenCalledWith(
-        "products",
+        'products',
         expectedOptions
       );
     });
 
-    it("should execute update with where conditions and data", async () => {
-      builder.where("id", "=", "rec-123").set({ price: 299.99 });
+    it('should execute update with where conditions and data', async () => {
+      builder.where('id', '=', 'rec-123').set({ price: 299.99 });
 
       await builder.update();
 
-      expect(mockRecordResource.update).toHaveBeenCalledWith("products", {
+      expect(mockRecordResource.update).toHaveBeenCalledWith('products', {
         set: { price: 299.99 },
-        where: { id: { $eq: "rec-123" } },
+        where: { id: { $eq: 'rec-123' } },
         limit: undefined,
       });
     });
 
-    it("should execute vector search", async () => {
+    it('should execute vector search', async () => {
       const queryVector = [0.1, 0.2, 0.3];
 
-      builder.where("category_id", "=", 1).limit(5);
+      builder.where('category_id', '=', 1).limit(5);
 
-      await builder.vectorSearch("embedding", queryVector, {
-        distance_metric: "cosine",
+      await builder.vectorSearch('embedding', queryVector, {
+        distance_metric: 'cosine',
         threshold: 0.8,
       });
 
-      expect(mockRecordResource.vectorSearch).toHaveBeenCalledWith("products", {
-        vector_field: "embedding",
+      expect(mockRecordResource.vectorSearch).toHaveBeenCalledWith('products', {
+        vector_field: 'embedding',
         query_vector: queryVector,
         limit: 5,
         where: { category_id: { $eq: 1 } },
-        distance_metric: "cosine",
+        distance_metric: 'cosine',
         threshold: 0.8,
       });
     });
@@ -2451,11 +2450,11 @@ This guide covers all record/data operations in the Boltic Tables SDK.
 #### Method 1: Direct API
 
 ```typescript
-const { data: record, error } = await db.record.insert("products", {
-  title: "MacBook Pro",
+const { data: record, error } = await db.record.insert('products', {
+  title: 'MacBook Pro',
   price: 2499.99,
   category_id: 1,
-  metadata: { color: "silver", storage: "512GB" },
+  metadata: { color: 'silver', storage: '512GB' },
 });
 ```
 ````
@@ -2463,11 +2462,11 @@ const { data: record, error } = await db.record.insert("products", {
 #### Method 2: Fluent Interface
 
 ```typescript
-const { data: record, error } = await db.from("products").insert({
-  title: "MacBook Pro",
+const { data: record, error } = await db.from('products').insert({
+  title: 'MacBook Pro',
   price: 2499.99,
   category_id: 1,
-  metadata: { color: "silver", storage: "512GB" },
+  metadata: { color: 'silver', storage: '512GB' },
 });
 ```
 
@@ -2476,10 +2475,10 @@ const { data: record, error } = await db.from("products").insert({
 #### Method 1: Direct API
 
 ```typescript
-const { data: result, error } = await db.record.bulkInsert("products", {
+const { data: result, error } = await db.record.bulkInsert('products', {
   data: [
-    { title: "iPhone 15", price: 999.99 },
-    { title: "iPad Air", price: 599.99 },
+    { title: 'iPhone 15', price: 999.99 },
+    { title: 'iPad Air', price: 599.99 },
   ],
   batch_size: 100,
   skip_validation: false,
@@ -2489,10 +2488,10 @@ const { data: result, error } = await db.record.bulkInsert("products", {
 #### Method 2: Fluent Interface
 
 ```typescript
-const { data: result, error } = await db.from("products").bulkInsert(
+const { data: result, error } = await db.from('products').bulkInsert(
   [
-    { title: "iPhone 15", price: 999.99 },
-    { title: "iPad Air", price: 599.99 },
+    { title: 'iPhone 15', price: 999.99 },
+    { title: 'iPad Air', price: 599.99 },
   ],
   { batch_size: 100 }
 );
@@ -2505,16 +2504,16 @@ const { data: result, error } = await db.from("products").bulkInsert(
 #### Method 1: Direct API
 
 ```typescript
-const { data: products, pagination } = await db.record.findAll("products", {
+const { data: products, pagination } = await db.record.findAll('products', {
   where: {
     price: { $between: [500, 2000] },
     category_id: { $in: [1, 2, 3] },
-    title: { $like: "%MacBook%" },
+    title: { $like: '%MacBook%' },
   },
-  fields: ["id", "title", "price", "created_at"],
+  fields: ['id', 'title', 'price', 'created_at'],
   sort: [
-    { field: "price", order: "desc" },
-    { field: "created_at", order: "asc" },
+    { field: 'price', order: 'desc' },
+    { field: 'created_at', order: 'asc' },
   ],
   limit: 10,
   offset: 5,
@@ -2525,13 +2524,13 @@ const { data: products, pagination } = await db.record.findAll("products", {
 
 ```typescript
 const { data: products, pagination } = await db
-  .from("products")
-  .where("price", "between", [500, 2000])
-  .where("category_id", "in", [1, 2, 3])
-  .where("title", "like", "%MacBook%")
-  .select(["id", "title", "price", "created_at"])
-  .orderBy("price", "desc")
-  .orderBy("created_at", "asc")
+  .from('products')
+  .where('price', 'between', [500, 2000])
+  .where('category_id', 'in', [1, 2, 3])
+  .where('title', 'like', '%MacBook%')
+  .select(['id', 'title', 'price', 'created_at'])
+  .orderBy('price', 'desc')
+  .orderBy('created_at', 'asc')
   .limit(10)
   .offset(5)
   .findAll();
@@ -2541,9 +2540,9 @@ const { data: products, pagination } = await db
 
 ```typescript
 const { data: products } = await db
-  .from("products")
-  .where("price", ">", 1000)
-  .orWhere("featured", "=", true)
+  .from('products')
+  .where('price', '>', 1000)
+  .orWhere('featured', '=', true)
   .orWhere({ category_id: 1, discount: { $gt: 0.2 } })
   .findAll();
 ```
@@ -2552,14 +2551,14 @@ const { data: products } = await db
 
 ```typescript
 // Method 1
-const { data: product } = await db.record.findOne("products", {
-  where: { id: "record_uuid" },
+const { data: product } = await db.record.findOne('products', {
+  where: { id: 'record_uuid' },
 });
 
 // Method 2
 const { data: product } = await db
-  .from("products")
-  .where("id", "=", "record_uuid")
+  .from('products')
+  .where('id', '=', 'record_uuid')
   .findOne();
 ```
 
@@ -2570,9 +2569,9 @@ const { data: product } = await db
 #### Method 1: Direct API
 
 ```typescript
-await db.record.update("products", {
+await db.record.update('products', {
   set: { price: 2299.99, updated_at: new Date() },
-  where: { id: "record_uuid" },
+  where: { id: 'record_uuid' },
   limit: 1,
 });
 ```
@@ -2581,8 +2580,8 @@ await db.record.update("products", {
 
 ```typescript
 await db
-  .from("products")
-  .where("id", "=", "record_uuid")
+  .from('products')
+  .where('id', '=', 'record_uuid')
   .set({ price: 2299.99, updated_at: new Date() })
   .update();
 ```
@@ -2590,10 +2589,10 @@ await db
 ### Bulk Updates
 
 ```typescript
-await db.record.bulkUpdate("products", {
+await db.record.bulkUpdate('products', {
   data: [
-    { id: "rec-1", data: { price: 999.99 } },
-    { id: "rec-2", data: { price: 1299.99 } },
+    { id: 'rec-1', data: { price: 999.99 } },
+    { id: 'rec-2', data: { price: 1299.99 } },
   ],
   batch_size: 50,
 });
@@ -2606,21 +2605,21 @@ await db.record.bulkUpdate("products", {
 #### Method 1: Direct API
 
 ```typescript
-await db.record.delete("products", {
-  where: { id: "record_uuid" },
+await db.record.delete('products', {
+  where: { id: 'record_uuid' },
 });
 ```
 
 #### Method 2: Fluent Interface
 
 ```typescript
-await db.from("products").where("id", "=", "record_uuid").delete();
+await db.from('products').where('id', '=', 'record_uuid').delete();
 ```
 
 ### Bulk Delete
 
 ```typescript
-await db.from("products").where("price", "<", 10).delete();
+await db.from('products').where('price', '<', 10).delete();
 ```
 
 ## Advanced Queries
@@ -2630,14 +2629,14 @@ await db.from("products").where("price", "<", 10).delete();
 #### Method 1: Direct API
 
 ```typescript
-const { data: stats } = await db.record.aggregate("orders", {
-  groupBy: ["status"],
+const { data: stats } = await db.record.aggregate('orders', {
+  groupBy: ['status'],
   aggregates: {
-    total_amount: { $sum: "amount" },
-    avg_amount: { $avg: "amount" },
-    order_count: { $count: "*" },
+    total_amount: { $sum: 'amount' },
+    avg_amount: { $avg: 'amount' },
+    order_count: { $count: '*' },
   },
-  where: { created_at: { $gte: "2024-01-01" } },
+  where: { created_at: { $gte: '2024-01-01' } },
 });
 ```
 
@@ -2645,13 +2644,13 @@ const { data: stats } = await db.record.aggregate("orders", {
 
 ```typescript
 const { data: stats } = await db
-  .from("orders")
-  .where("created_at", ">=", "2024-01-01")
-  .groupBy(["status"])
+  .from('orders')
+  .where('created_at', '>=', '2024-01-01')
+  .groupBy(['status'])
   .aggregate({
-    total_amount: { $sum: "amount" },
-    avg_amount: { $avg: "amount" },
-    order_count: { $count: "*" },
+    total_amount: { $sum: 'amount' },
+    avg_amount: { $avg: 'amount' },
+    order_count: { $count: '*' },
   })
   .aggregateQuery();
 ```
@@ -2662,11 +2661,11 @@ const { data: stats } = await db
 
 ```typescript
 const { data: similarProducts } = await db.record.vectorSearch(
-  "recommendations",
+  'recommendations',
   {
-    vector_field: "embedding",
+    vector_field: 'embedding',
     query_vector: [0.1, 0.2, 0.3 /* ... 1536 dimensions */],
-    distance_metric: "cosine",
+    distance_metric: 'cosine',
     threshold: 0.8,
     limit: 10,
   }
@@ -2677,11 +2676,11 @@ const { data: similarProducts } = await db.record.vectorSearch(
 
 ```typescript
 const { data: similarProducts } = await db
-  .from("recommendations")
-  .where("category_id", "=", 1)
+  .from('recommendations')
+  .where('category_id', '=', 1)
   .limit(10)
-  .vectorSearch("embedding", queryVector, {
-    distance_metric: "cosine",
+  .vectorSearch('embedding', queryVector, {
+    distance_metric: 'cosine',
     threshold: 0.8,
   });
 ```
@@ -2694,7 +2693,7 @@ const { data: similarProducts } = await db
 
 ```typescript
 const { data: results } = await db.sql.execute({
-  query: "SELECT * FROM products WHERE price > $1",
+  query: 'SELECT * FROM products WHERE price > $1',
   params: [1000],
 });
 ```
@@ -2704,7 +2703,7 @@ const { data: results } = await db.sql.execute({
 ```typescript
 const { data: results } = await db
   .sql()
-  .query("SELECT * FROM products WHERE price > $1")
+  .query('SELECT * FROM products WHERE price > $1')
   .params([1000])
   .execute();
 ```
@@ -2724,7 +2723,7 @@ const { data: analytics } = await db.sql.execute({
     GROUP BY month, category_id
     ORDER BY month DESC, avg_price DESC
   `,
-  params: ["2024-01-01"],
+  params: ['2024-01-01'],
 });
 ```
 
@@ -2741,9 +2740,9 @@ const { data: userOrders } = await db.sql.queryWithParams(
     AND o.created_at >= :startDate
 `,
   {
-    userId: "user123",
-    status: "completed",
-    startDate: "2024-01-01",
+    userId: 'user123',
+    status: 'completed',
+    startDate: '2024-01-01',
   }
 );
 ```
@@ -2753,12 +2752,12 @@ const { data: userOrders } = await db.sql.queryWithParams(
 ### Using Helper Utilities
 
 ```typescript
-import { RecordHelpers } from "@boltic/database-js/utils";
+import { RecordHelpers } from '@boltic/database-js/utils';
 
 // Batch large operations
 const batches = RecordHelpers.batchRecords(largeDataset, 100);
 for (const batch of batches) {
-  await db.record.bulkInsert("products", { data: batch });
+  await db.record.bulkInsert('products', { data: batch });
 }
 
 // Sanitize record data
@@ -2773,18 +2772,18 @@ const optimizedQuery = RecordHelpers.optimizeQuery(queryOptions);
 ```typescript
 // Enable result counting for pagination
 const { data: products, pagination } = await db
-  .from("products")
+  .from('products')
   .withCount()
   .limit(20)
   .findAll();
 
 // Cache expensive aggregations
-const cacheKey = "monthly_sales_stats";
+const cacheKey = 'monthly_sales_stats';
 let stats = await cache.get(cacheKey);
 if (!stats) {
-  stats = await db.record.aggregate("orders", {
-    groupBy: ["month"],
-    aggregates: { total: { $sum: "amount" } },
+  stats = await db.record.aggregate('orders', {
+    groupBy: ['month'],
+    aggregates: { total: { $sum: 'amount' } },
   });
   await cache.set(cacheKey, stats, 300000); // 5 minutes
 }
@@ -2794,12 +2793,12 @@ if (!stats) {
 
 ```typescript
 try {
-  const result = await db.record.insert("products", recordData);
+  const result = await db.record.insert('products', recordData);
 } catch (error) {
   if (error instanceof ValidationError) {
-    console.log("Validation errors:", error.failures);
+    console.log('Validation errors:', error.failures);
   } else if (error instanceof ApiError) {
-    console.log("API error:", error.statusCode, error.message);
+    console.log('API error:', error.statusCode, error.message);
   }
 }
 ```

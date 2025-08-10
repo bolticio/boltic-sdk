@@ -36,24 +36,24 @@ This agent depends on ALL previous agents completion. Verify these exist:
 Update `vitest.config.ts`:
 
 ```typescript
-import { defineConfig } from "vitest/config";
-import { resolve } from "path";
+import { defineConfig } from 'vitest/config';
+import { resolve } from 'path';
 
 export default defineConfig({
   test: {
-    environment: "node",
+    environment: 'node',
     globals: true,
-    setupFiles: ["./tests/setup.ts"],
+    setupFiles: ['./tests/setup.ts'],
     coverage: {
-      provider: "v8",
-      reporter: ["text", "json", "html", "lcov"],
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'lcov'],
       exclude: [
-        "node_modules/",
-        "dist/",
-        "tests/",
-        "**/*.d.ts",
-        "**/*.config.*",
-        "**/coverage/**",
+        'node_modules/',
+        'dist/',
+        'tests/',
+        '**/*.d.ts',
+        '**/*.config.*',
+        '**/coverage/**',
       ],
       thresholds: {
         global: {
@@ -67,9 +67,9 @@ export default defineConfig({
     testTimeout: 30000,
     hookTimeout: 10000,
     teardownTimeout: 5000,
-    include: ["tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
-    exclude: ["node_modules/", "dist/", ".git/", ".cache/"],
-    pool: "threads",
+    include: ['tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    exclude: ['node_modules/', 'dist/', '.git/', '.cache/'],
+    pool: 'threads',
     poolOptions: {
       threads: {
         minThreads: 1,
@@ -79,8 +79,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./src"),
-      "@tests": resolve(__dirname, "./tests"),
+      '@': resolve(__dirname, './src'),
+      '@tests': resolve(__dirname, './tests'),
     },
   },
   define: {
@@ -95,13 +95,13 @@ export default defineConfig({
 Create `tests/setup.ts`:
 
 ```typescript
-import { beforeAll, afterAll, beforeEach, afterEach, vi } from "vitest";
-import { config } from "dotenv";
-import { TestEnvironment } from "./utils/test-environment";
-import { MockApiServer } from "./utils/mock-api-server";
+import { beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
+import { config } from 'dotenv';
+import { TestEnvironment } from './utils/test-environment';
+import { MockApiServer } from './utils/mock-api-server';
 
 // Load test environment variables
-config({ path: ".env.test" });
+config({ path: '.env.test' });
 
 // Global test environment
 let testEnvironment: TestEnvironment;
@@ -117,9 +117,9 @@ beforeAll(async () => {
   await mockApiServer.start();
 
   // Set global test configuration
-  process.env.NODE_ENV = "test";
-  process.env.BOLTIC_API_KEY = "test-api-key";
-  process.env.BOLTIC_ENVIRONMENT = "local";
+  process.env.NODE_ENV = 'test';
+  process.env.BOLTIC_API_KEY = 'test-api-key';
+  process.env.BOLTIC_ENVIRONMENT = 'local';
   process.env.BOLTIC_BASE_URL = mockApiServer.getBaseUrl();
 });
 
@@ -154,8 +154,8 @@ vi.setConfig({ testTimeout: 30000 });
 vi.useFakeTimers();
 
 // Global error handler for unhandled rejections
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 ```
 
@@ -194,11 +194,11 @@ MOCK_API_HOST=localhost
 Create `tests/utils/mock-api-server.ts`:
 
 ```typescript
-import { createServer, Server } from "http";
-import express, { Express, Request, Response } from "express";
-import cors from "cors";
-import { ApiEndpoints } from "../../src/api/endpoints";
-import { MockDataGenerator } from "./mock-data-generator";
+import { createServer, Server } from 'http';
+import express, { Express, Request, Response } from 'express';
+import cors from 'cors';
+import { ApiEndpoints } from '../../src/api/endpoints';
+import { MockDataGenerator } from './mock-data-generator';
 
 interface MockEndpoint {
   method: string;
@@ -220,7 +220,7 @@ export class MockApiServer {
     timestamp: number;
   }> = [];
 
-  constructor(port = 3001, host = "localhost") {
+  constructor(port = 3001, host = 'localhost') {
     this.port = port;
     this.host = host;
     this.app = express();
@@ -231,7 +231,7 @@ export class MockApiServer {
 
   private setupMiddleware(): void {
     this.app.use(cors());
-    this.app.use(express.json({ limit: "10mb" }));
+    this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true }));
 
     // Request logging middleware
@@ -248,11 +248,11 @@ export class MockApiServer {
 
     // Authentication middleware
     this.app.use((req, res, next) => {
-      const apiKey = req.headers["x-boltic-token"];
-      if (!apiKey && req.path !== "/health") {
+      const apiKey = req.headers['x-boltic-token'];
+      if (!apiKey && req.path !== '/health') {
         return res.status(401).json({
           success: false,
-          error: { code: "UNAUTHORIZED", message: "API key required" },
+          error: { code: 'UNAUTHORIZED', message: 'API key required' },
         });
       }
       next();
@@ -261,8 +261,8 @@ export class MockApiServer {
 
   private setupRoutes(): void {
     // Health check
-    this.app.get("/health", (req, res) => {
-      res.json({ status: "ok", timestamp: new Date().toISOString() });
+    this.app.get('/health', (req, res) => {
+      res.json({ status: 'ok', timestamp: new Date().toISOString() });
     });
 
     // Database endpoints
@@ -273,11 +273,11 @@ export class MockApiServer {
     this.setupSqlRoutes();
 
     // Catch-all for unmatched routes
-    this.app.use("*", (req, res) => {
+    this.app.use('*', (req, res) => {
       res.status(404).json({
         success: false,
         error: {
-          code: "NOT_FOUND",
+          code: 'NOT_FOUND',
           message: `Endpoint not found: ${req.method} ${req.path}`,
         },
       });
@@ -286,25 +286,25 @@ export class MockApiServer {
 
   private setupDatabaseRoutes(): void {
     // List databases
-    this.app.get("/v1/tables/databases", (req, res) => {
+    this.app.get('/v1/tables/databases', (req, res) => {
       const databases = this.mockData.generateDatabases(5);
       this.sendSuccessResponse(res, databases, { total: databases.length });
     });
 
     // Create database
-    this.app.post("/v1/tables/databases", (req, res) => {
+    this.app.post('/v1/tables/databases', (req, res) => {
       const database = this.mockData.generateDatabase(req.body);
       this.sendSuccessResponse(res, database);
     });
 
     // Get database
-    this.app.get("/v1/tables/databases/:id", (req, res) => {
+    this.app.get('/v1/tables/databases/:id', (req, res) => {
       const database = this.mockData.generateDatabase({ id: req.params.id });
       this.sendSuccessResponse(res, database);
     });
 
     // Update database
-    this.app.patch("/v1/tables/databases/:id", (req, res) => {
+    this.app.patch('/v1/tables/databases/:id', (req, res) => {
       const database = this.mockData.generateDatabase({
         id: req.params.id,
         ...req.body,
@@ -313,32 +313,32 @@ export class MockApiServer {
     });
 
     // Delete database
-    this.app.delete("/v1/tables/databases/:id", (req, res) => {
+    this.app.delete('/v1/tables/databases/:id', (req, res) => {
       this.sendSuccessResponse(res, { deleted: true, id: req.params.id });
     });
   }
 
   private setupTableRoutes(): void {
     // List tables
-    this.app.get("/v1/tables", (req, res) => {
+    this.app.get('/v1/tables', (req, res) => {
       const tables = this.mockData.generateTables(3);
       this.sendSuccessResponse(res, tables, { total: tables.length });
     });
 
     // Create table
-    this.app.post("/v1/tables", (req, res) => {
+    this.app.post('/v1/tables', (req, res) => {
       const table = this.mockData.generateTable(req.body);
       this.sendSuccessResponse(res, table);
     });
 
     // Get table
-    this.app.get("/v1/tables/:id", (req, res) => {
+    this.app.get('/v1/tables/:id', (req, res) => {
       const table = this.mockData.generateTable({ id: req.params.id });
       this.sendSuccessResponse(res, table);
     });
 
     // Update table
-    this.app.patch("/v1/tables/:id", (req, res) => {
+    this.app.patch('/v1/tables/:id', (req, res) => {
       const table = this.mockData.generateTable({
         id: req.params.id,
         ...req.body,
@@ -347,20 +347,20 @@ export class MockApiServer {
     });
 
     // Delete table
-    this.app.delete("/v1/tables/:id", (req, res) => {
+    this.app.delete('/v1/tables/:id', (req, res) => {
       this.sendSuccessResponse(res, { deleted: true, id: req.params.id });
     });
   }
 
   private setupFieldRoutes(): void {
     // List fields
-    this.app.get("/v1/tables/:tableId/fields", (req, res) => {
+    this.app.get('/v1/tables/:tableId/fields', (req, res) => {
       const fields = this.mockData.generateFields(5);
       this.sendSuccessResponse(res, fields);
     });
 
     // Create fields
-    this.app.post("/v1/tables/:tableId/fields", (req, res) => {
+    this.app.post('/v1/tables/:tableId/fields', (req, res) => {
       const fields =
         req.body.columns?.map((col: any) => this.mockData.generateField(col)) ||
         [];
@@ -368,13 +368,13 @@ export class MockApiServer {
     });
 
     // Get field
-    this.app.get("/v1/tables/:tableId/fields/:fieldId", (req, res) => {
+    this.app.get('/v1/tables/:tableId/fields/:fieldId', (req, res) => {
       const field = this.mockData.generateField({ id: req.params.fieldId });
       this.sendSuccessResponse(res, field);
     });
 
     // Update field
-    this.app.patch("/v1/tables/:tableId/fields/:fieldId", (req, res) => {
+    this.app.patch('/v1/tables/:tableId/fields/:fieldId', (req, res) => {
       const field = this.mockData.generateField({
         id: req.params.fieldId,
         ...req.body,
@@ -383,14 +383,14 @@ export class MockApiServer {
     });
 
     // Delete field
-    this.app.delete("/v1/tables/:tableId/fields/:fieldId", (req, res) => {
+    this.app.delete('/v1/tables/:tableId/fields/:fieldId', (req, res) => {
       this.sendSuccessResponse(res, { deleted: true, id: req.params.fieldId });
     });
   }
 
   private setupRecordRoutes(): void {
     // List records
-    this.app.get("/v1/tables/:tableId/records", (req, res) => {
+    this.app.get('/v1/tables/:tableId/records', (req, res) => {
       const limit = parseInt(req.query.limit as string) || 10;
       const offset = parseInt(req.query.offset as string) || 0;
       const records = this.mockData.generateRecords(limit);
@@ -409,13 +409,13 @@ export class MockApiServer {
     });
 
     // Create record
-    this.app.post("/v1/tables/:tableId/records", (req, res) => {
+    this.app.post('/v1/tables/:tableId/records', (req, res) => {
       const record = this.mockData.generateRecord(req.body.data);
       this.sendSuccessResponse(res, record);
     });
 
     // Bulk create records
-    this.app.post("/v1/tables/:tableId/records/bulk", (req, res) => {
+    this.app.post('/v1/tables/:tableId/records/bulk', (req, res) => {
       const success = req.body.data.map((data: any) =>
         this.mockData.generateRecord(data)
       );
@@ -431,34 +431,34 @@ export class MockApiServer {
     });
 
     // Update records
-    this.app.patch("/v1/tables/:tableId/records", (req, res) => {
+    this.app.patch('/v1/tables/:tableId/records', (req, res) => {
       const records = this.mockData.generateRecords(1);
       this.sendSuccessResponse(res, records);
     });
 
     // Delete records
-    this.app.delete("/v1/tables/:tableId/records", (req, res) => {
+    this.app.delete('/v1/tables/:tableId/records', (req, res) => {
       this.sendSuccessResponse(res, {
         deleted_count: 1,
-        deleted_ids: ["record-123"],
+        deleted_ids: ['record-123'],
       });
     });
 
     // Aggregate records
-    this.app.post("/v1/tables/:tableId/records/aggregate", (req, res) => {
+    this.app.post('/v1/tables/:tableId/records/aggregate', (req, res) => {
       const results = this.mockData.generateAggregateResults(req.body);
       this.sendSuccessResponse(res, { results, total_groups: results.length });
     });
 
     // Vector search
-    this.app.post("/v1/tables/:tableId/records/vector-search", (req, res) => {
+    this.app.post('/v1/tables/:tableId/records/vector-search', (req, res) => {
       const records = this.mockData.generateRecords(5);
       this.sendSuccessResponse(res, records);
     });
   }
 
   private setupSqlRoutes(): void {
-    this.app.post("/v1/tables/query", (req, res) => {
+    this.app.post('/v1/tables/query', (req, res) => {
       const result = this.mockData.generateSqlResult(req.body.query);
       this.sendSuccessResponse(res, result);
     });
@@ -481,7 +481,7 @@ export class MockApiServer {
         resolve();
       });
 
-      this.server.on("error", reject);
+      this.server.on('error', reject);
     });
   }
 
@@ -489,7 +489,7 @@ export class MockApiServer {
     if (this.server) {
       return new Promise((resolve) => {
         this.server!.close(() => {
-          console.log("Mock API server stopped");
+          console.log('Mock API server stopped');
           resolve();
         });
       });
@@ -514,7 +514,7 @@ export class MockApiServer {
     this.app[method.toLowerCase() as keyof Express](path, (req, res) => {
       res.status(statusCode).json({
         success: false,
-        error: { code: "MOCK_ERROR", message: "Simulated error" },
+        error: { code: 'MOCK_ERROR', message: 'Simulated error' },
       });
     });
   }
@@ -522,7 +522,7 @@ export class MockApiServer {
   simulateDelay(path: string, method: string, delay = 1000): void {
     this.app[method.toLowerCase() as keyof Express](path, (req, res) => {
       setTimeout(() => {
-        this.sendSuccessResponse(res, { message: "Delayed response" });
+        this.sendSuccessResponse(res, { message: 'Delayed response' });
       }, delay);
     });
   }
@@ -531,7 +531,7 @@ export class MockApiServer {
     this.app[method.toLowerCase() as keyof Express](path, (req, res) => {
       res.status(429).json({
         success: false,
-        error: { code: "RATE_LIMIT_EXCEEDED", message: "Rate limit exceeded" },
+        error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Rate limit exceeded' },
       });
     });
   }
@@ -543,14 +543,14 @@ export class MockApiServer {
 Create `tests/utils/mock-data-generator.ts`:
 
 ```typescript
-import { faker } from "@faker-js/faker";
+import { faker } from '@faker-js/faker';
 import {
   DatabaseWithId,
   TableWithId,
   ColumnWithId,
   RecordWithId,
   FieldType,
-} from "../../src/types/api";
+} from '../../src/types/api';
 
 export class MockDataGenerator {
   private counters: Record<string, number> = {};
@@ -568,7 +568,7 @@ export class MockDataGenerator {
 
   generateDatabase(overrides: Partial<DatabaseWithId> = {}): DatabaseWithId {
     return {
-      id: this.getNextId("db"),
+      id: this.getNextId('db'),
       name: faker.word.noun(),
       slug: faker.lorem.slug(),
       description: faker.lorem.sentence(),
@@ -590,7 +590,7 @@ export class MockDataGenerator {
     const schema = overrides.schema || this.generateFields(5);
 
     return {
-      id: this.getNextId("table"),
+      id: this.getNextId('table'),
       name: faker.word.noun(),
       table_name: faker.word.noun(),
       description: faker.lorem.sentence(),
@@ -600,7 +600,7 @@ export class MockDataGenerator {
       updated_at: faker.date.recent().toISOString(),
       created_by: faker.internet.email(),
       is_public: faker.datatype.boolean(),
-      database_id: this.getNextId("db"),
+      database_id: this.getNextId('db'),
       ...overrides,
     };
   }
@@ -611,26 +611,26 @@ export class MockDataGenerator {
 
   generateField(overrides: Partial<ColumnWithId> = {}): ColumnWithId {
     const fieldTypes: FieldType[] = [
-      "text",
-      "long-text",
-      "number",
-      "currency",
-      "checkbox",
-      "dropdown",
-      "email",
-      "phone-number",
-      "link",
-      "json",
-      "date-time",
-      "vector",
-      "halfvec",
-      "sparsevec",
+      'text',
+      'long-text',
+      'number',
+      'currency',
+      'checkbox',
+      'dropdown',
+      'email',
+      'phone-number',
+      'link',
+      'json',
+      'date-time',
+      'vector',
+      'halfvec',
+      'sparsevec',
     ];
 
     const type = overrides.type || faker.helpers.arrayElement(fieldTypes);
 
     return {
-      id: this.getNextId("field"),
+      id: this.getNextId('field'),
       name: faker.database.column(),
       type,
       is_nullable: faker.datatype.boolean(),
@@ -640,27 +640,27 @@ export class MockDataGenerator {
       is_readonly: faker.datatype.boolean(),
       field_order: faker.number.int({ min: 1, max: 20 }),
       alignment: null,
-      timezone: type === "date-time" ? faker.location.timeZone() : null,
-      date_format: type === "date-time" ? "YYYY-MM-DD" : null,
-      time_format: type === "date-time" ? "HH:mm:ss" : null,
-      decimals: type === "number" || type === "currency" ? "2" : null,
-      currency_format: type === "currency" ? "USD" : null,
-      selection_source: type === "dropdown" ? "static" : null,
+      timezone: type === 'date-time' ? faker.location.timeZone() : null,
+      date_format: type === 'date-time' ? 'YYYY-MM-DD' : null,
+      time_format: type === 'date-time' ? 'HH:mm:ss' : null,
+      decimals: type === 'number' || type === 'currency' ? '2' : null,
+      currency_format: type === 'currency' ? 'USD' : null,
+      selection_source: type === 'dropdown' ? 'static' : null,
       selectable_items:
-        type === "dropdown" ? ["Option 1", "Option 2", "Option 3"] : null,
+        type === 'dropdown' ? ['Option 1', 'Option 2', 'Option 3'] : null,
       multiple_selections:
-        type === "dropdown" ? faker.datatype.boolean() : false,
-      phone_format: type === "phone-number" ? "US" : null,
+        type === 'dropdown' ? faker.datatype.boolean() : false,
+      phone_format: type === 'phone-number' ? 'US' : null,
       button_type: null,
       button_label: null,
       button_additional_labels: null,
       button_state: null,
       disable_on_click: null,
-      vector_dimension: type.includes("vec") ? 1536 : null,
+      vector_dimension: type.includes('vec') ? 1536 : null,
       description: faker.lorem.sentence(),
       created_at: faker.date.past().toISOString(),
       updated_at: faker.date.recent().toISOString(),
-      table_id: this.getNextId("table"),
+      table_id: this.getNextId('table'),
       ...overrides,
     };
   }
@@ -671,19 +671,19 @@ export class MockDataGenerator {
 
   generateRecord(overrides: any = {}): RecordWithId {
     return {
-      id: this.getNextId("record"),
+      id: this.getNextId('record'),
       title: faker.commerce.productName(),
       description: faker.commerce.productDescription(),
       price: parseFloat(faker.commerce.price()),
       category_id: faker.number.int({ min: 1, max: 10 }),
       is_active: faker.datatype.boolean(),
       tags: faker.helpers.arrayElements(
-        ["electronics", "clothing", "books", "sports"],
+        ['electronics', 'clothing', 'books', 'sports'],
         2
       ),
       metadata: {
         color: faker.color.human(),
-        size: faker.helpers.arrayElement(["S", "M", "L", "XL"]),
+        size: faker.helpers.arrayElement(['S', 'M', 'L', 'XL']),
         weight: faker.number.float({ min: 0.1, max: 10.0, fractionDigits: 2 }),
       },
       created_at: faker.date.past().toISOString(),
@@ -697,7 +697,7 @@ export class MockDataGenerator {
   }
 
   generateAggregateResults(request: any): any[] {
-    const groupBy = request.groupBy || ["category_id"];
+    const groupBy = request.groupBy || ['category_id'];
     const aggregates = request.aggregates || {};
 
     return [
@@ -717,18 +717,18 @@ export class MockDataGenerator {
   }
 
   generateSqlResult(query: string): any {
-    const isSelect = query.toLowerCase().trim().startsWith("select");
+    const isSelect = query.toLowerCase().trim().startsWith('select');
 
     if (isSelect) {
       return {
         columns: [
-          { name: "id", type: "string" },
-          { name: "title", type: "string" },
-          { name: "price", type: "number" },
+          { name: 'id', type: 'string' },
+          { name: 'title', type: 'string' },
+          { name: 'price', type: 'number' },
         ],
         rows: [
-          ["1", "Product 1", 99.99],
-          ["2", "Product 2", 199.99],
+          ['1', 'Product 1', 99.99],
+          ['2', 'Product 2', 199.99],
         ],
         row_count: 2,
         execution_time_ms: faker.number.int({ min: 10, max: 500 }),
@@ -745,8 +745,8 @@ export class MockDataGenerator {
   generateErrorRecord(): any {
     return {
       // Missing required fields to trigger validation errors
-      title: "",
-      price: "invalid-price",
+      title: '',
+      price: 'invalid-price',
     };
   }
 
@@ -772,10 +772,10 @@ export class MockDataGenerator {
 Create `tests/utils/test-environment.ts`:
 
 ```typescript
-import { writeFile, unlink, mkdir } from "fs/promises";
-import { resolve } from "path";
-import { createClient } from "../../src";
-import { MockDataGenerator } from "./mock-data-generator";
+import { writeFile, unlink, mkdir } from 'fs/promises';
+import { resolve } from 'path';
+import { createClient } from '../../src';
+import { MockDataGenerator } from './mock-data-generator';
 
 export class TestEnvironment {
   private tempFiles: string[] = [];
@@ -788,17 +788,17 @@ export class TestEnvironment {
 
   async setup(): Promise<void> {
     // Create temp directory for test files
-    await mkdir(resolve(__dirname, "../temp"), { recursive: true });
+    await mkdir(resolve(__dirname, '../temp'), { recursive: true });
 
     // Initialize test client
-    this.testClient = createClient("test-api-key", {
-      environment: "local",
+    this.testClient = createClient('test-api-key', {
+      environment: 'local',
       debug: true,
       timeout: 5000,
       retryAttempts: 1,
     });
 
-    console.log("Test environment setup complete");
+    console.log('Test environment setup complete');
   }
 
   async cleanup(): Promise<void> {
@@ -811,7 +811,7 @@ export class TestEnvironment {
       }
     }
 
-    console.log("Test environment cleanup complete");
+    console.log('Test environment cleanup complete');
   }
 
   getTestClient(): any {
@@ -823,7 +823,7 @@ export class TestEnvironment {
   }
 
   async createTempFile(filename: string, content: string): Promise<string> {
-    const filepath = resolve(__dirname, "../temp", filename);
+    const filepath = resolve(__dirname, '../temp', filename);
     await writeFile(filepath, content);
     this.tempFiles.push(filepath);
     return filepath;
@@ -832,8 +832,8 @@ export class TestEnvironment {
   // Helper methods for common test scenarios
   async createTestDatabase(): Promise<any> {
     const dbData = this.mockData.generateDatabase({
-      name: "test_database",
-      slug: "test-database",
+      name: 'test_database',
+      slug: 'test-database',
     });
 
     return dbData;
@@ -841,22 +841,22 @@ export class TestEnvironment {
 
   async createTestTable(): Promise<any> {
     const tableData = this.mockData.generateTable({
-      table_name: "test_products",
+      table_name: 'test_products',
       schema: [
         {
-          name: "title",
-          type: "text",
+          name: 'title',
+          type: 'text',
           is_nullable: false,
         },
         {
-          name: "price",
-          type: "currency",
+          name: 'price',
+          type: 'currency',
           is_nullable: false,
-          currency_format: "USD",
+          currency_format: 'USD',
         },
         {
-          name: "category_id",
-          type: "number",
+          name: 'category_id',
+          type: 'number',
           is_nullable: false,
         },
       ],
@@ -903,7 +903,7 @@ export class TestEnvironment {
       `Heap Total: ${formatBytes(usage.heapTotal)}`,
       `Heap Used: ${formatBytes(usage.heapUsed)}`,
       `External: ${formatBytes(usage.external)}`,
-    ].join(", ");
+    ].join(', ');
   }
 }
 ```
@@ -918,12 +918,12 @@ export class TestEnvironment {
 Create `tests/unit/client/core/base-client.test.ts`:
 
 ```typescript
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { BaseClient } from "../../../../src/client/core/base-client";
-import { FetchHttpAdapter } from "../../../../src/utils/http/fetch-adapter";
-import { ClientConfig } from "../../../../src/types/config";
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { BaseClient } from '../../../../src/client/core/base-client';
+import { FetchHttpAdapter } from '../../../../src/utils/http/fetch-adapter';
+import { ClientConfig } from '../../../../src/types/config';
 
-describe("BaseClient", () => {
+describe('BaseClient', () => {
   let baseClient: BaseClient;
   let mockHttpAdapter: any;
   let config: ClientConfig;
@@ -934,8 +934,8 @@ describe("BaseClient", () => {
     };
 
     config = {
-      apiKey: "test-api-key",
-      environment: "test",
+      apiKey: 'test-api-key',
+      environment: 'test',
       timeout: 10000,
       retryAttempts: 2,
       retryDelay: 1000,
@@ -946,21 +946,21 @@ describe("BaseClient", () => {
     baseClient = new BaseClient(mockHttpAdapter, config);
   });
 
-  describe("constructor", () => {
-    it("should initialize with correct configuration", () => {
-      expect(baseClient.getEnvironment()).toBe("test");
-      expect(baseClient.isFeatureEnabled("vectorSearch")).toBeDefined();
+  describe('constructor', () => {
+    it('should initialize with correct configuration', () => {
+      expect(baseClient.getEnvironment()).toBe('test');
+      expect(baseClient.isFeatureEnabled('vectorSearch')).toBeDefined();
     });
 
-    it("should initialize API client correctly", () => {
+    it('should initialize API client correctly', () => {
       const apiClient = baseClient.getApiClient();
       expect(apiClient).toBeDefined();
     });
   });
 
-  describe("updateApiKey", () => {
-    it("should update API key in both config and API client", () => {
-      const newApiKey = "new-test-api-key";
+  describe('updateApiKey', () => {
+    it('should update API key in both config and API client', () => {
+      const newApiKey = 'new-test-api-key';
       baseClient.updateApiKey(newApiKey);
 
       // API key should be updated (we'd need to expose this for testing)
@@ -968,9 +968,9 @@ describe("BaseClient", () => {
     });
   });
 
-  describe("updateDatabaseId", () => {
-    it("should update database context", () => {
-      const databaseId = "new-db-123";
+  describe('updateDatabaseId', () => {
+    it('should update database context', () => {
+      const databaseId = 'new-db-123';
       baseClient.updateDatabaseId(databaseId);
 
       // Database ID should be updated in API client
@@ -978,18 +978,18 @@ describe("BaseClient", () => {
     });
   });
 
-  describe("feature flags", () => {
-    it("should check feature availability correctly", () => {
-      const vectorSearchEnabled = baseClient.isFeatureEnabled("vectorSearch");
-      const aggregationsEnabled = baseClient.isFeatureEnabled("aggregations");
+  describe('feature flags', () => {
+    it('should check feature availability correctly', () => {
+      const vectorSearchEnabled = baseClient.isFeatureEnabled('vectorSearch');
+      const aggregationsEnabled = baseClient.isFeatureEnabled('aggregations');
 
-      expect(typeof vectorSearchEnabled).toBe("boolean");
-      expect(typeof aggregationsEnabled).toBe("boolean");
+      expect(typeof vectorSearchEnabled).toBe('boolean');
+      expect(typeof aggregationsEnabled).toBe('boolean');
     });
   });
 
-  describe("cache management", () => {
-    it("should provide cache instance when enabled", () => {
+  describe('cache management', () => {
+    it('should provide cache instance when enabled', () => {
       const cache = baseClient.getCache();
       if (config.cacheEnabled) {
         expect(cache).toBeDefined();
@@ -999,15 +999,15 @@ describe("BaseClient", () => {
     });
   });
 
-  describe("error handling", () => {
-    it("should handle configuration errors gracefully", () => {
-      const invalidConfig = { ...config, apiKey: "" };
+  describe('error handling', () => {
+    it('should handle configuration errors gracefully', () => {
+      const invalidConfig = { ...config, apiKey: '' };
 
       expect(() => new BaseClient(mockHttpAdapter, invalidConfig)).toThrow();
     });
 
-    it("should handle HTTP adapter errors", async () => {
-      mockHttpAdapter.request.mockRejectedValue(new Error("Network error"));
+    it('should handle HTTP adapter errors', async () => {
+      mockHttpAdapter.request.mockRejectedValue(new Error('Network error'));
 
       // Test error handling through API client
       const apiClient = baseClient.getApiClient();
@@ -1022,12 +1022,12 @@ describe("BaseClient", () => {
 Create `tests/unit/client/resources/database.test.ts`:
 
 ```typescript
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { DatabaseResource } from "../../../../src/client/resources/database";
-import { BaseClient } from "../../../../src/client/core/base-client";
-import { ValidationError } from "../../../../src/errors/validation-error";
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { DatabaseResource } from '../../../../src/client/resources/database';
+import { BaseClient } from '../../../../src/client/core/base-client';
+import { ValidationError } from '../../../../src/errors/validation-error';
 
-describe("DatabaseResource", () => {
+describe('DatabaseResource', () => {
   let databaseResource: DatabaseResource;
   let mockBaseClient: any;
 
@@ -1046,28 +1046,28 @@ describe("DatabaseResource", () => {
         set: vi.fn(),
         delete: vi.fn(),
         clear: vi.fn(),
-        generateKey: vi.fn((...parts) => parts.join(":")),
+        generateKey: vi.fn((...parts) => parts.join(':')),
       })),
     };
 
     databaseResource = new DatabaseResource(mockBaseClient);
   });
 
-  describe("create", () => {
-    it("should create database successfully", async () => {
+  describe('create', () => {
+    it('should create database successfully', async () => {
       const dbData = {
-        name: "test_database",
-        slug: "test-database",
-        description: "Test database",
+        name: 'test_database',
+        slug: 'test-database',
+        description: 'Test database',
       };
 
       const expectedResponse = {
         data: {
-          id: "db-123",
-          name: "test_database",
-          slug: "test-database",
-          description: "Test database",
-          created_at: "2024-01-01T00:00:00Z",
+          id: 'db-123',
+          name: 'test_database',
+          slug: 'test-database',
+          description: 'Test database',
+          created_at: '2024-01-01T00:00:00Z',
         },
       };
 
@@ -1083,30 +1083,30 @@ describe("DatabaseResource", () => {
       expect(result.data).toEqual(expectedResponse.data);
     });
 
-    it("should validate required fields", async () => {
-      const invalidData = { name: "" }; // Missing required name
+    it('should validate required fields', async () => {
+      const invalidData = { name: '' }; // Missing required name
 
       await expect(databaseResource.create(invalidData)).rejects.toThrow(
         ValidationError
       );
     });
 
-    it("should handle API errors", async () => {
-      const dbData = { name: "test_database", slug: "test-database" };
+    it('should handle API errors', async () => {
+      const dbData = { name: 'test_database', slug: 'test-database' };
 
       mockBaseClient
         .getApiClient()
-        .createDatabase.mockRejectedValue(new Error("API Error"));
+        .createDatabase.mockRejectedValue(new Error('API Error'));
 
       await expect(databaseResource.create(dbData)).rejects.toThrow();
     });
   });
 
-  describe("findAll", () => {
-    it("should list databases with default options", async () => {
+  describe('findAll', () => {
+    it('should list databases with default options', async () => {
       const mockDatabases = [
-        { id: "db-1", name: "database1" },
-        { id: "db-2", name: "database2" },
+        { id: 'db-1', name: 'database1' },
+        { id: 'db-2', name: 'database2' },
       ];
 
       mockBaseClient
@@ -1121,14 +1121,14 @@ describe("DatabaseResource", () => {
       expect(result.data).toEqual(mockDatabases);
     });
 
-    it("should apply filters and sorting", async () => {
+    it('should apply filters and sorting', async () => {
       const options = {
-        where: { created_by: "user@example.com" },
-        sort: [{ field: "created_at", order: "desc" as const }],
+        where: { created_by: 'user@example.com' },
+        sort: [{ field: 'created_at', order: 'desc' as const }],
         limit: 5,
       };
 
-      const mockDatabases = [{ id: "db-1", name: "database1" }];
+      const mockDatabases = [{ id: 'db-1', name: 'database1' }];
       mockBaseClient
         .getApiClient()
         .listDatabases.mockResolvedValue(mockDatabases);
@@ -1141,9 +1141,9 @@ describe("DatabaseResource", () => {
       expect(result.data).toEqual(mockDatabases);
     });
 
-    it("should handle cache hits", async () => {
+    it('should handle cache hits', async () => {
       const options = { limit: 10 };
-      const cachedData = [{ id: "db-cached", name: "cached_db" }];
+      const cachedData = [{ id: 'db-cached', name: 'cached_db' }];
 
       mockBaseClient.getCache().get.mockResolvedValue({ data: cachedData });
 
@@ -1157,10 +1157,10 @@ describe("DatabaseResource", () => {
     });
   });
 
-  describe("findOne", () => {
-    it("should find single database", async () => {
-      const options = { where: { slug: "test-database" } };
-      const mockDatabase = { id: "db-123", name: "test_database" };
+  describe('findOne', () => {
+    it('should find single database', async () => {
+      const options = { where: { slug: 'test-database' } };
+      const mockDatabase = { id: 'db-123', name: 'test_database' };
 
       mockBaseClient
         .getApiClient()
@@ -1174,20 +1174,20 @@ describe("DatabaseResource", () => {
       expect(result.data).toEqual(mockDatabase);
     });
 
-    it("should require where conditions", async () => {
+    it('should require where conditions', async () => {
       await expect(databaseResource.findOne({})).rejects.toThrow(
         ValidationError
       );
     });
   });
 
-  describe("update", () => {
-    it("should update database", async () => {
-      const updates = { description: "Updated description" };
-      const whereCondition = { slug: "test-database" };
+  describe('update', () => {
+    it('should update database', async () => {
+      const updates = { description: 'Updated description' };
+      const whereCondition = { slug: 'test-database' };
       const mockUpdatedDb = {
-        id: "db-123",
-        description: "Updated description",
+        id: 'db-123',
+        description: 'Updated description',
       };
 
       mockBaseClient
@@ -1199,9 +1199,9 @@ describe("DatabaseResource", () => {
       expect(result.data).toEqual(mockUpdatedDb);
     });
 
-    it("should validate update data", async () => {
-      const invalidUpdates = { name: "" }; // Invalid empty name
-      const whereCondition = { id: "db-123" };
+    it('should validate update data', async () => {
+      const invalidUpdates = { name: '' }; // Invalid empty name
+      const whereCondition = { id: 'db-123' };
 
       await expect(
         databaseResource.update(whereCondition, invalidUpdates)
@@ -1209,10 +1209,10 @@ describe("DatabaseResource", () => {
     });
   });
 
-  describe("delete", () => {
-    it("should delete database", async () => {
-      const whereCondition = { id: "db-123" };
-      const mockResponse = { deleted: true, id: "db-123" };
+  describe('delete', () => {
+    it('should delete database', async () => {
+      const whereCondition = { id: 'db-123' };
+      const mockResponse = { deleted: true, id: 'db-123' };
 
       mockBaseClient
         .getApiClient()
@@ -1223,28 +1223,28 @@ describe("DatabaseResource", () => {
       expect(result.data).toEqual(mockResponse);
     });
 
-    it("should require where conditions for delete", async () => {
+    it('should require where conditions for delete', async () => {
       await expect(databaseResource.delete({})).rejects.toThrow(
         ValidationError
       );
     });
   });
 
-  describe("caching behavior", () => {
-    it("should cache successful responses", async () => {
-      const mockDatabase = { id: "db-123", name: "test_database" };
+  describe('caching behavior', () => {
+    it('should cache successful responses', async () => {
+      const mockDatabase = { id: 'db-123', name: 'test_database' };
       mockBaseClient
         .getApiClient()
         .findDatabase.mockResolvedValue(mockDatabase);
 
-      await databaseResource.findOne({ where: { id: "db-123" } });
+      await databaseResource.findOne({ where: { id: 'db-123' } });
 
       expect(mockBaseClient.getCache().set).toHaveBeenCalled();
     });
 
-    it("should invalidate cache on updates", async () => {
-      const updates = { description: "Updated" };
-      const whereCondition = { id: "db-123" };
+    it('should invalidate cache on updates', async () => {
+      const updates = { description: 'Updated' };
+      const whereCondition = { id: 'db-123' };
 
       mockBaseClient.getApiClient().updateDatabase.mockResolvedValue({});
 
@@ -1282,12 +1282,12 @@ Create similar comprehensive unit tests for:
 Create `tests/integration/e2e/complete-workflow.test.ts`:
 
 ```typescript
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { createClient } from "../../../src";
-import { MockApiServer } from "../../utils/mock-api-server";
-import { TestEnvironment } from "../../utils/test-environment";
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { createClient } from '../../../src';
+import { MockApiServer } from '../../utils/mock-api-server';
+import { TestEnvironment } from '../../utils/test-environment';
 
-describe("Complete SDK Workflow (E2E)", () => {
+describe('Complete SDK Workflow (E2E)', () => {
   let client: any;
   let mockApiServer: MockApiServer;
   let testEnvironment: TestEnvironment;
@@ -1299,8 +1299,8 @@ describe("Complete SDK Workflow (E2E)", () => {
     mockApiServer = new MockApiServer();
     await mockApiServer.start();
 
-    client = createClient("test-api-key", {
-      environment: "local",
+    client = createClient('test-api-key', {
+      environment: 'local',
       debug: true,
     });
   });
@@ -1314,70 +1314,70 @@ describe("Complete SDK Workflow (E2E)", () => {
     mockApiServer.reset();
   });
 
-  describe("Database → Table → Column → Record Workflow", () => {
-    it("should complete full CRUD workflow successfully", async () => {
+  describe('Database → Table → Column → Record Workflow', () => {
+    it('should complete full CRUD workflow successfully', async () => {
       // Step 1: Create Database
       const dbResult = await client.database.create({
-        name: "e2e_test_database",
-        slug: "e2e-test-database",
-        description: "End-to-end test database",
+        name: 'e2e_test_database',
+        slug: 'e2e-test-database',
+        description: 'End-to-end test database',
       });
 
       expect(dbResult.data).toBeDefined();
-      expect(dbResult.data.name).toBe("e2e_test_database");
+      expect(dbResult.data.name).toBe('e2e_test_database');
 
       // Step 2: Use Database Context
       const db = client.useDatabase(dbResult.data.id);
 
       // Step 3: Create Table with Schema
       const tableResult = await db.table.create({
-        table_name: "products",
+        table_name: 'products',
         schema: [
           {
-            name: "title",
-            type: "text",
+            name: 'title',
+            type: 'text',
             is_nullable: false,
           },
           {
-            name: "price",
-            type: "currency",
+            name: 'price',
+            type: 'currency',
             is_nullable: false,
-            currency_format: "USD",
+            currency_format: 'USD',
           },
           {
-            name: "category_id",
-            type: "number",
+            name: 'category_id',
+            type: 'number',
             is_nullable: false,
           },
           {
-            name: "description",
-            type: "long-text",
+            name: 'description',
+            type: 'long-text',
             is_nullable: true,
           },
           {
-            name: "metadata",
-            type: "json",
+            name: 'metadata',
+            type: 'json',
             is_nullable: true,
           },
         ],
-        description: "Products table for e2e testing",
+        description: 'Products table for e2e testing',
       });
 
       expect(tableResult.data).toBeDefined();
-      expect(tableResult.data.table_name).toBe("products");
+      expect(tableResult.data.table_name).toBe('products');
       expect(tableResult.data.schema).toHaveLength(5);
 
       // Step 4: Add Additional Columns
-      const columnResult = await db.column.create("products", {
+      const columnResult = await db.column.create('products', {
         columns: [
           {
-            name: "is_featured",
-            type: "checkbox",
+            name: 'is_featured',
+            type: 'checkbox',
             is_nullable: true,
           },
           {
-            name: "tags",
-            type: "json",
+            name: 'tags',
+            type: 'json',
             is_nullable: true,
           },
         ],
@@ -1386,50 +1386,50 @@ describe("Complete SDK Workflow (E2E)", () => {
       expect(columnResult.data).toBeDefined();
 
       // Step 5: Insert Records (Method 1)
-      const recordResult1 = await db.record.insert("products", {
-        title: "MacBook Pro",
+      const recordResult1 = await db.record.insert('products', {
+        title: 'MacBook Pro',
         price: 2499.99,
         category_id: 1,
-        description: "Powerful laptop for professionals",
-        metadata: { color: "silver", storage: "512GB" },
+        description: 'Powerful laptop for professionals',
+        metadata: { color: 'silver', storage: '512GB' },
         is_featured: true,
-        tags: ["electronics", "computers", "apple"],
+        tags: ['electronics', 'computers', 'apple'],
       });
 
       expect(recordResult1.data).toBeDefined();
-      expect(recordResult1.data.title).toBe("MacBook Pro");
+      expect(recordResult1.data.title).toBe('MacBook Pro');
 
       // Step 6: Insert Records (Method 2 - Fluent)
-      const recordResult2 = await db.from("products").insert({
-        title: "iPhone 15",
+      const recordResult2 = await db.from('products').insert({
+        title: 'iPhone 15',
         price: 999.99,
         category_id: 1,
-        description: "Latest smartphone",
-        metadata: { color: "blue", storage: "256GB" },
+        description: 'Latest smartphone',
+        metadata: { color: 'blue', storage: '256GB' },
         is_featured: true,
-        tags: ["electronics", "phones", "apple"],
+        tags: ['electronics', 'phones', 'apple'],
       });
 
       expect(recordResult2.data).toBeDefined();
-      expect(recordResult2.data.title).toBe("iPhone 15");
+      expect(recordResult2.data.title).toBe('iPhone 15');
 
       // Step 7: Bulk Insert Records
       const bulkRecords = [
         {
-          title: "iPad Air",
+          title: 'iPad Air',
           price: 599.99,
           category_id: 1,
-          description: "Versatile tablet",
+          description: 'Versatile tablet',
         },
         {
-          title: "AirPods Pro",
+          title: 'AirPods Pro',
           price: 249.99,
           category_id: 1,
-          description: "Wireless earphones",
+          description: 'Wireless earphones',
         },
       ];
 
-      const bulkResult = await db.record.bulkInsert("products", {
+      const bulkResult = await db.record.bulkInsert('products', {
         data: bulkRecords,
       });
 
@@ -1437,13 +1437,13 @@ describe("Complete SDK Workflow (E2E)", () => {
       expect(bulkResult.data.failed).toHaveLength(0);
 
       // Step 8: Query Records (Method 1)
-      const queryResult1 = await db.record.findAll("products", {
+      const queryResult1 = await db.record.findAll('products', {
         where: {
           category_id: 1,
           price: { $gt: 500 },
         },
-        fields: ["id", "title", "price"],
-        sort: [{ field: "price", order: "desc" }],
+        fields: ['id', 'title', 'price'],
+        sort: [{ field: 'price', order: 'desc' }],
         limit: 10,
       });
 
@@ -1452,11 +1452,11 @@ describe("Complete SDK Workflow (E2E)", () => {
 
       // Step 9: Query Records (Method 2 - Fluent)
       const queryResult2 = await db
-        .from("products")
-        .where("category_id", "=", 1)
-        .where("price", ">", 500)
-        .select(["id", "title", "price"])
-        .orderBy("price", "desc")
+        .from('products')
+        .where('category_id', '=', 1)
+        .where('price', '>', 500)
+        .select(['id', 'title', 'price'])
+        .orderBy('price', 'desc')
         .limit(10)
         .findAll();
 
@@ -1465,20 +1465,20 @@ describe("Complete SDK Workflow (E2E)", () => {
 
       // Step 10: Update Records
       const updateResult = await db
-        .from("products")
-        .where("title", "=", "MacBook Pro")
+        .from('products')
+        .where('title', '=', 'MacBook Pro')
         .set({ price: 2299.99, is_featured: false })
         .update();
 
       expect(updateResult.data).toBeDefined();
 
       // Step 11: Aggregation Query
-      const aggregateResult = await db.record.aggregate("products", {
-        groupBy: ["category_id"],
+      const aggregateResult = await db.record.aggregate('products', {
+        groupBy: ['category_id'],
         aggregates: {
-          total_price: { $sum: "price" },
-          avg_price: { $avg: "price" },
-          count: { $count: "*" },
+          total_price: { $sum: 'price' },
+          avg_price: { $avg: 'price' },
+          count: { $count: '*' },
         },
         where: { price: { $gt: 100 } },
       });
@@ -1504,43 +1504,43 @@ describe("Complete SDK Workflow (E2E)", () => {
 
       // Step 13: Delete Records
       const deleteResult = await db
-        .from("products")
-        .where("title", "=", "AirPods Pro")
+        .from('products')
+        .where('title', '=', 'AirPods Pro')
         .delete();
 
       expect(deleteResult.data.deleted_count).toBeGreaterThan(0);
 
       // Step 14: Clean up
-      await db.table.delete("products");
+      await db.table.delete('products');
       await client.database.delete({ where: { id: dbResult.data.id } });
     });
   });
 
-  describe("Error Handling Workflow", () => {
-    it("should handle validation errors gracefully", async () => {
+  describe('Error Handling Workflow', () => {
+    it('should handle validation errors gracefully', async () => {
       // Test validation errors
-      await expect(client.database.create({ name: "" })).rejects.toThrow();
+      await expect(client.database.create({ name: '' })).rejects.toThrow();
 
       await expect(
         client.database.create({
-          name: "test",
-          slug: "invalid slug with spaces",
+          name: 'test',
+          slug: 'invalid slug with spaces',
         })
       ).rejects.toThrow();
     });
 
-    it("should handle API errors gracefully", async () => {
+    it('should handle API errors gracefully', async () => {
       // Simulate API error
-      mockApiServer.simulateError("/v1/tables/databases", "post", 500);
+      mockApiServer.simulateError('/v1/tables/databases', 'post', 500);
 
       await expect(
-        client.database.create({ name: "test_db", slug: "test-db" })
+        client.database.create({ name: 'test_db', slug: 'test-db' })
       ).rejects.toThrow();
     });
 
-    it("should handle network errors with retries", async () => {
+    it('should handle network errors with retries', async () => {
       // Simulate network delay
-      mockApiServer.simulateDelay("/v1/tables/databases", "get", 2000);
+      mockApiServer.simulateDelay('/v1/tables/databases', 'get', 2000);
 
       const start = Date.now();
       await client.database.findAll({ limit: 1 });
@@ -1551,16 +1551,16 @@ describe("Complete SDK Workflow (E2E)", () => {
     });
   });
 
-  describe("Performance Characteristics", () => {
-    it("should handle bulk operations efficiently", async () => {
-      const db = client.useDatabase("test-db-123");
+  describe('Performance Characteristics', () => {
+    it('should handle bulk operations efficiently', async () => {
+      const db = client.useDatabase('test-db-123');
 
       // Create table for bulk testing
       await db.table.create({
-        table_name: "bulk_test",
+        table_name: 'bulk_test',
         schema: [
-          { name: "title", type: "text", is_nullable: false },
-          { name: "value", type: "number", is_nullable: false },
+          { name: 'title', type: 'text', is_nullable: false },
+          { name: 'value', type: 'number', is_nullable: false },
         ],
       });
 
@@ -1572,7 +1572,7 @@ describe("Complete SDK Workflow (E2E)", () => {
 
       // Measure bulk insert performance
       const { result, duration } = await testEnvironment.measureExecutionTime(
-        () => db.record.bulkInsert("bulk_test", { data: largeDataset })
+        () => db.record.bulkInsert('bulk_test', { data: largeDataset })
       );
 
       expect(result.data.summary.successful).toBe(1000);
@@ -1581,19 +1581,19 @@ describe("Complete SDK Workflow (E2E)", () => {
       console.log(`Bulk insert of 1000 records completed in ${duration}ms`);
     });
 
-    it("should cache results effectively", async () => {
-      const db = client.useDatabase("test-db-123");
+    it('should cache results effectively', async () => {
+      const db = client.useDatabase('test-db-123');
 
       // First query (uncached)
       const { duration: firstDuration } =
         await testEnvironment.measureExecutionTime(() =>
-          db.record.findAll("products", { limit: 100 })
+          db.record.findAll('products', { limit: 100 })
         );
 
       // Second identical query (should be cached)
       const { duration: secondDuration } =
         await testEnvironment.measureExecutionTime(() =>
-          db.record.findAll("products", { limit: 100 })
+          db.record.findAll('products', { limit: 100 })
         );
 
       // Second query should be faster due to caching
@@ -1605,24 +1605,24 @@ describe("Complete SDK Workflow (E2E)", () => {
     });
   });
 
-  describe("Memory Usage", () => {
-    it("should maintain reasonable memory usage", async () => {
+  describe('Memory Usage', () => {
+    it('should maintain reasonable memory usage', async () => {
       const initialMemory = testEnvironment.getMemoryUsage();
       console.log(
-        "Initial memory:",
+        'Initial memory:',
         testEnvironment.formatMemoryUsage(initialMemory)
       );
 
-      const db = client.useDatabase("test-db-123");
+      const db = client.useDatabase('test-db-123');
 
       // Perform various operations
       await db.database.findAll();
       await db.table.findAll();
-      await db.record.findAll("products", { limit: 100 });
+      await db.record.findAll('products', { limit: 100 });
 
       const finalMemory = testEnvironment.getMemoryUsage();
       console.log(
-        "Final memory:",
+        'Final memory:',
         testEnvironment.formatMemoryUsage(finalMemory)
       );
 
@@ -1644,12 +1644,12 @@ describe("Complete SDK Workflow (E2E)", () => {
 Create `tests/performance/load-testing.test.ts`:
 
 ```typescript
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createClient } from "../../src";
-import { MockApiServer } from "../utils/mock-api-server";
-import { TestEnvironment } from "../utils/test-environment";
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { createClient } from '../../src';
+import { MockApiServer } from '../utils/mock-api-server';
+import { TestEnvironment } from '../utils/test-environment';
 
-describe("Performance and Load Testing", () => {
+describe('Performance and Load Testing', () => {
   let client: any;
   let mockApiServer: MockApiServer;
   let testEnvironment: TestEnvironment;
@@ -1661,8 +1661,8 @@ describe("Performance and Load Testing", () => {
     mockApiServer = new MockApiServer();
     await mockApiServer.start();
 
-    client = createClient("test-api-key", {
-      environment: "local",
+    client = createClient('test-api-key', {
+      environment: 'local',
       timeout: 30000,
       retryAttempts: 3,
     });
@@ -1673,8 +1673,8 @@ describe("Performance and Load Testing", () => {
     await testEnvironment.cleanup();
   });
 
-  describe("Concurrent Operations", () => {
-    it("should handle concurrent database operations", async () => {
+  describe('Concurrent Operations', () => {
+    it('should handle concurrent database operations', async () => {
       const concurrentOperations = Array.from({ length: 50 }, (_, index) =>
         client.database.create({
           name: `concurrent_db_${index}`,
@@ -1694,11 +1694,11 @@ describe("Performance and Load Testing", () => {
       );
     });
 
-    it("should handle concurrent record operations", async () => {
-      const db = client.useDatabase("test-db-123");
+    it('should handle concurrent record operations', async () => {
+      const db = client.useDatabase('test-db-123');
 
       const concurrentInserts = Array.from({ length: 100 }, (_, index) =>
-        db.record.insert("products", {
+        db.record.insert('products', {
           title: `Concurrent Product ${index}`,
           price: Math.random() * 1000,
           category_id: Math.floor(Math.random() * 5) + 1,
@@ -1716,9 +1716,9 @@ describe("Performance and Load Testing", () => {
     });
   });
 
-  describe("Large Dataset Operations", () => {
-    it("should handle bulk operations with large datasets", async () => {
-      const db = client.useDatabase("test-db-123");
+  describe('Large Dataset Operations', () => {
+    it('should handle bulk operations with large datasets', async () => {
+      const db = client.useDatabase('test-db-123');
 
       // Test various bulk sizes
       const bulkSizes = [100, 500, 1000, 2500];
@@ -1736,7 +1736,7 @@ describe("Performance and Load Testing", () => {
         }));
 
         const { result, duration } = await testEnvironment.measureExecutionTime(
-          () => db.record.bulkInsert("products", { data: largeDataset })
+          () => db.record.bulkInsert('products', { data: largeDataset })
         );
 
         expect(result.data.summary.successful).toBe(size);
@@ -1753,15 +1753,15 @@ describe("Performance and Load Testing", () => {
       }
     });
 
-    it("should handle large query result sets efficiently", async () => {
-      const db = client.useDatabase("test-db-123");
+    it('should handle large query result sets efficiently', async () => {
+      const db = client.useDatabase('test-db-123');
 
       // Test pagination with large result sets
       const pageSizes = [50, 100, 500, 1000];
 
       for (const pageSize of pageSizes) {
         const { result, duration } = await testEnvironment.measureExecutionTime(
-          () => db.record.findAll("products", { limit: pageSize })
+          () => db.record.findAll('products', { limit: pageSize })
         );
 
         expect(result.data).toBeDefined();
@@ -1779,9 +1779,9 @@ describe("Performance and Load Testing", () => {
     });
   });
 
-  describe("Cache Performance", () => {
-    it("should demonstrate cache performance benefits", async () => {
-      const db = client.useDatabase("test-db-123");
+  describe('Cache Performance', () => {
+    it('should demonstrate cache performance benefits', async () => {
+      const db = client.useDatabase('test-db-123');
 
       const queryOptions = {
         where: { category_id: 1, price: { $gt: 100 } },
@@ -1791,14 +1791,14 @@ describe("Performance and Load Testing", () => {
       // First query (cold cache)
       const { duration: coldDuration } =
         await testEnvironment.measureExecutionTime(() =>
-          db.record.findAll("products", queryOptions)
+          db.record.findAll('products', queryOptions)
         );
 
       // Repeated queries (warm cache)
       const warmQueryTimes: number[] = [];
       for (let i = 0; i < 10; i++) {
         const { duration } = await testEnvironment.measureExecutionTime(() =>
-          db.record.findAll("products", queryOptions)
+          db.record.findAll('products', queryOptions)
         );
         warmQueryTimes.push(duration);
       }
@@ -1820,10 +1820,10 @@ describe("Performance and Load Testing", () => {
     });
   });
 
-  describe("Memory Efficiency", () => {
-    it("should maintain memory efficiency under load", async () => {
+  describe('Memory Efficiency', () => {
+    it('should maintain memory efficiency under load', async () => {
       const initialMemory = testEnvironment.getMemoryUsage();
-      const db = client.useDatabase("test-db-123");
+      const db = client.useDatabase('test-db-123');
 
       // Perform memory-intensive operations
       for (let batch = 0; batch < 10; batch++) {
@@ -1839,10 +1839,10 @@ describe("Performance and Load Testing", () => {
           },
         }));
 
-        await db.record.bulkInsert("products", { data: batchData });
+        await db.record.bulkInsert('products', { data: batchData });
 
         // Large query
-        await db.record.findAll("products", { limit: 1000 });
+        await db.record.findAll('products', { limit: 1000 });
 
         // Measure memory after each batch
         const currentMemory = testEnvironment.getMemoryUsage();
@@ -1877,10 +1877,10 @@ describe("Performance and Load Testing", () => {
     });
   });
 
-  describe("Rate Limiting Behavior", () => {
-    it("should handle rate limiting gracefully", async () => {
+  describe('Rate Limiting Behavior', () => {
+    it('should handle rate limiting gracefully', async () => {
       // Simulate rate limiting
-      mockApiServer.simulateRateLimit("/v1/tables/databases", "get");
+      mockApiServer.simulateRateLimit('/v1/tables/databases', 'get');
 
       const start = Date.now();
 
@@ -1889,7 +1889,7 @@ describe("Performance and Load Testing", () => {
       } catch (error) {
         const duration = Date.now() - start;
 
-        expect(error.message).toContain("rate limit");
+        expect(error.message).toContain('rate limit');
         expect(duration).toBeGreaterThan(0);
 
         console.log(`Rate limit handled in ${duration}ms`);
@@ -1897,10 +1897,10 @@ describe("Performance and Load Testing", () => {
     });
   });
 
-  describe("Network Resilience", () => {
-    it("should handle network delays and recover", async () => {
+  describe('Network Resilience', () => {
+    it('should handle network delays and recover', async () => {
       // Simulate network delay
-      mockApiServer.simulateDelay("/v1/tables/databases", "get", 2000);
+      mockApiServer.simulateDelay('/v1/tables/databases', 'get', 2000);
 
       const { result, duration } = await testEnvironment.measureExecutionTime(
         () => client.database.findAll()
@@ -1935,7 +1935,7 @@ on:
     branches: [main, develop]
 
 env:
-  NODE_VERSION: "18"
+  NODE_VERSION: '18'
 
 jobs:
   unit-tests:
@@ -1954,7 +1954,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -1991,7 +1991,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -2017,7 +2017,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -2043,7 +2043,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci

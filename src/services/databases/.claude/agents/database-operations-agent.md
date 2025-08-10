@@ -79,7 +79,7 @@ export interface DatabaseQueryOptions {
   fields?: Array<keyof DatabaseRecord>;
   sort?: Array<{
     field: keyof DatabaseRecord;
-    order: "asc" | "desc";
+    order: 'asc' | 'desc';
   }>;
   limit?: number;
   offset?: number;
@@ -114,8 +114,8 @@ export interface DatabaseListResponse {
 Create `src/client/resources/database.ts`:
 
 ```typescript
-import { BaseResource, ApiResponse, QueryOptions } from "../core/base-resource";
-import { BaseClient } from "../core/base-client";
+import { BaseResource, ApiResponse, QueryOptions } from '../core/base-resource';
+import { BaseClient } from '../core/base-client';
 import {
   DatabaseCreateRequest,
   DatabaseUpdateRequest,
@@ -123,13 +123,13 @@ import {
   DatabaseQueryOptions,
   DatabaseDeleteOptions,
   DatabaseListResponse,
-} from "../../types/api/database";
-import { ValidationError } from "../../errors/validation-error";
-import { ApiError } from "../../errors/api-error";
+} from '../../types/api/database';
+import { ValidationError } from '../../errors/validation-error';
+import { ApiError } from '../../errors/api-error';
 
 export class DatabaseResource extends BaseResource {
   constructor(client: BaseClient) {
-    super(client, "/v1/tables/databases");
+    super(client, '/v1/tables/databases');
   }
 
   /**
@@ -141,14 +141,14 @@ export class DatabaseResource extends BaseResource {
     this.validateCreateRequest(data);
 
     try {
-      const response = await this.makeRequest<DatabaseRecord>("POST", "", data);
+      const response = await this.makeRequest<DatabaseRecord>('POST', '', data);
 
       // Cache the created database
       if (this.client.getCache && response.data) {
         const cache = this.client.getCache();
         if (cache) {
           await cache.set(
-            cache.generateKey("database", "id", response.data.id),
+            cache.generateKey('database', 'id', response.data.id),
             response.data,
             300000 // 5 minutes
           );
@@ -158,10 +158,10 @@ export class DatabaseResource extends BaseResource {
       return response;
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === 409) {
-        throw new ValidationError("Database already exists", [
+        throw new ValidationError('Database already exists', [
           {
-            field: "slug",
-            message: "A database with this slug already exists",
+            field: 'slug',
+            message: 'A database with this slug already exists',
           },
         ]);
       }
@@ -175,7 +175,7 @@ export class DatabaseResource extends BaseResource {
   async findAll(
     options: DatabaseQueryOptions = {}
   ): Promise<ApiResponse<DatabaseRecord[]> & { pagination?: any }> {
-    const cacheKey = this.generateCacheKey("findAll", options);
+    const cacheKey = this.generateCacheKey('findAll', options);
 
     // Check cache first
     if (this.client.getCache) {
@@ -192,8 +192,8 @@ export class DatabaseResource extends BaseResource {
 
     const queryParams = this.buildQueryParams(options);
     const response = await this.makeRequest<DatabaseListResponse>(
-      "GET",
-      "",
+      'GET',
+      '',
       undefined,
       { params: queryParams }
     );
@@ -224,11 +224,11 @@ export class DatabaseResource extends BaseResource {
   ): Promise<ApiResponse<DatabaseRecord | null>> {
     if (!options.where || Object.keys(options.where).length === 0) {
       throw new ValidationError(
-        "findOne requires at least one where condition",
+        'findOne requires at least one where condition',
         [
           {
-            field: "where",
-            message: "Where clause is required for findOne operation",
+            field: 'where',
+            message: 'Where clause is required for findOne operation',
           },
         ]
       );
@@ -238,7 +238,7 @@ export class DatabaseResource extends BaseResource {
     if (options.where.id && this.client.getCache) {
       const cache = this.client.getCache();
       if (cache) {
-        const cacheKey = cache.generateKey("database", "id", options.where.id);
+        const cacheKey = cache.generateKey('database', 'id', options.where.id);
         const cached = await cache.get<DatabaseRecord>(cacheKey);
         if (cached) {
           return { data: cached };
@@ -248,8 +248,8 @@ export class DatabaseResource extends BaseResource {
 
     const queryParams = this.buildQueryParams({ ...options, limit: 1 });
     const response = await this.makeRequest<DatabaseListResponse>(
-      "GET",
-      "",
+      'GET',
+      '',
       undefined,
       { params: queryParams }
     );
@@ -265,7 +265,7 @@ export class DatabaseResource extends BaseResource {
       const cache = this.client.getCache();
       if (cache) {
         await cache.set(
-          cache.generateKey("database", "id", database.id),
+          cache.generateKey('database', 'id', database.id),
           database,
           300000 // 5 minutes
         );
@@ -285,21 +285,21 @@ export class DatabaseResource extends BaseResource {
     let updateData: DatabaseUpdateRequest;
     let whereClause: any;
 
-    if (typeof identifier === "string") {
+    if (typeof identifier === 'string') {
       // Update by ID
       updateData = data!;
       whereClause = { id: identifier };
     } else {
       // Update with where clause (not typically used for databases)
-      throw new ValidationError("Database updates must specify a database ID", [
-        { field: "identifier", message: "Database ID is required for updates" },
+      throw new ValidationError('Database updates must specify a database ID', [
+        { field: 'identifier', message: 'Database ID is required for updates' },
       ]);
     }
 
     this.validateUpdateRequest(updateData);
 
     const response = await this.makeRequest<DatabaseRecord>(
-      "PUT",
+      'PUT',
       `/${whereClause.id}`,
       updateData
     );
@@ -309,7 +309,7 @@ export class DatabaseResource extends BaseResource {
       const cache = this.client.getCache();
       if (cache) {
         await cache.delete(
-          cache.generateKey("database", "id", response.data.id)
+          cache.generateKey('database', 'id', response.data.id)
         );
         // Also clear list caches
         await this.invalidateListCaches();
@@ -327,7 +327,7 @@ export class DatabaseResource extends BaseResource {
   ): Promise<ApiResponse<{ success: boolean; message?: string }>> {
     let whereClause: any;
 
-    if (typeof options === "string") {
+    if (typeof options === 'string') {
       whereClause = { id: options };
     } else {
       whereClause = options.where;
@@ -335,11 +335,11 @@ export class DatabaseResource extends BaseResource {
 
     if (!whereClause.id && !whereClause.name && !whereClause.slug) {
       throw new ValidationError(
-        "Delete operation requires database ID, name, or slug",
+        'Delete operation requires database ID, name, or slug',
         [
           {
-            field: "where",
-            message: "At least one identifier (id, name, or slug) is required",
+            field: 'where',
+            message: 'At least one identifier (id, name, or slug) is required',
           },
         ]
       );
@@ -354,19 +354,19 @@ export class DatabaseResource extends BaseResource {
       databaseId = findResult.data?.id;
     }
 
-    const endpoint = whereClause.id ? `/${whereClause.id}` : "";
+    const endpoint = whereClause.id ? `/${whereClause.id}` : '';
     const params = whereClause.id ? {} : whereClause;
 
     const response = await this.makeRequest<{
       success: boolean;
       message?: string;
-    }>("DELETE", endpoint, undefined, { params });
+    }>('DELETE', endpoint, undefined, { params });
 
     // Invalidate cache
     if (this.client.getCache && databaseId) {
       const cache = this.client.getCache();
       if (cache) {
-        await cache.delete(cache.generateKey("database", "id", databaseId));
+        await cache.delete(cache.generateKey('database', 'id', databaseId));
         await this.invalidateListCaches();
       }
     }
@@ -385,7 +385,7 @@ export class DatabaseResource extends BaseResource {
       last_updated: string;
     }>
   > {
-    const cacheKey = this.generateCacheKey("stats", { id: databaseId });
+    const cacheKey = this.generateCacheKey('stats', { id: databaseId });
 
     // Check cache first
     if (this.client.getCache) {
@@ -398,7 +398,7 @@ export class DatabaseResource extends BaseResource {
       }
     }
 
-    const response = await this.makeRequest("GET", `/${databaseId}/stats`);
+    const response = await this.makeRequest('GET', `/${databaseId}/stats`);
 
     // Cache stats for 1 minute (frequently changing data)
     if (this.client.getCache && !response.error) {
@@ -416,28 +416,28 @@ export class DatabaseResource extends BaseResource {
     const errors: Array<{ field: string; message: string }> = [];
 
     if (!data.name || data.name.trim().length === 0) {
-      errors.push({ field: "name", message: "Database name is required" });
+      errors.push({ field: 'name', message: 'Database name is required' });
     }
 
     if (!data.slug || data.slug.trim().length === 0) {
-      errors.push({ field: "slug", message: "Database slug is required" });
+      errors.push({ field: 'slug', message: 'Database slug is required' });
     } else if (!/^[a-z0-9-_]+$/.test(data.slug)) {
       errors.push({
-        field: "slug",
+        field: 'slug',
         message:
-          "Slug can only contain lowercase letters, numbers, hyphens, and underscores",
+          'Slug can only contain lowercase letters, numbers, hyphens, and underscores',
       });
     }
 
     if (data.description && data.description.length > 500) {
       errors.push({
-        field: "description",
-        message: "Description cannot exceed 500 characters",
+        field: 'description',
+        message: 'Description cannot exceed 500 characters',
       });
     }
 
     if (errors.length > 0) {
-      throw new ValidationError("Database creation validation failed", errors);
+      throw new ValidationError('Database creation validation failed', errors);
     }
   }
 
@@ -448,7 +448,7 @@ export class DatabaseResource extends BaseResource {
       data.name !== undefined &&
       (!data.name || data.name.trim().length === 0)
     ) {
-      errors.push({ field: "name", message: "Database name cannot be empty" });
+      errors.push({ field: 'name', message: 'Database name cannot be empty' });
     }
 
     if (
@@ -456,29 +456,29 @@ export class DatabaseResource extends BaseResource {
       (!data.slug || !/^[a-z0-9-_]+$/.test(data.slug))
     ) {
       errors.push({
-        field: "slug",
+        field: 'slug',
         message:
-          "Slug can only contain lowercase letters, numbers, hyphens, and underscores",
+          'Slug can only contain lowercase letters, numbers, hyphens, and underscores',
       });
     }
 
     if (data.description !== undefined && data.description.length > 500) {
       errors.push({
-        field: "description",
-        message: "Description cannot exceed 500 characters",
+        field: 'description',
+        message: 'Description cannot exceed 500 characters',
       });
     }
 
     if (errors.length > 0) {
-      throw new ValidationError("Database update validation failed", errors);
+      throw new ValidationError('Database update validation failed', errors);
     }
   }
 
   private generateCacheKey(operation: string, params?: any): string {
-    if (!this.client.getCache) return "";
+    if (!this.client.getCache) return '';
     const cache = this.client.getCache()!;
-    const paramsStr = params ? JSON.stringify(params) : "";
-    return cache.generateKey("database", operation, paramsStr);
+    const paramsStr = params ? JSON.stringify(params) : '';
+    return cache.generateKey('database', operation, paramsStr);
   }
 
   private async invalidateListCaches(): Promise<void> {
@@ -495,11 +495,11 @@ export class DatabaseResource extends BaseResource {
     const params: Record<string, any> = {};
 
     if (options.fields?.length) {
-      params.fields = options.fields.join(",");
+      params.fields = options.fields.join(',');
     }
 
     if (options.sort?.length) {
-      params.sort = options.sort.map((s) => `${s.field}:${s.order}`).join(",");
+      params.sort = options.sort.map((s) => `${s.field}:${s.order}`).join(',');
     }
 
     if (options.limit !== undefined) {
@@ -513,7 +513,7 @@ export class DatabaseResource extends BaseResource {
     if (options.where) {
       Object.entries(options.where).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          if (typeof value === "object" && !Array.isArray(value)) {
+          if (typeof value === 'object' && !Array.isArray(value)) {
             // Handle complex operators like $gte, $lte, etc.
             Object.entries(value).forEach(([operator, operatorValue]) => {
               params[`where[${key}][${operator}]`] = operatorValue;
@@ -540,15 +540,15 @@ export class DatabaseResource extends BaseResource {
 Create `src/client/resources/database-builder.ts`:
 
 ```typescript
-import { DatabaseResource } from "./database";
+import { DatabaseResource } from './database';
 import {
   DatabaseCreateRequest,
   DatabaseUpdateRequest,
   DatabaseRecord,
   DatabaseQueryOptions,
   DatabaseDeleteOptions,
-} from "../../types/api/database";
-import { ApiResponse } from "../core/base-resource";
+} from '../../types/api/database';
+import { ApiResponse } from '../core/base-resource';
 
 export class DatabaseBuilder {
   private databaseResource: DatabaseResource;
@@ -562,7 +562,7 @@ export class DatabaseBuilder {
   /**
    * Add where conditions to the query
    */
-  where(conditions: DatabaseQueryOptions["where"]): DatabaseBuilder {
+  where(conditions: DatabaseQueryOptions['where']): DatabaseBuilder {
     this.queryOptions.where = { ...this.queryOptions.where, ...conditions };
     return this;
   }
@@ -579,7 +579,7 @@ export class DatabaseBuilder {
    * Add sorting to the query
    */
   sort(
-    sortOptions: Array<{ field: keyof DatabaseRecord; order: "asc" | "desc" }>
+    sortOptions: Array<{ field: keyof DatabaseRecord; order: 'asc' | 'desc' }>
   ): DatabaseBuilder {
     this.queryOptions.sort = [
       ...(this.queryOptions.sort || []),
@@ -645,13 +645,13 @@ export class DatabaseBuilder {
       !this.queryOptions.where ||
       Object.keys(this.queryOptions.where).length === 0
     ) {
-      throw new Error("Update operation requires where conditions");
+      throw new Error('Update operation requires where conditions');
     }
 
     // For database updates, we typically need an ID
     const idCondition = this.queryOptions.where.id;
     if (!idCondition) {
-      throw new Error("Database updates require an ID in the where clause");
+      throw new Error('Database updates require an ID in the where clause');
     }
 
     return this.databaseResource.update(idCondition, this.updateData);
@@ -665,7 +665,7 @@ export class DatabaseBuilder {
       !this.queryOptions.where ||
       Object.keys(this.queryOptions.where).length === 0
     ) {
-      throw new Error("Delete operation requires where conditions");
+      throw new Error('Delete operation requires where conditions');
     }
 
     return this.databaseResource.delete({ where: this.queryOptions.where });
@@ -692,8 +692,8 @@ export class DatabaseBuilder {
 Create `src/client/core/database-context.ts`:
 
 ```typescript
-import { DatabaseRecord } from "../../types/api/database";
-import { BolticClient } from "../boltic-client";
+import { DatabaseRecord } from '../../types/api/database';
+import { BolticClient } from '../boltic-client';
 
 export class DatabaseContext {
   private selectedDatabase: DatabaseRecord | null = null;
@@ -708,7 +708,7 @@ export class DatabaseContext {
    */
   async useDatabase(identifier: string): Promise<DatabaseContext> {
     const databaseResource = new (
-      await import("./resources/database")
+      await import('./resources/database')
     ).DatabaseResource(this.client.getHttpClient());
 
     // Try to find the database
@@ -799,9 +799,9 @@ Update `src/client/boltic-client.ts` to add database operations:
 
 ```typescript
 // Add imports at the top
-import { DatabaseResource } from "./resources/database";
-import { DatabaseBuilder } from "./resources/database-builder";
-import { DatabaseContext } from "./core/database-context";
+import { DatabaseResource } from './resources/database';
+import { DatabaseBuilder } from './resources/database-builder';
+import { DatabaseContext } from './core/database-context';
 
 // Add to the BolticClient class:
 
@@ -865,7 +865,7 @@ export class BolticClient {
 Create `src/utils/database/helpers.ts`:
 
 ```typescript
-import { DatabaseRecord } from "../../types/api/database";
+import { DatabaseRecord } from '../../types/api/database';
 
 export class DatabaseHelpers {
   /**
@@ -905,7 +905,7 @@ export class DatabaseHelpers {
     id: string;
     name: string;
     slug: string;
-    status: "active" | "inactive";
+    status: 'active' | 'inactive';
     createdAt: Date;
     tableCount: number;
     sizeMB: number;
@@ -914,7 +914,7 @@ export class DatabaseHelpers {
       id: database.id,
       name: database.name,
       slug: database.slug,
-      status: database.is_active ? "active" : "inactive",
+      status: database.is_active ? 'active' : 'inactive',
       createdAt: new Date(database.created_at),
       tableCount: database.table_count || 0,
       sizeMB: database.size_mb || 0,
@@ -926,27 +926,27 @@ export class DatabaseHelpers {
    */
   static sortDatabases(
     databases: DatabaseRecord[],
-    criteria: "name" | "created_at" | "size" | "table_count",
-    order: "asc" | "desc" = "asc"
+    criteria: 'name' | 'created_at' | 'size' | 'table_count',
+    order: 'asc' | 'desc' = 'asc'
   ): DatabaseRecord[] {
     const sorted = [...databases].sort((a, b) => {
       let aValue: any;
       let bValue: any;
 
       switch (criteria) {
-        case "name":
+        case 'name':
           aValue = a.name.toLowerCase();
           bValue = b.name.toLowerCase();
           break;
-        case "created_at":
+        case 'created_at':
           aValue = new Date(a.created_at).getTime();
           bValue = new Date(b.created_at).getTime();
           break;
-        case "size":
+        case 'size':
           aValue = a.size_mb || 0;
           bValue = b.size_mb || 0;
           break;
-        case "table_count":
+        case 'table_count':
           aValue = a.table_count || 0;
           bValue = b.table_count || 0;
           break;
@@ -954,8 +954,8 @@ export class DatabaseHelpers {
           return 0;
       }
 
-      if (aValue < bValue) return order === "asc" ? -1 : 1;
-      if (aValue > bValue) return order === "asc" ? 1 : -1;
+      if (aValue < bValue) return order === 'asc' ? -1 : 1;
+      if (aValue > bValue) return order === 'asc' ? 1 : -1;
       return 0;
     });
 
@@ -974,15 +974,15 @@ export class DatabaseHelpers {
 Create `tests/unit/client/resources/database.test.ts`:
 
 ```typescript
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { DatabaseResource } from "../../../../src/client/resources/database";
-import { BaseClient } from "../../../../src/client/core/base-client";
-import { ValidationError } from "../../../../src/errors/validation-error";
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { DatabaseResource } from '../../../../src/client/resources/database';
+import { BaseClient } from '../../../../src/client/core/base-client';
+import { ValidationError } from '../../../../src/errors/validation-error';
 
 // Mock the BaseClient
-vi.mock("../../../../src/client/core/base-client");
+vi.mock('../../../../src/client/core/base-client');
 
-describe("DatabaseResource", () => {
+describe('DatabaseResource', () => {
   let databaseResource: DatabaseResource;
   let mockClient: any;
 
@@ -994,32 +994,32 @@ describe("DatabaseResource", () => {
         set: vi.fn(),
         delete: vi.fn(),
         clear: vi.fn(),
-        generateKey: vi.fn((...parts) => parts.join(":")),
+        generateKey: vi.fn((...parts) => parts.join(':')),
       })),
     };
 
     databaseResource = new DatabaseResource(mockClient as BaseClient);
   });
 
-  describe("create", () => {
-    it("should create a database successfully", async () => {
+  describe('create', () => {
+    it('should create a database successfully', async () => {
       const createData = {
-        name: "Test Database",
-        slug: "test-database",
-        description: "A test database",
+        name: 'Test Database',
+        slug: 'test-database',
+        description: 'A test database',
       };
 
       const expectedResponse = {
         data: {
-          id: "db-123",
-          name: "Test Database",
-          slug: "test-database",
-          db_name: "bt_account_test-database",
-          description: "A test database",
+          id: 'db-123',
+          name: 'Test Database',
+          slug: 'test-database',
+          db_name: 'bt_account_test-database',
+          description: 'A test database',
           is_active: true,
-          created_by: "user@example.com",
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
+          created_by: 'user@example.com',
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z',
         },
       };
 
@@ -1028,17 +1028,17 @@ describe("DatabaseResource", () => {
       const result = await databaseResource.create(createData);
 
       expect(mockClient.makeRequest).toHaveBeenCalledWith(
-        "POST",
-        "",
+        'POST',
+        '',
         createData
       );
       expect(result).toEqual(expectedResponse);
     });
 
-    it("should validate required fields", async () => {
+    it('should validate required fields', async () => {
       const invalidData = {
-        name: "",
-        slug: "test-database",
+        name: '',
+        slug: 'test-database',
       };
 
       await expect(databaseResource.create(invalidData as any)).rejects.toThrow(
@@ -1046,10 +1046,10 @@ describe("DatabaseResource", () => {
       );
     });
 
-    it("should validate slug format", async () => {
+    it('should validate slug format', async () => {
       const invalidData = {
-        name: "Test Database",
-        slug: "Invalid Slug!",
+        name: 'Test Database',
+        slug: 'Invalid Slug!',
       };
 
       await expect(databaseResource.create(invalidData)).rejects.toThrow(
@@ -1058,13 +1058,13 @@ describe("DatabaseResource", () => {
     });
   });
 
-  describe("findAll", () => {
-    it("should retrieve databases with pagination", async () => {
+  describe('findAll', () => {
+    it('should retrieve databases with pagination', async () => {
       const mockResponse = {
         data: {
           databases: [
-            { id: "db-1", name: "Database 1", slug: "db-1" },
-            { id: "db-2", name: "Database 2", slug: "db-2" },
+            { id: 'db-1', name: 'Database 1', slug: 'db-1' },
+            { id: 'db-2', name: 'Database 2', slug: 'db-2' },
           ],
           pagination: {
             total: 2,
@@ -1087,67 +1087,67 @@ describe("DatabaseResource", () => {
     });
   });
 
-  describe("findOne", () => {
-    it("should find a single database", async () => {
+  describe('findOne', () => {
+    it('should find a single database', async () => {
       const mockResponse = {
         data: {
-          databases: [{ id: "db-1", name: "Database 1", slug: "db-1" }],
+          databases: [{ id: 'db-1', name: 'Database 1', slug: 'db-1' }],
         },
       };
 
       mockClient.makeRequest = vi.fn().mockResolvedValue(mockResponse);
 
       const result = await databaseResource.findOne({
-        where: { id: "db-1" },
+        where: { id: 'db-1' },
       });
 
       expect(result.data).toEqual(mockResponse.data.databases[0]);
     });
 
-    it("should require where conditions", async () => {
+    it('should require where conditions', async () => {
       await expect(databaseResource.findOne({} as any)).rejects.toThrow(
         ValidationError
       );
     });
   });
 
-  describe("update", () => {
-    it("should update a database", async () => {
-      const updateData = { name: "Updated Database Name" };
+  describe('update', () => {
+    it('should update a database', async () => {
+      const updateData = { name: 'Updated Database Name' };
       const expectedResponse = {
         data: {
-          id: "db-123",
-          name: "Updated Database Name",
-          slug: "test-database",
+          id: 'db-123',
+          name: 'Updated Database Name',
+          slug: 'test-database',
         },
       };
 
       mockClient.makeRequest = vi.fn().mockResolvedValue(expectedResponse);
 
-      const result = await databaseResource.update("db-123", updateData);
+      const result = await databaseResource.update('db-123', updateData);
 
       expect(mockClient.makeRequest).toHaveBeenCalledWith(
-        "PUT",
-        "/db-123",
+        'PUT',
+        '/db-123',
         updateData
       );
       expect(result).toEqual(expectedResponse);
     });
   });
 
-  describe("delete", () => {
-    it("should delete a database by ID", async () => {
+  describe('delete', () => {
+    it('should delete a database by ID', async () => {
       const expectedResponse = {
-        data: { success: true, message: "Database deleted successfully" },
+        data: { success: true, message: 'Database deleted successfully' },
       };
 
       mockClient.makeRequest = vi.fn().mockResolvedValue(expectedResponse);
 
-      const result = await databaseResource.delete("db-123");
+      const result = await databaseResource.delete('db-123');
 
       expect(mockClient.makeRequest).toHaveBeenCalledWith(
-        "DELETE",
-        "/db-123",
+        'DELETE',
+        '/db-123',
         undefined,
         { params: {} }
       );
@@ -1162,13 +1162,13 @@ describe("DatabaseResource", () => {
 Create `tests/unit/client/resources/database-builder.test.ts`:
 
 ```typescript
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { DatabaseBuilder } from "../../../../src/client/resources/database-builder";
-import { DatabaseResource } from "../../../../src/client/resources/database";
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { DatabaseBuilder } from '../../../../src/client/resources/database-builder';
+import { DatabaseResource } from '../../../../src/client/resources/database';
 
-vi.mock("../../../../src/client/resources/database");
+vi.mock('../../../../src/client/resources/database');
 
-describe("DatabaseBuilder", () => {
+describe('DatabaseBuilder', () => {
   let builder: DatabaseBuilder;
   let mockDatabaseResource: any;
 
@@ -1184,18 +1184,18 @@ describe("DatabaseBuilder", () => {
     builder = new DatabaseBuilder(mockDatabaseResource as DatabaseResource);
   });
 
-  describe("fluent interface", () => {
-    it("should chain where conditions", () => {
-      const result = builder.where({ name: "test" }).where({ is_active: true });
+  describe('fluent interface', () => {
+    it('should chain where conditions', () => {
+      const result = builder.where({ name: 'test' }).where({ is_active: true });
 
       expect(result).toBe(builder);
     });
 
-    it("should chain multiple operations", () => {
+    it('should chain multiple operations', () => {
       const result = builder
         .where({ is_active: true })
-        .fields(["id", "name", "slug"])
-        .sort([{ field: "name", order: "asc" }])
+        .fields(['id', 'name', 'slug'])
+        .sort([{ field: 'name', order: 'asc' }])
         .limit(10)
         .offset(5);
 
@@ -1203,15 +1203,15 @@ describe("DatabaseBuilder", () => {
     });
   });
 
-  describe("execute operations", () => {
-    it("should execute findAll with built query options", async () => {
+  describe('execute operations', () => {
+    it('should execute findAll with built query options', async () => {
       const expectedOptions = {
         where: { is_active: true },
-        fields: ["id", "name"],
+        fields: ['id', 'name'],
         limit: 10,
       };
 
-      builder.where({ is_active: true }).fields(["id", "name"]).limit(10);
+      builder.where({ is_active: true }).fields(['id', 'name']).limit(10);
 
       await builder.findAll();
 
@@ -1220,13 +1220,13 @@ describe("DatabaseBuilder", () => {
       );
     });
 
-    it("should execute update with where conditions and data", async () => {
-      builder.where({ id: "db-123" }).set({ name: "Updated Name" });
+    it('should execute update with where conditions and data', async () => {
+      builder.where({ id: 'db-123' }).set({ name: 'Updated Name' });
 
       await builder.update();
 
-      expect(mockDatabaseResource.update).toHaveBeenCalledWith("db-123", {
-        name: "Updated Name",
+      expect(mockDatabaseResource.update).toHaveBeenCalledWith('db-123', {
+        name: 'Updated Name',
       });
     });
   });
@@ -1238,49 +1238,49 @@ describe("DatabaseBuilder", () => {
 Create `tests/integration/database-operations.test.ts`:
 
 ```typescript
-import { describe, it, expect, beforeEach } from "vitest";
-import { createTestClient } from "../../src/testing/test-client";
-import { BolticClient } from "../../src/client/boltic-client";
+import { describe, it, expect, beforeEach } from 'vitest';
+import { createTestClient } from '../../src/testing/test-client';
+import { BolticClient } from '../../src/client/boltic-client';
 
-describe("Database Operations Integration", () => {
+describe('Database Operations Integration', () => {
   let client: BolticClient;
 
   beforeEach(() => {
     client = createTestClient({
-      apiKey: "test-api-key",
-      environment: "local",
+      apiKey: 'test-api-key',
+      environment: 'local',
     });
   });
 
-  describe("Method 1: Direct operations", () => {
-    it("should support direct database operations", async () => {
+  describe('Method 1: Direct operations', () => {
+    it('should support direct database operations', async () => {
       // This test would require actual API mocking or test server
       expect(client.database).toBeDefined();
-      expect(client.database.create).toBeTypeOf("function");
-      expect(client.database.findAll).toBeTypeOf("function");
-      expect(client.database.findOne).toBeTypeOf("function");
-      expect(client.database.update).toBeTypeOf("function");
-      expect(client.database.delete).toBeTypeOf("function");
+      expect(client.database.create).toBeTypeOf('function');
+      expect(client.database.findAll).toBeTypeOf('function');
+      expect(client.database.findOne).toBeTypeOf('function');
+      expect(client.database.update).toBeTypeOf('function');
+      expect(client.database.delete).toBeTypeOf('function');
     });
   });
 
-  describe("Method 2: Fluent interface", () => {
-    it("should support fluent database operations", () => {
+  describe('Method 2: Fluent interface', () => {
+    it('should support fluent database operations', () => {
       const builder = client.database();
       expect(builder).toBeDefined();
-      expect(builder.where).toBeTypeOf("function");
-      expect(builder.fields).toBeTypeOf("function");
-      expect(builder.sort).toBeTypeOf("function");
-      expect(builder.limit).toBeTypeOf("function");
-      expect(builder.offset).toBeTypeOf("function");
+      expect(builder.where).toBeTypeOf('function');
+      expect(builder.fields).toBeTypeOf('function');
+      expect(builder.sort).toBeTypeOf('function');
+      expect(builder.limit).toBeTypeOf('function');
+      expect(builder.offset).toBeTypeOf('function');
     });
   });
 
-  describe("Database context management", () => {
-    it("should support database selection", async () => {
-      expect(client.useDatabase).toBeTypeOf("function");
-      expect(client.getCurrentDatabase).toBeTypeOf("function");
-      expect(client.getDatabaseContext).toBeTypeOf("function");
+  describe('Database context management', () => {
+    it('should support database selection', async () => {
+      expect(client.useDatabase).toBeTypeOf('function');
+      expect(client.getCurrentDatabase).toBeTypeOf('function');
+      expect(client.getDatabaseContext).toBeTypeOf('function');
     });
   });
 });
@@ -1306,10 +1306,10 @@ This guide covers all database management operations in the Boltic Tables SDK.
 
 ```typescript
 const { data: database, error } = await boltic.database.create({
-  name: "Analytics Database",
-  slug: "analytics-db",
-  description: "Database for analytics data",
-  resource_id: "connector_123", // Optional
+  name: 'Analytics Database',
+  slug: 'analytics-db',
+  description: 'Database for analytics data',
+  resource_id: 'connector_123', // Optional
 });
 ```
 ````
@@ -1318,9 +1318,9 @@ const { data: database, error } = await boltic.database.create({
 
 ```typescript
 const { data: database, error } = await boltic.database().create({
-  name: "Analytics Database",
-  slug: "analytics-db",
-  description: "Database for analytics data",
+  name: 'Analytics Database',
+  slug: 'analytics-db',
+  description: 'Database for analytics data',
 });
 ```
 
@@ -1331,8 +1331,8 @@ const { data: database, error } = await boltic.database().create({
 ```typescript
 const { data: databases, pagination } = await boltic.database.findAll({
   where: { is_active: true },
-  fields: ["id", "name", "slug", "created_at"],
-  sort: [{ field: "created_at", order: "desc" }],
+  fields: ['id', 'name', 'slug', 'created_at'],
+  sort: [{ field: 'created_at', order: 'desc' }],
   limit: 20,
   offset: 0,
 });
@@ -1344,8 +1344,8 @@ const { data: databases, pagination } = await boltic.database.findAll({
 const { data: databases, pagination } = await boltic
   .database()
   .where({ is_active: true })
-  .fields(["id", "name", "slug", "created_at"])
-  .sort([{ field: "created_at", order: "desc" }])
+  .fields(['id', 'name', 'slug', 'created_at'])
+  .sort([{ field: 'created_at', order: 'desc' }])
   .limit(20)
   .offset(0)
   .findAll();
@@ -1357,7 +1357,7 @@ const { data: databases, pagination } = await boltic
 
 ```typescript
 const { data: database } = await boltic.database.findOne({
-  where: { slug: "analytics-db" },
+  where: { slug: 'analytics-db' },
 });
 ```
 
@@ -1366,7 +1366,7 @@ const { data: database } = await boltic.database.findOne({
 ```typescript
 const { data: database } = await boltic
   .database()
-  .where({ slug: "analytics-db" })
+  .where({ slug: 'analytics-db' })
   .findOne();
 ```
 
@@ -1374,7 +1374,7 @@ const { data: database } = await boltic
 
 ```typescript
 // Select a database for subsequent operations
-await boltic.useDatabase("analytics-db");
+await boltic.useDatabase('analytics-db');
 
 // Get current database
 const currentDb = boltic.getCurrentDatabase();
@@ -1387,14 +1387,14 @@ const currentDb = boltic.getCurrentDatabase();
 ```typescript
 try {
   const result = await boltic.database.create({
-    name: "Test DB",
-    slug: "test-db",
+    name: 'Test DB',
+    slug: 'test-db',
   });
 } catch (error) {
   if (error instanceof ValidationError) {
-    console.log("Validation errors:", error.failures);
+    console.log('Validation errors:', error.failures);
   } else if (error instanceof ApiError) {
-    console.log("API error:", error.statusCode, error.message);
+    console.log('API error:', error.statusCode, error.message);
   }
 }
 ```

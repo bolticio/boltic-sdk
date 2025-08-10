@@ -72,17 +72,17 @@ Based on the existing Boltic Tables backend service (`athena`), the current API 
 
 ```javascript
 // E-commerce product catalog
-const products = await db.record.findAll("products", {
-  where: { category: "electronics", price: { $lt: 1000 } },
-  sort: [{ field: "created_at", order: "desc" }],
+const products = await db.record.findAll('products', {
+  where: { category: 'electronics', price: { $lt: 1000 } },
+  sort: [{ field: 'created_at', order: 'desc' }],
   limit: 20,
 });
 
 // Real-time dashboard
 const metrics = await db.sql({
   query:
-    "SELECT COUNT(*) as total_orders, SUM(amount) as revenue FROM orders WHERE created_at > $1",
-  params: [new Date("2024-01-01")],
+    'SELECT COUNT(*) as total_orders, SUM(amount) as revenue FROM orders WHERE created_at > $1',
+  params: [new Date('2024-01-01')],
 });
 ```
 
@@ -90,11 +90,11 @@ const metrics = await db.sql({
 
 ```javascript
 // API endpoint for user management
-app.post("/api/users", async (req, res) => {
-  const user = await db.record.insert("users", {
+app.post('/api/users', async (req, res) => {
+  const user = await db.record.insert('users', {
     email: req.body.email,
     name: req.body.name,
-    role: "customer",
+    role: 'customer',
   });
   res.json(user);
 });
@@ -107,14 +107,14 @@ app.post("/api/users", async (req, res) => {
 
 ```javascript
 // Migrate data between environments
-const sourceData = await sourceDb.record.findAll("legacy_table");
-await targetDb.record.bulkInsert("new_table", sourceData);
+const sourceData = await sourceDb.record.findAll('legacy_table');
+await targetDb.record.bulkInsert('new_table', sourceData);
 
 // Data transformation pipeline
 const transformed = sourceData.map((record) => ({
   ...record,
   processed_at: new Date(),
-  status: "migrated",
+  status: 'migrated',
 }));
 ```
 
@@ -125,10 +125,10 @@ const transformed = sourceData.map((record) => ({
 #### 4.1.1 Client Initialization
 
 ```javascript
-import { createClient } from "@boltic/database-js";
+import { createClient } from '@boltic/database-js';
 
-const boltic = createClient("your-api-key", {
-  environment: "prod" | "sit" | "uat", // Default: 'prod'
+const boltic = createClient('your-api-key', {
+  environment: 'prod' | 'sit' | 'uat', // Default: 'prod'
   debug: false,
   timeout: 30000,
   retryAttempts: 3,
@@ -140,14 +140,14 @@ const boltic = createClient("your-api-key", {
 
 ```javascript
 // Option 1: Explicit database selection
-const db = boltic.useDatabase("analytics-db");
+const db = boltic.useDatabase('analytics-db');
 
 // Option 2: Default database (implicit)
 const defaultDb = boltic; // Uses preconfigured default DB
 
 // Option 3: Multi-database operations
-const userDb = boltic.useDatabase("users");
-const analyticsDb = boltic.useDatabase("analytics");
+const userDb = boltic.useDatabase('users');
+const analyticsDb = boltic.useDatabase('analytics');
 ```
 
 ### 4.2 Database Operations
@@ -1052,19 +1052,19 @@ const { data: userOrders } = await db
 ```javascript
 const ENV_CONFIGS = {
   local: {
-    baseURL: "http://localhost:8000",
+    baseURL: 'http://localhost:8000',
     timeout: 30000,
   },
   sit: {
-    baseURL: "https://asia-south1.api.fcz0.de/service/panel/boltic-tables",
+    baseURL: 'https://asia-south1.api.fcz0.de/service/panel/boltic-tables',
     timeout: 15000,
   },
   uat: {
-    baseURL: "https://asia-south1.api.uat.fcz0.de/service/panel/boltic-tables",
+    baseURL: 'https://asia-south1.api.uat.fcz0.de/service/panel/boltic-tables',
     timeout: 15000,
   },
   prod: {
-    baseURL: "https://asia-south1.api.boltic.io/service/panel/boltic-tables",
+    baseURL: 'https://asia-south1.api.boltic.io/service/panel/boltic-tables',
     timeout: 10000,
   },
 };
@@ -1073,8 +1073,8 @@ const ENV_CONFIGS = {
 #### 5.2.2 Advanced Configuration Options
 
 ```javascript
-const boltic = createClient("api-key", {
-  environment: "prod",
+const boltic = createClient('api-key', {
+  environment: 'prod',
 
   // Network settings
   timeout: 30000,
@@ -1088,22 +1088,22 @@ const boltic = createClient("api-key", {
 
   // Debugging
   debug: false,
-  logLevel: "info", // 'debug', 'info', 'warn', 'error'
+  logLevel: 'info', // 'debug', 'info', 'warn', 'error'
 
   // Custom headers
   headers: {
-    "X-Client-Version": "1.0.0",
-    "X-Source": "sdk",
+    'X-Client-Version': '1.0.0',
+    'X-Source': 'sdk',
   },
 
   // Interceptors
   beforeRequest: (config) => {
-    console.log("Making request:", config);
+    console.log('Making request:', config);
     return config;
   },
 
   afterResponse: (response) => {
-    console.log("Received response:", response);
+    console.log('Received response:', response);
     return response;
   },
 });
@@ -1118,7 +1118,7 @@ const boltic = createClient("api-key", {
 const boltic = createClient(process.env.BOLTIC_API_KEY);
 
 // Dynamic key rotation
-boltic.updateApiKey("new-api-key");
+boltic.updateApiKey('new-api-key');
 
 // Key validation
 const isValid = await boltic.validateApiKey();
@@ -1148,15 +1148,15 @@ const cacheConfig = {
   // Browser localStorage for session persistence
   localStorage: {
     enabled: true,
-    prefix: "boltic_cache_",
+    prefix: 'boltic_cache_',
     ttl: 3600000, // 1 hour
   },
 
   // Redis cache for server-side applications
   redis: {
     enabled: false,
-    url: "redis://localhost:6379",
-    keyPrefix: "boltic:",
+    url: 'redis://localhost:6379',
+    keyPrefix: 'boltic:',
   },
 };
 ```
@@ -1178,11 +1178,11 @@ const cacheConfig = {
 
 ```javascript
 // Modular imports to reduce bundle size
-import { createTableClient } from "@boltic/database-js/table";
-import { createRecordClient } from "@boltic/database-js/record";
+import { createTableClient } from '@boltic/database-js/table';
+import { createRecordClient } from '@boltic/database-js/record';
 
 // Full SDK import
-import { createClient } from "@boltic/database-js";
+import { createClient } from '@boltic/database-js';
 ```
 
 ### 5.5 Error Handling & Resilience
@@ -1191,7 +1191,7 @@ import { createClient } from "@boltic/database-js";
 
 ```javascript
 try {
-  await db.record.insert("table_uuid", invalidData);
+  await db.record.insert('table_uuid', invalidData);
 } catch (error) {
   if (error instanceof ValidationError) {
     // Handle validation errors
@@ -1282,13 +1282,13 @@ interface Product {
 }
 
 // Type-safe operations
-const products = await db.record.findAll<Product>("table_uuid", {
+const products = await db.record.findAll<Product>('table_uuid', {
   where: {
     price: { $gt: 100 },
     category_id: { $in: [1, 2, 3] },
   },
-  fields: ["id", "title", "price"], // TypeScript ensures these are valid keys
-  sort: [{ field: "price", order: "desc" }],
+  fields: ['id', 'title', 'price'], // TypeScript ensures these are valid keys
+  sort: [{ field: 'price', order: 'desc' }],
 });
 
 // Inferred return type: Product[]
@@ -1352,9 +1352,9 @@ boltic.debug.enablePerformanceMetrics();
 boltic.debug.exportCacheStats();
 
 // Development helpers
-if (process.env.NODE_ENV === "development") {
-  boltic.dev.validateTableSchema("products");
-  boltic.dev.suggestIndexes("products");
+if (process.env.NODE_ENV === 'development') {
+  boltic.dev.validateTableSchema('products');
+  boltic.dev.suggestIndexes('products');
   boltic.dev.analyzeQueryPerformance();
 }
 ```
@@ -1363,16 +1363,16 @@ if (process.env.NODE_ENV === "development") {
 
 ```javascript
 // Mock client for testing
-import { createMockClient } from "@boltic/database-js/testing";
+import { createMockClient } from '@boltic/database-js/testing';
 
 const mockBoltic = createMockClient({
   tables: {
-    products: [{ id: "1", title: "Test Product", price: 99.99 }],
+    products: [{ id: '1', title: 'Test Product', price: 99.99 }],
   },
 });
 
 // Test utilities
-import { fixtures } from "@boltic/database-js/testing";
+import { fixtures } from '@boltic/database-js/testing';
 const testData = fixtures.generateProducts(100);
 ```
 

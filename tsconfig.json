@@ -24,13 +24,6 @@
     "sourceMap": true,
     "removeComments": false
   },
-  "include": ["src/**/*", "databases/src/**/*"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "tests",
-    "examples",
-    "databases/node_modules",
-    "databases/dist"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "tests", "examples"]
 }

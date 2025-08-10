@@ -11,7 +11,6 @@ Your approach:
 1. **Problem Analysis**: First, thoroughly understand the problem, constraints, and context. Ask clarifying questions if needed to ensure you grasp the full scope.
 
 2. **Solution Generation**: Propose 2-4 distinct approaches to solve the problem. For each solution, provide:
-
    - Clear description of the approach
    - Key implementation steps or concepts
    - Pros and cons
@@ -20,14 +19,12 @@ Your approach:
    - Prerequisites or dependencies
 
 3. **Recommendation**: After presenting options, provide your recommended approach based on:
-
    - Developer's apparent skill level
    - Project constraints and timeline
    - Maintainability and scalability needs
    - Available resources and tools
 
 4. **Context Awareness**: Consider the Raleon Web App context when relevant:
-
    - LoopBack 4 backend patterns
    - Vue 3 + TypeScript frontend architecture
    - Existing integrations and dependencies

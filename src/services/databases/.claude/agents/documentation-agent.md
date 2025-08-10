@@ -36,171 +36,171 @@ This agent depends on ALL previous agents completion. Verify these exist:
 Create `docs/config/vitepress.config.ts`:
 
 ```typescript
-import { defineConfig } from "vitepress";
-import { SearchPlugin } from "vitepress-plugin-search";
-import { generateApiReference } from "./api-reference-generator";
+import { defineConfig } from 'vitepress';
+import { SearchPlugin } from 'vitepress-plugin-search';
+import { generateApiReference } from './api-reference-generator';
 
 export default defineConfig({
-  title: "Boltic Tables SDK",
-  description: "Comprehensive JavaScript SDK for Boltic Tables infrastructure",
-  base: "/boltic-sdk/",
+  title: 'Boltic Tables SDK',
+  description: 'Comprehensive JavaScript SDK for Boltic Tables infrastructure',
+  base: '/boltic-sdk/',
 
   themeConfig: {
-    logo: "/boltic-logo.svg",
+    logo: '/boltic-logo.svg',
 
     nav: [
-      { text: "Guide", link: "/guide/getting-started" },
-      { text: "API Reference", link: "/api/" },
-      { text: "Examples", link: "/examples/" },
-      { text: "Migration", link: "/migration/" },
+      { text: 'Guide', link: '/guide/getting-started' },
+      { text: 'API Reference', link: '/api/' },
+      { text: 'Examples', link: '/examples/' },
+      { text: 'Migration', link: '/migration/' },
       {
-        text: "v1.0.0",
+        text: 'v1.0.0',
         items: [
-          { text: "Changelog", link: "/changelog" },
-          { text: "Contributing", link: "/contributing" },
+          { text: 'Changelog', link: '/changelog' },
+          { text: 'Contributing', link: '/contributing' },
         ],
       },
     ],
 
     sidebar: {
-      "/guide/": [
+      '/guide/': [
         {
-          text: "Introduction",
+          text: 'Introduction',
           items: [
-            { text: "Getting Started", link: "/guide/getting-started" },
-            { text: "Installation", link: "/guide/installation" },
-            { text: "Quick Start", link: "/guide/quick-start" },
-            { text: "Configuration", link: "/guide/configuration" },
+            { text: 'Getting Started', link: '/guide/getting-started' },
+            { text: 'Installation', link: '/guide/installation' },
+            { text: 'Quick Start', link: '/guide/quick-start' },
+            { text: 'Configuration', link: '/guide/configuration' },
           ],
         },
         {
-          text: "Core Concepts",
+          text: 'Core Concepts',
           items: [
-            { text: "Client & Authentication", link: "/guide/concepts/client" },
-            { text: "Database Context", link: "/guide/concepts/database" },
-            { text: "API Methods", link: "/guide/concepts/api-methods" },
-            { text: "Error Handling", link: "/guide/concepts/error-handling" },
-            { text: "Caching", link: "/guide/concepts/caching" },
+            { text: 'Client & Authentication', link: '/guide/concepts/client' },
+            { text: 'Database Context', link: '/guide/concepts/database' },
+            { text: 'API Methods', link: '/guide/concepts/api-methods' },
+            { text: 'Error Handling', link: '/guide/concepts/error-handling' },
+            { text: 'Caching', link: '/guide/concepts/caching' },
           ],
         },
         {
-          text: "Working with Data",
+          text: 'Working with Data',
           items: [
-            { text: "Database Operations", link: "/guide/database/" },
-            { text: "Table Management", link: "/guide/tables/" },
-            { text: "Schema & Columns", link: "/guide/columns/" },
-            { text: "Record Operations", link: "/guide/records/" },
-            { text: "SQL Queries", link: "/guide/sql/" },
+            { text: 'Database Operations', link: '/guide/database/' },
+            { text: 'Table Management', link: '/guide/tables/' },
+            { text: 'Schema & Columns', link: '/guide/columns/' },
+            { text: 'Record Operations', link: '/guide/records/' },
+            { text: 'SQL Queries', link: '/guide/sql/' },
           ],
         },
         {
-          text: "Advanced Features",
+          text: 'Advanced Features',
           items: [
-            { text: "Vector Search", link: "/guide/advanced/vector-search" },
-            { text: "Aggregations", link: "/guide/advanced/aggregations" },
+            { text: 'Vector Search', link: '/guide/advanced/vector-search' },
+            { text: 'Aggregations', link: '/guide/advanced/aggregations' },
             {
-              text: "Bulk Operations",
-              link: "/guide/advanced/bulk-operations",
+              text: 'Bulk Operations',
+              link: '/guide/advanced/bulk-operations',
             },
             {
-              text: "Performance Optimization",
-              link: "/guide/advanced/performance",
+              text: 'Performance Optimization',
+              link: '/guide/advanced/performance',
             },
-            { text: "Real-time Updates", link: "/guide/advanced/realtime" },
+            { text: 'Real-time Updates', link: '/guide/advanced/realtime' },
           ],
         },
         {
-          text: "Best Practices",
+          text: 'Best Practices',
           items: [
-            { text: "Security", link: "/guide/best-practices/security" },
-            { text: "Performance", link: "/guide/best-practices/performance" },
+            { text: 'Security', link: '/guide/best-practices/security' },
+            { text: 'Performance', link: '/guide/best-practices/performance' },
             {
-              text: "Error Handling",
-              link: "/guide/best-practices/error-handling",
+              text: 'Error Handling',
+              link: '/guide/best-practices/error-handling',
             },
-            { text: "Testing", link: "/guide/best-practices/testing" },
+            { text: 'Testing', link: '/guide/best-practices/testing' },
             {
-              text: "Production Deployment",
-              link: "/guide/best-practices/production",
+              text: 'Production Deployment',
+              link: '/guide/best-practices/production',
             },
           ],
         },
       ],
 
-      "/api/": [
+      '/api/': [
         {
-          text: "API Reference",
+          text: 'API Reference',
           items: [
-            { text: "Overview", link: "/api/" },
-            { text: "Client", link: "/api/client" },
-            { text: "Database", link: "/api/database" },
-            { text: "Table", link: "/api/table" },
-            { text: "Column", link: "/api/column" },
-            { text: "Record", link: "/api/record" },
-            { text: "SQL", link: "/api/sql" },
-            { text: "Types", link: "/api/types" },
-            { text: "Errors", link: "/api/errors" },
+            { text: 'Overview', link: '/api/' },
+            { text: 'Client', link: '/api/client' },
+            { text: 'Database', link: '/api/database' },
+            { text: 'Table', link: '/api/table' },
+            { text: 'Column', link: '/api/column' },
+            { text: 'Record', link: '/api/record' },
+            { text: 'SQL', link: '/api/sql' },
+            { text: 'Types', link: '/api/types' },
+            { text: 'Errors', link: '/api/errors' },
           ],
         },
       ],
 
-      "/examples/": [
+      '/examples/': [
         {
-          text: "Examples",
+          text: 'Examples',
           items: [
-            { text: "Overview", link: "/examples/" },
-            { text: "Basic CRUD", link: "/examples/basic-crud" },
-            { text: "E-commerce Store", link: "/examples/ecommerce" },
-            { text: "Blog Platform", link: "/examples/blog" },
-            { text: "Analytics Dashboard", link: "/examples/analytics" },
-            { text: "Real-time Chat", link: "/examples/chat" },
-            { text: "Data Migration", link: "/examples/migration" },
+            { text: 'Overview', link: '/examples/' },
+            { text: 'Basic CRUD', link: '/examples/basic-crud' },
+            { text: 'E-commerce Store', link: '/examples/ecommerce' },
+            { text: 'Blog Platform', link: '/examples/blog' },
+            { text: 'Analytics Dashboard', link: '/examples/analytics' },
+            { text: 'Real-time Chat', link: '/examples/chat' },
+            { text: 'Data Migration', link: '/examples/migration' },
           ],
         },
         {
-          text: "Integrations",
+          text: 'Integrations',
           items: [
-            { text: "React", link: "/examples/react" },
-            { text: "Vue.js", link: "/examples/vue" },
-            { text: "Next.js", link: "/examples/nextjs" },
-            { text: "Express.js", link: "/examples/express" },
-            { text: "Serverless", link: "/examples/serverless" },
+            { text: 'React', link: '/examples/react' },
+            { text: 'Vue.js', link: '/examples/vue' },
+            { text: 'Next.js', link: '/examples/nextjs' },
+            { text: 'Express.js', link: '/examples/express' },
+            { text: 'Serverless', link: '/examples/serverless' },
           ],
         },
       ],
     },
 
     socialLinks: [
-      { icon: "github", link: "https://github.com/boltic/database-js" },
-      { icon: "discord", link: "https://discord.gg/boltic" },
+      { icon: 'github', link: 'https://github.com/boltic/database-js' },
+      { icon: 'discord', link: 'https://discord.gg/boltic' },
     ],
 
     footer: {
-      message: "Released under the MIT License.",
-      copyright: "Copyright © 2024 Boltic Technologies",
+      message: 'Released under the MIT License.',
+      copyright: 'Copyright © 2024 Boltic Technologies',
     },
 
     search: {
-      provider: "local",
+      provider: 'local',
     },
 
     editLink: {
-      pattern: "https://github.com/boltic/database-js/edit/main/docs/:path",
-      text: "Edit this page on GitHub",
+      pattern: 'https://github.com/boltic/database-js/edit/main/docs/:path',
+      text: 'Edit this page on GitHub',
     },
   },
 
   markdown: {
     theme: {
-      light: "github-light",
-      dark: "github-dark",
+      light: 'github-light',
+      dark: 'github-dark',
     },
     lineNumbers: true,
     config: (md) => {
       // Add custom markdown plugins
-      md.use(require("markdown-it-container"), "tip");
-      md.use(require("markdown-it-container"), "warning");
-      md.use(require("markdown-it-container"), "danger");
+      md.use(require('markdown-it-container'), 'tip');
+      md.use(require('markdown-it-container'), 'warning');
+      md.use(require('markdown-it-container'), 'danger');
     },
   },
 
@@ -208,8 +208,8 @@ export default defineConfig({
     plugins: [
       SearchPlugin({
         previewLength: 62,
-        buttonLabel: "Search",
-        placeholder: "Search docs",
+        buttonLabel: 'Search',
+        placeholder: 'Search docs',
       }),
     ],
   },
@@ -222,13 +222,13 @@ Create `typedoc.config.js`:
 
 ```javascript
 module.exports = {
-  entryPoints: ["./src/index.ts"],
-  out: "./docs/api-reference",
-  theme: "default",
-  plugin: ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
+  entryPoints: ['./src/index.ts'],
+  out: './docs/api-reference',
+  theme: 'default',
+  plugin: ['typedoc-plugin-markdown', 'typedoc-vitepress-theme'],
 
   // Output options
-  readme: "none",
+  readme: 'none',
   excludePrivate: true,
   excludeProtected: true,
   excludeInternal: true,
@@ -239,21 +239,21 @@ module.exports = {
   disableSources: false,
 
   // VitePress integration
-  outputFileStrategy: "modules",
+  outputFileStrategy: 'modules',
   flattenOutputFiles: false,
 
   // Custom options
   categorizeByGroup: true,
   categoryOrder: [
-    "Client",
-    "Database",
-    "Table",
-    "Column",
-    "Record",
-    "SQL",
-    "Types",
-    "Errors",
-    "Utilities",
+    'Client',
+    'Database',
+    'Table',
+    'Column',
+    'Record',
+    'SQL',
+    'Types',
+    'Errors',
+    'Utilities',
   ],
 
   // Navigation
@@ -308,18 +308,18 @@ Update `package.json`:
 Create `scripts/process-api-docs.js`:
 
 ````javascript
-const fs = require("fs");
-const path = require("path");
-const { execSync } = require("child_process");
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
 
 class ApiDocumentationProcessor {
   constructor() {
-    this.apiDocsPath = path.join(__dirname, "../docs/api-reference");
-    this.outputPath = path.join(__dirname, "../docs/api");
+    this.apiDocsPath = path.join(__dirname, '../docs/api-reference');
+    this.outputPath = path.join(__dirname, '../docs/api');
   }
 
   async processApiDocs() {
-    console.log("Processing API documentation...");
+    console.log('Processing API documentation...');
 
     // Generate TypeDoc documentation
     await this.generateTypedocDocs();
@@ -330,14 +330,14 @@ class ApiDocumentationProcessor {
     // Generate navigation and index files
     await this.generateNavigation();
 
-    console.log("API documentation processing complete!");
+    console.log('API documentation processing complete!');
   }
 
   async generateTypedocDocs() {
     try {
-      execSync("typedoc", { stdio: "inherit" });
+      execSync('typedoc', { stdio: 'inherit' });
     } catch (error) {
-      console.error("Failed to generate TypeDoc documentation:", error);
+      console.error('Failed to generate TypeDoc documentation:', error);
       throw error;
     }
   }
@@ -351,7 +351,7 @@ class ApiDocumentationProcessor {
   }
 
   async enhanceMarkdownFile(filePath) {
-    let content = fs.readFileSync(filePath, "utf8");
+    let content = fs.readFileSync(filePath, 'utf8');
 
     // Add code example links
     content = this.addCodeExamples(content);
@@ -416,15 +416,15 @@ console.log('Created record:', record.data.id);`,
   addRelatedLinks(content) {
     // Add links to related guides and examples
     const relatedLinks = {
-      Database: "/guide/database/",
-      Table: "/guide/tables/",
-      Record: "/guide/records/",
-      SQL: "/guide/sql/",
+      Database: '/guide/database/',
+      Table: '/guide/tables/',
+      Record: '/guide/records/',
+      SQL: '/guide/sql/',
     };
 
     let enhanced = content;
     Object.entries(relatedLinks).forEach(([term, link]) => {
-      const regex = new RegExp(`\\b${term}\\b`, "g");
+      const regex = new RegExp(`\\b${term}\\b`, 'g');
       enhanced = enhanced.replace(regex, `[${term}](${link})`);
     });
 
@@ -433,22 +433,22 @@ console.log('Created record:', record.data.id);`,
 
   improveFormatting(content) {
     // Improve code block formatting
-    content = content.replace(/```typescript\n/g, "```typescript\n");
+    content = content.replace(/```typescript\n/g, '```typescript\n');
 
     // Add proper spacing
-    content = content.replace(/\n\n\n+/g, "\n\n");
+    content = content.replace(/\n\n\n+/g, '\n\n');
 
     // Format parameter tables
     content = content.replace(
       /\| Parameter \| Type \| Description \|/g,
-      "| Parameter | Type | Description |\n|-----------|------|-------------|"
+      '| Parameter | Type | Description |\n|-----------|------|-------------|'
     );
 
     return content;
   }
 
   addFrontmatter(content, filePath) {
-    const filename = path.basename(filePath, ".md");
+    const filename = path.basename(filePath, '.md');
     const title = filename.charAt(0).toUpperCase() + filename.slice(1);
 
     const frontmatter = `---
@@ -471,7 +471,7 @@ description: API reference for ${title}
 
       if (stat.isDirectory()) {
         files.push(...this.getAllMarkdownFiles(itemPath));
-      } else if (item.endsWith(".md")) {
+      } else if (item.endsWith('.md')) {
         files.push(itemPath);
       }
     }
@@ -519,7 +519,7 @@ const db = client.useDatabase('database-id');
 - [**Errors**](./errors) - Error classes and handling
 `;
 
-    fs.writeFileSync(path.join(this.outputPath, "index.md"), indexContent);
+    fs.writeFileSync(path.join(this.outputPath, 'index.md'), indexContent);
   }
 
   buildNavigationStructure() {
@@ -584,7 +584,7 @@ function createClient(apiKey: string, options?: ClientOptions): BolticClient;
 
 ```typescript
 interface ClientOptions {
-  environment?: "local" | "sit" | "uat" | "prod";
+  environment?: 'local' | 'sit' | 'uat' | 'prod';
   timeout?: number;
   retryAttempts?: number;
   retryDelay?: number;
@@ -597,14 +597,14 @@ interface ClientOptions {
 ### Example
 
 ```typescript
-import { createClient } from "@boltic/database-js";
+import { createClient } from '@boltic/database-js';
 
 // Basic client
-const client = createClient("your-api-key");
+const client = createClient('your-api-key');
 
 // Client with options
-const client = createClient("your-api-key", {
-  environment: "prod",
+const client = createClient('your-api-key', {
+  environment: 'prod',
   timeout: 30000,
   retryAttempts: 3,
   cacheEnabled: true,
@@ -636,7 +636,7 @@ useDatabase(databaseId: string): DatabaseClient
 **Example:**
 
 ```typescript
-const db = client.useDatabase("database-123");
+const db = client.useDatabase('database-123');
 ```
 
 #### updateApiKey
@@ -650,7 +650,7 @@ updateApiKey(apiKey: string): void
 **Example:**
 
 ```typescript
-client.updateApiKey("new-api-key");
+client.updateApiKey('new-api-key');
 ```
 
 ### Database Context
@@ -658,11 +658,11 @@ client.updateApiKey("new-api-key");
 When you call `useDatabase()`, you get a database-scoped client:
 
 ```typescript
-const db = client.useDatabase("my-database-id");
+const db = client.useDatabase('my-database-id');
 
 // All operations now use this database context
 const tables = await db.table.findAll();
-const records = await db.record.findAll("products");
+const records = await db.record.findAll('products');
 ```
 
 ## Error Handling
@@ -686,9 +686,9 @@ interface ApiResponse<T> {
 const result = await client.database.create(dbData);
 
 if (result.error) {
-  console.error("Error:", result.error.message);
+  console.error('Error:', result.error.message);
 } else {
-  console.log("Success:", result.data);
+  console.log('Success:', result.data);
 }
 ```
 
@@ -754,10 +754,10 @@ pnpm add @boltic/database-js
 ### 1. Initialize the Client
 
 ```typescript
-import { createClient } from "@boltic/database-js";
+import { createClient } from '@boltic/database-js';
 
-const client = createClient("your-api-key", {
-  environment: "prod", // 'local', 'sit', 'uat', or 'prod'
+const client = createClient('your-api-key', {
+  environment: 'prod', // 'local', 'sit', 'uat', or 'prod'
 });
 ```
 
@@ -765,15 +765,15 @@ const client = createClient("your-api-key", {
 
 ```typescript
 const { data: database, error } = await client.database.create({
-  name: "my_awesome_database",
-  slug: "my-awesome-database",
-  description: "My first Boltic database",
+  name: 'my_awesome_database',
+  slug: 'my-awesome-database',
+  description: 'My first Boltic database',
 });
 
 if (error) {
-  console.error("Error creating database:", error.message);
+  console.error('Error creating database:', error.message);
 } else {
-  console.log("Database created:", database.id);
+  console.log('Database created:', database.id);
 }
 ```
 
@@ -787,26 +787,26 @@ const db = client.useDatabase(database.id);
 
 ```typescript
 const { data: table } = await db.table.create({
-  table_name: "products",
+  table_name: 'products',
   schema: [
     {
-      name: "title",
-      type: "text",
+      name: 'title',
+      type: 'text',
       is_nullable: false,
     },
     {
-      name: "price",
-      type: "currency",
+      name: 'price',
+      type: 'currency',
       is_nullable: false,
-      currency_format: "USD",
+      currency_format: 'USD',
     },
     {
-      name: "category_id",
-      type: "number",
+      name: 'category_id',
+      type: 'number',
       is_nullable: false,
     },
   ],
-  description: "Product catalog",
+  description: 'Product catalog',
 });
 ```
 
@@ -815,16 +815,16 @@ const { data: table } = await db.table.create({
 ::: code-group
 
 ```typescript [Method 1: Direct API]
-const { data: record } = await db.record.insert("products", {
-  title: "MacBook Pro",
+const { data: record } = await db.record.insert('products', {
+  title: 'MacBook Pro',
   price: 2499.99,
   category_id: 1,
 });
 ```
 
 ```typescript [Method 2: Fluent API]
-const { data: record } = await db.from("products").insert({
-  title: "MacBook Pro",
+const { data: record } = await db.from('products').insert({
+  title: 'MacBook Pro',
   price: 2499.99,
   category_id: 1,
 });
@@ -837,22 +837,22 @@ const { data: record } = await db.from("products").insert({
 ::: code-group
 
 ```typescript [Method 1: Direct API]
-const { data: products } = await db.record.findAll("products", {
+const { data: products } = await db.record.findAll('products', {
   where: {
     category_id: 1,
     price: { $gt: 1000 },
   },
-  sort: [{ field: "price", order: "desc" }],
+  sort: [{ field: 'price', order: 'desc' }],
   limit: 10,
 });
 ```
 
 ```typescript [Method 2: Fluent API]
 const { data: products } = await db
-  .from("products")
-  .where("category_id", "=", 1)
-  .where("price", ">", 1000)
-  .orderBy("price", "desc")
+  .from('products')
+  .where('category_id', '=', 1)
+  .where('price', '>', 1000)
+  .orderBy('price', 'desc')
   .limit(10)
   .findAll();
 ```
@@ -871,8 +871,8 @@ The SDK supports multiple environments:
 | `prod`      | Production                 | Boltic production environment |
 
 ```typescript
-const client = createClient("your-api-key", {
-  environment: "prod",
+const client = createClient('your-api-key', {
+  environment: 'prod',
   timeout: 30000,
   retryAttempts: 3,
   cacheEnabled: true,
@@ -897,21 +897,21 @@ const client = createClient(process.env.BOLTIC_API_KEY);
 The SDK uses a consistent error handling pattern:
 
 ```typescript
-const result = await db.record.insert("products", data);
+const result = await db.record.insert('products', data);
 
 if (result.error) {
   switch (result.error.code) {
-    case "VALIDATION_ERROR":
-      console.error("Validation failed:", result.error.details);
+    case 'VALIDATION_ERROR':
+      console.error('Validation failed:', result.error.details);
       break;
-    case "UNAUTHORIZED":
-      console.error("Invalid API key");
+    case 'UNAUTHORIZED':
+      console.error('Invalid API key');
       break;
     default:
-      console.error("Unknown error:", result.error.message);
+      console.error('Unknown error:', result.error.message);
   }
 } else {
-  console.log("Success:", result.data);
+  console.log('Success:', result.data);
 }
 ```
 
@@ -924,7 +924,7 @@ import {
   createClient,
   DatabaseWithId,
   RecordWithId,
-} from "@boltic/database-js";
+} from '@boltic/database-js';
 
 interface Product extends RecordWithId {
   title: string;
@@ -932,7 +932,7 @@ interface Product extends RecordWithId {
   category_id: number;
 }
 
-const products = await db.record.findAll<Product>("products", {
+const products = await db.record.findAll<Product>('products', {
   where: { category_id: 1 },
 });
 
@@ -1002,9 +1002,9 @@ const { data: database, error } = await client.database.create({
 
 ```typescript [Method 2: Fluent API]
 const { data: database, error } = await client.database().create({
-  name: "ecommerce_store",
-  slug: "ecommerce-store",
-  description: "E-commerce application database",
+  name: 'ecommerce_store',
+  slug: 'ecommerce-store',
+  description: 'E-commerce application database',
 });
 ```
 
@@ -1032,19 +1032,19 @@ interface DatabaseCreateRequest {
 ```typescript
 const databases = [
   {
-    name: "user_management",
-    slug: "user-management",
-    description: "User accounts and profiles",
+    name: 'user_management',
+    slug: 'user-management',
+    description: 'User accounts and profiles',
   },
   {
-    name: "product_catalog",
-    slug: "product-catalog",
-    description: "Product inventory and details",
+    name: 'product_catalog',
+    slug: 'product-catalog',
+    description: 'Product inventory and details',
   },
   {
-    name: "order_processing",
-    slug: "order-processing",
-    description: "Orders and transactions",
+    name: 'order_processing',
+    slug: 'order-processing',
+    description: 'Orders and transactions',
   },
 ];
 
@@ -1053,7 +1053,7 @@ const results = await Promise.all(
 );
 
 console.log(
-  "Created databases:",
+  'Created databases:',
   results.map((r) => r.data?.id)
 );
 ```
@@ -1081,11 +1081,11 @@ const { data: databases } = await client.database().findAll();
 ```typescript [Method 1: Direct API]
 const { data: databases } = await client.database.findAll({
   where: {
-    created_by: "user@example.com",
+    created_by: 'user@example.com',
     is_public: true,
   },
-  fields: ["id", "name", "description", "created_at"],
-  sort: [{ field: "created_at", order: "desc" }],
+  fields: ['id', 'name', 'description', 'created_at'],
+  sort: [{ field: 'created_at', order: 'desc' }],
   limit: 10,
 });
 ```
@@ -1094,11 +1094,11 @@ const { data: databases } = await client.database.findAll({
 const { data: databases } = await client
   .database()
   .where({
-    created_by: "user@example.com",
+    created_by: 'user@example.com',
     is_public: true,
   })
-  .select(["id", "name", "description", "created_at"])
-  .orderBy("created_at", "desc")
+  .select(['id', 'name', 'description', 'created_at'])
+  .orderBy('created_at', 'desc')
   .limit(10)
   .findAll();
 ```
@@ -1116,7 +1116,7 @@ while (true) {
   const { data: batch } = await client.database.findAll({
     limit,
     offset,
-    sort: [{ field: "name", order: "asc" }],
+    sort: [{ field: 'name', order: 'asc' }],
   });
 
   if (!batch || batch.length === 0) break;
@@ -1125,7 +1125,7 @@ while (true) {
   offset += limit;
 }
 
-console.log("Total databases:", allDatabases.length);
+console.log('Total databases:', allDatabases.length);
 ```
 
 ## Finding Specific Databases
@@ -1134,7 +1134,7 @@ console.log("Total databases:", allDatabases.length);
 
 ```typescript
 const { data: database } = await client.database.findOne({
-  where: { id: "database-uuid" },
+  where: { id: 'database-uuid' },
 });
 ```
 
@@ -1142,7 +1142,7 @@ const { data: database } = await client.database.findOne({
 
 ```typescript
 const { data: database } = await client.database.findOne({
-  where: { slug: "ecommerce-store" },
+  where: { slug: 'ecommerce-store' },
 });
 ```
 
@@ -1150,7 +1150,7 @@ const { data: database } = await client.database.findOne({
 
 ```typescript
 const { data: database } = await client.database.findOne({
-  where: { name: "ecommerce_store" },
+  where: { name: 'ecommerce_store' },
 });
 ```
 
@@ -1161,7 +1161,7 @@ Once you have a database, set it as the context for subsequent operations:
 ```typescript
 // Get database first
 const { data: database } = await client.database.findOne({
-  where: { slug: "ecommerce-store" },
+  where: { slug: 'ecommerce-store' },
 });
 
 // Set database context
@@ -1169,7 +1169,7 @@ const db = client.useDatabase(database.id);
 
 // Now all operations use this database
 const tables = await db.table.findAll();
-const records = await db.record.findAll("products");
+const records = await db.record.findAll('products');
 ```
 
 ## Updating Databases
@@ -1178,9 +1178,9 @@ const records = await db.record.findAll("products");
 
 ```typescript [Method 1: Direct API]
 const { data: updated } = await client.database.update(
-  { id: "database-uuid" },
+  { id: 'database-uuid' },
   {
-    description: "Updated description",
+    description: 'Updated description',
     is_public: false,
   }
 );
@@ -1189,9 +1189,9 @@ const { data: updated } = await client.database.update(
 ```typescript [Method 2: Fluent API]
 const { data: updated } = await client
   .database()
-  .where({ id: "database-uuid" })
+  .where({ id: 'database-uuid' })
   .set({
-    description: "Updated description",
+    description: 'Updated description',
     is_public: false,
   })
   .update();
@@ -1217,12 +1217,12 @@ Deleting a database will permanently remove all tables and data within it. This 
 
 ```typescript [Method 1: Direct API]
 await client.database.delete({
-  where: { id: "database-uuid" },
+  where: { id: 'database-uuid' },
 });
 ```
 
 ```typescript [Method 2: Fluent API]
-await client.database().where({ id: "database-uuid" }).delete();
+await client.database().where({ id: 'database-uuid' }).delete();
 ```
 
 :::
@@ -1232,7 +1232,7 @@ await client.database().where({ id: "database-uuid" }).delete();
 ```typescript
 // Confirm before deletion
 const { data: database } = await client.database.findOne({
-  where: { id: "database-uuid" },
+  where: { id: 'database-uuid' },
 });
 
 if (database) {
@@ -1240,13 +1240,13 @@ if (database) {
   console.log(`Tables will be lost: ${database.table_count}`);
 
   // Add confirmation logic here
-  const confirmed = confirm("Are you sure?");
+  const confirmed = confirm('Are you sure?');
 
   if (confirmed) {
     await client.database.delete({
-      where: { id: "database-uuid" },
+      where: { id: 'database-uuid' },
     });
-    console.log("Database deleted successfully");
+    console.log('Database deleted successfully');
   }
 }
 ```
@@ -1261,21 +1261,21 @@ try {
 
   if (result.error) {
     switch (result.error.code) {
-      case "VALIDATION_ERROR":
-        console.error("Invalid database data:", result.error.details);
+      case 'VALIDATION_ERROR':
+        console.error('Invalid database data:', result.error.details);
         break;
-      case "DUPLICATE_NAME":
-        console.error("Database name already exists");
+      case 'DUPLICATE_NAME':
+        console.error('Database name already exists');
         break;
-      case "UNAUTHORIZED":
-        console.error("Invalid API key or permissions");
+      case 'UNAUTHORIZED':
+        console.error('Invalid API key or permissions');
         break;
       default:
-        console.error("Unexpected error:", result.error.message);
+        console.error('Unexpected error:', result.error.message);
     }
   }
 } catch (error) {
-  console.error("Network or system error:", error);
+  console.error('Network or system error:', error);
 }
 ```
 
@@ -1286,23 +1286,23 @@ try {
 ```typescript
 // Good naming
 const dbConfig = {
-  name: "user_management_prod", // Clear, descriptive
-  slug: "user-management-prod", // URL-friendly
-  description: "Production user management database",
+  name: 'user_management_prod', // Clear, descriptive
+  slug: 'user-management-prod', // URL-friendly
+  description: 'Production user management database',
 };
 
 // Avoid
 const badConfig = {
-  name: "db1", // Too generic
-  slug: "DB_1", // Invalid characters
-  description: "", // Empty description
+  name: 'db1', // Too generic
+  slug: 'DB_1', // Invalid characters
+  description: '', // Empty description
 };
 ```
 
 ### Environment-Specific Databases
 
 ```typescript
-const environment = process.env.NODE_ENV || "development";
+const environment = process.env.NODE_ENV || 'development';
 
 const dbConfig = {
   name: `ecommerce_${environment}`,
@@ -1336,7 +1336,7 @@ class DatabaseManager {
     // Create if doesn't exist
     if (!database) {
       const result = await this.client.database.create({
-        name: slug.replace("-", "_"),
+        name: slug.replace('-', '_'),
         slug,
         description: `Auto-created database for ${slug}`,
       });
@@ -1587,7 +1587,7 @@ export class CatalogService {
   }
 
   async createCategory(categoryData) {
-    return await this.db.record.insert("categories", {
+    return await this.db.record.insert('categories', {
       ...categoryData,
       slug: this.generateSlug(categoryData.name),
       is_active: true,
@@ -1596,14 +1596,14 @@ export class CatalogService {
   }
 
   async getCategories() {
-    return await this.db.record.findAll("categories", {
+    return await this.db.record.findAll('categories', {
       where: { is_active: true },
-      sort: [{ field: "sort_order", order: "asc" }],
+      sort: [{ field: 'sort_order', order: 'asc' }],
     });
   }
 
   async createProduct(productData) {
-    const { data: product } = await this.db.record.insert("products", {
+    const { data: product } = await this.db.record.insert('products', {
       ...productData,
       slug: this.generateSlug(productData.title),
       is_active: true,
@@ -1616,7 +1616,7 @@ export class CatalogService {
   async getProducts(options = {}) {
     const queryOptions = {
       where: { is_active: true },
-      sort: [{ field: "created_at", order: "desc" }],
+      sort: [{ field: 'created_at', order: 'desc' }],
       limit: options.limit || 20,
       offset: options.offset || 0,
     };
@@ -1638,11 +1638,11 @@ export class CatalogService {
       queryOptions.where.is_featured = true;
     }
 
-    return await this.db.record.findAll("products", queryOptions);
+    return await this.db.record.findAll('products', queryOptions);
   }
 
   async searchProducts(searchTerm, options = {}) {
-    return await this.db.record.findAll("products", {
+    return await this.db.record.findAll('products', {
       where: {
         $or: [
           { title: { $ilike: `%${searchTerm}%` } },
@@ -1651,40 +1651,40 @@ export class CatalogService {
         ],
         is_active: true,
       },
-      sort: [{ field: "title", order: "asc" }],
+      sort: [{ field: 'title', order: 'asc' }],
       limit: options.limit || 20,
     });
   }
 
   async getProductBySlug(slug) {
-    return await this.db.record.findOne("products", {
+    return await this.db.record.findOne('products', {
       where: { slug, is_active: true },
     });
   }
 
   async getFeaturedProducts(limit = 10) {
-    return await this.db.record.findAll("products", {
+    return await this.db.record.findAll('products', {
       where: { is_featured: true, is_active: true },
-      sort: [{ field: "created_at", order: "desc" }],
+      sort: [{ field: 'created_at', order: 'desc' }],
       limit,
     });
   }
 
   async updateInventory(productId, quantity) {
-    const { data: product } = await this.db.record.findOne("products", {
+    const { data: product } = await this.db.record.findOne('products', {
       where: { id: productId },
     });
 
     if (!product) {
-      throw new Error("Product not found");
+      throw new Error('Product not found');
     }
 
     const newCount = product.inventory_count + quantity;
     if (newCount < 0) {
-      throw new Error("Insufficient inventory");
+      throw new Error('Insufficient inventory');
     }
 
-    return await this.db.record.update("products", {
+    return await this.db.record.update('products', {
       set: { inventory_count: newCount },
       where: { id: productId },
     });
@@ -1693,8 +1693,8 @@ export class CatalogService {
   generateSlug(title) {
     return title
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 }
 ```
@@ -1710,32 +1710,32 @@ export class CartService {
 
   async addToCart(userId, productId, quantity = 1) {
     // Get product details
-    const { data: product } = await this.db.record.findOne("products", {
+    const { data: product } = await this.db.record.findOne('products', {
       where: { id: productId, is_active: true },
     });
 
     if (!product) {
-      throw new Error("Product not found");
+      throw new Error('Product not found');
     }
 
     if (product.inventory_count < quantity) {
-      throw new Error("Insufficient inventory");
+      throw new Error('Insufficient inventory');
     }
 
     // Check if item already in cart
-    const { data: existingItem } = await this.db.record.findOne("cart_items", {
+    const { data: existingItem } = await this.db.record.findOne('cart_items', {
       where: { user_id: userId, product_id: productId },
     });
 
     if (existingItem) {
       // Update quantity
-      return await this.db.record.update("cart_items", {
+      return await this.db.record.update('cart_items', {
         set: { quantity: existingItem.quantity + quantity },
         where: { id: existingItem.id },
       });
     } else {
       // Add new item
-      return await this.db.record.insert("cart_items", {
+      return await this.db.record.insert('cart_items', {
         user_id: userId,
         product_id: productId,
         quantity,
@@ -1771,20 +1771,20 @@ export class CartService {
       return await this.removeFromCart(userId, itemId);
     }
 
-    return await this.db.record.update("cart_items", {
+    return await this.db.record.update('cart_items', {
       set: { quantity },
       where: { id: itemId, user_id: userId },
     });
   }
 
   async removeFromCart(userId, itemId) {
-    return await this.db.record.delete("cart_items", {
+    return await this.db.record.delete('cart_items', {
       where: { id: itemId, user_id: userId },
     });
   }
 
   async clearCart(userId) {
-    return await this.db.record.delete("cart_items", {
+    return await this.db.record.delete('cart_items', {
       where: { user_id: userId },
     });
   }
@@ -1823,7 +1823,7 @@ export class CheckoutService {
     const cartItems = cartResult.rows;
 
     if (cartItems.length === 0) {
-      throw new Error("Cart is empty");
+      throw new Error('Cart is empty');
     }
 
     // Validate inventory
@@ -1846,17 +1846,17 @@ export class CheckoutService {
     const orderNumber = await this.generateOrderNumber();
 
     // Create order
-    const { data: order } = await this.db.record.insert("orders", {
+    const { data: order } = await this.db.record.insert('orders', {
       user_id: userId,
       order_number: orderNumber,
-      status: "pending",
+      status: 'pending',
       total_amount: totalAmount,
       shipping_amount: shippingAmount,
       tax_amount: taxAmount,
       shipping_address: orderData.shipping_address,
       billing_address: orderData.billing_address,
       payment_method: orderData.payment_method,
-      payment_status: "pending",
+      payment_status: 'pending',
       notes: orderData.notes,
     });
 
@@ -1874,11 +1874,11 @@ export class CheckoutService {
       },
     }));
 
-    await this.db.record.bulkInsert("order_items", { data: orderItems });
+    await this.db.record.bulkInsert('order_items', { data: orderItems });
 
     // Update inventory
     for (const item of cartItems) {
-      await this.db.record.update("products", {
+      await this.db.record.update('products', {
         set: { inventory_count: item.inventory_count - item.quantity },
         where: { id: item.product_id },
       });
@@ -1891,16 +1891,16 @@ export class CheckoutService {
   }
 
   async getOrder(orderId, userId) {
-    const { data: order } = await this.db.record.findOne("orders", {
+    const { data: order } = await this.db.record.findOne('orders', {
       where: { id: orderId, user_id: userId },
     });
 
     if (!order) {
-      throw new Error("Order not found");
+      throw new Error('Order not found');
     }
 
     // Get order items
-    const { data: items } = await this.db.record.findAll("order_items", {
+    const { data: items } = await this.db.record.findAll('order_items', {
       where: { order_id: orderId },
     });
 
@@ -1908,9 +1908,9 @@ export class CheckoutService {
   }
 
   async getUserOrders(userId, options = {}) {
-    return await this.db.record.findAll("orders", {
+    return await this.db.record.findAll('orders', {
       where: { user_id: userId },
-      sort: [{ field: "created_at", order: "desc" }],
+      sort: [{ field: 'created_at', order: 'desc' }],
       limit: options.limit || 20,
       offset: options.offset || 0,
     });
@@ -1922,7 +1922,7 @@ export class CheckoutService {
       updateData.tracking_number = trackingNumber;
     }
 
-    return await this.db.record.update("orders", {
+    return await this.db.record.update('orders', {
       set: updateData,
       where: { id: orderId },
     });
@@ -1931,7 +1931,7 @@ export class CheckoutService {
   calculateShipping(subtotal, address) {
     // Simple shipping calculation
     if (subtotal > 100) return 0; // Free shipping over $100
-    if (address.country !== "US") return 25; // International shipping
+    if (address.country !== 'US') return 25; // International shipping
     return 10; // Domestic shipping
   }
 
@@ -1949,7 +1949,7 @@ export class CheckoutService {
   }
 
   async generateOrderNumber() {
-    const prefix = "ORD";
+    const prefix = 'ORD';
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substr(2, 4).toUpperCase();
     return `${prefix}-${timestamp}-${random}`;
@@ -1961,10 +1961,10 @@ export class CheckoutService {
 
 ```javascript
 // src/app.js
-import DatabaseManager from "./models/database.js";
-import { CatalogService } from "./services/catalog.js";
-import { CartService } from "./services/cart.js";
-import { CheckoutService } from "./services/checkout.js";
+import DatabaseManager from './models/database.js';
+import { CatalogService } from './services/catalog.js';
+import { CartService } from './services/cart.js';
+import { CheckoutService } from './services/checkout.js';
 
 async function setupEcommerceStore() {
   // Initialize database
@@ -1978,14 +1978,14 @@ async function setupEcommerceStore() {
 
   // Create sample categories
   const electronics = await catalog.createCategory({
-    name: "Electronics",
-    description: "Electronic devices and gadgets",
+    name: 'Electronics',
+    description: 'Electronic devices and gadgets',
     sort_order: 1,
   });
 
   const computers = await catalog.createCategory({
-    name: "Computers",
-    description: "Laptops, desktops, and accessories",
+    name: 'Computers',
+    description: 'Laptops, desktops, and accessories',
     parent_id: electronics.data.id,
     sort_order: 1,
   });
@@ -1994,25 +1994,25 @@ async function setupEcommerceStore() {
   const products = [
     {
       title: 'MacBook Pro 16"',
-      description: "Powerful laptop for professionals",
+      description: 'Powerful laptop for professionals',
       price: 2499.99,
-      sku: "MBP-16-2024",
+      sku: 'MBP-16-2024',
       category_id: computers.data.id,
       inventory_count: 50,
       is_featured: true,
       specifications: {
-        processor: "M3 Pro",
-        memory: "16GB",
-        storage: "512GB SSD",
-        display: "16-inch Liquid Retina XDR",
+        processor: 'M3 Pro',
+        memory: '16GB',
+        storage: '512GB SSD',
+        display: '16-inch Liquid Retina XDR',
       },
     },
     {
-      title: "iPhone 15 Pro",
-      description: "Latest iPhone with Pro features",
+      title: 'iPhone 15 Pro',
+      description: 'Latest iPhone with Pro features',
       price: 999.99,
       sale_price: 899.99,
-      sku: "IP15-PRO-2024",
+      sku: 'IP15-PRO-2024',
       category_id: electronics.data.id,
       inventory_count: 100,
       is_featured: true,
@@ -2023,18 +2023,18 @@ async function setupEcommerceStore() {
     await catalog.createProduct(productData);
   }
 
-  console.log("E-commerce store setup complete!");
+  console.log('E-commerce store setup complete!');
 
   // Example usage
   await demonstrateUsage(catalog, cart, checkout);
 }
 
 async function demonstrateUsage(catalog, cart, checkout) {
-  const userId = "user-123";
+  const userId = 'user-123';
 
   // Browse products
   const { data: featuredProducts } = await catalog.getFeaturedProducts();
-  console.log("Featured products:", featuredProducts.length);
+  console.log('Featured products:', featuredProducts.length);
 
   // Add to cart
   const product = featuredProducts[0];
@@ -2042,29 +2042,29 @@ async function demonstrateUsage(catalog, cart, checkout) {
 
   // View cart
   const { data: cartItems } = await cart.getCartItems(userId);
-  console.log("Cart items:", cartItems.rows.length);
+  console.log('Cart items:', cartItems.rows.length);
 
   // Create order
   const orderData = {
     shipping_address: {
-      street: "123 Main St",
-      city: "San Francisco",
-      state: "CA",
-      zip: "94105",
-      country: "US",
+      street: '123 Main St',
+      city: 'San Francisco',
+      state: 'CA',
+      zip: '94105',
+      country: 'US',
     },
     billing_address: {
-      street: "123 Main St",
-      city: "San Francisco",
-      state: "CA",
-      zip: "94105",
-      country: "US",
+      street: '123 Main St',
+      city: 'San Francisco',
+      state: 'CA',
+      zip: '94105',
+      country: 'US',
     },
-    payment_method: "credit_card",
+    payment_method: 'credit_card',
   };
 
   const order = await checkout.createOrder(userId, orderData);
-  console.log("Order created:", order.order_number);
+  console.log('Order created:', order.order_number);
 }
 
 // Run the setup
@@ -2173,17 +2173,17 @@ if (!result.success) {
 ### After (SDK)
 
 ```javascript
-import { createClient } from "@boltic/database-js";
+import { createClient } from '@boltic/database-js';
 
-const client = createClient("your-api-key");
+const client = createClient('your-api-key');
 
 const { data: database, error } = await client.database.create({
-  name: "my_database",
-  slug: "my-database",
+  name: 'my_database',
+  slug: 'my-database',
 });
 
 if (error) {
-  console.error("Error:", error.message);
+  console.error('Error:', error.message);
 }
 ```
 
@@ -2201,15 +2201,15 @@ Replace your HTTP client setup:
 
 ```javascript
 // Before
-const API_BASE_URL = "https://api.boltic.io/service/panel/boltic-tables";
+const API_BASE_URL = 'https://api.boltic.io/service/panel/boltic-tables';
 const API_KEY = process.env.BOLTIC_API_KEY;
 
 async function makeRequest(endpoint, options = {}) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
-      "x-boltic-token": API_KEY,
+      'Content-Type': 'application/json',
+      'x-boltic-token': API_KEY,
       ...options.headers,
     },
   });
@@ -2218,10 +2218,10 @@ async function makeRequest(endpoint, options = {}) {
 }
 
 // After
-import { createClient } from "@boltic/database-js";
+import { createClient } from '@boltic/database-js';
 
 const client = createClient(process.env.BOLTIC_API_KEY, {
-  environment: "prod",
+  environment: 'prod',
 });
 ```
 
@@ -2231,20 +2231,20 @@ const client = createClient(process.env.BOLTIC_API_KEY, {
 
 ```javascript
 // Before
-const database = await makeRequest("/v1/tables/databases", {
-  method: "POST",
+const database = await makeRequest('/v1/tables/databases', {
+  method: 'POST',
   body: JSON.stringify({
-    name: "my_database",
-    slug: "my-database",
-    description: "My database",
+    name: 'my_database',
+    slug: 'my-database',
+    description: 'My database',
   }),
 });
 
 // After
 const { data: database, error } = await client.database.create({
-  name: "my_database",
-  slug: "my-database",
-  description: "My database",
+  name: 'my_database',
+  slug: 'my-database',
+  description: 'My database',
 });
 ```
 
@@ -2252,7 +2252,7 @@ const { data: database, error } = await client.database.create({
 
 ```javascript
 // Before
-const databases = await makeRequest("/v1/tables/databases");
+const databases = await makeRequest('/v1/tables/databases');
 
 // After
 const { data: databases } = await client.database.findAll();
@@ -2264,25 +2264,25 @@ const { data: databases } = await client.database.findAll();
 
 ```javascript
 // Before
-const table = await makeRequest("/v1/tables", {
-  method: "POST",
+const table = await makeRequest('/v1/tables', {
+  method: 'POST',
   body: JSON.stringify({
-    table_name: "products",
+    table_name: 'products',
     schema: [
-      { name: "title", type: "text", is_nullable: false },
-      { name: "price", type: "currency", currency_format: "USD" },
+      { name: 'title', type: 'text', is_nullable: false },
+      { name: 'price', type: 'currency', currency_format: 'USD' },
     ],
   }),
 });
 
 // After
-const db = client.useDatabase("database-id");
+const db = client.useDatabase('database-id');
 
 const { data: table } = await db.table.create({
-  table_name: "products",
+  table_name: 'products',
   schema: [
-    { name: "title", type: "text", is_nullable: false },
-    { name: "price", type: "currency", currency_format: "USD" },
+    { name: 'title', type: 'text', is_nullable: false },
+    { name: 'price', type: 'currency', currency_format: 'USD' },
   ],
 });
 ```
@@ -2294,18 +2294,18 @@ const { data: table } = await db.table.create({
 ```javascript
 // Before
 const record = await makeRequest(`/v1/tables/${tableId}/records`, {
-  method: "POST",
+  method: 'POST',
   body: JSON.stringify({
     data: {
-      title: "MacBook Pro",
+      title: 'MacBook Pro',
       price: 2499.99,
     },
   }),
 });
 
 // After
-const { data: record } = await db.record.insert("products", {
-  title: "MacBook Pro",
+const { data: record } = await db.record.insert('products', {
+  title: 'MacBook Pro',
   price: 2499.99,
 });
 ```
@@ -2321,7 +2321,7 @@ const products = await makeRequest(
 );
 
 // After
-const { data: products } = await db.record.findAll("products", {
+const { data: products } = await db.record.findAll('products', {
   where: { price: { $gt: 1000 } },
   limit: 10,
 });
@@ -2338,7 +2338,7 @@ try {
   }
   return response.data;
 } catch (error) {
-  console.error("API Error:", error.message);
+  console.error('API Error:', error.message);
   throw error;
 }
 
@@ -2347,17 +2347,17 @@ const result = await client.database.create(data);
 
 if (result.error) {
   switch (result.error.code) {
-    case "VALIDATION_ERROR":
-      console.error("Validation failed:", result.error.details);
+    case 'VALIDATION_ERROR':
+      console.error('Validation failed:', result.error.details);
       break;
-    case "UNAUTHORIZED":
-      console.error("Invalid API key");
+    case 'UNAUTHORIZED':
+      console.error('Invalid API key');
       break;
     default:
-      console.error("Error:", result.error.message);
+      console.error('Error:', result.error.message);
   }
 } else {
-  console.log("Success:", result.data);
+  console.log('Success:', result.data);
 }
 ```
 
@@ -2477,7 +2477,7 @@ The SDK includes built-in caching. Remove manual caching:
 const cacheKey = `databases:${userId}`;
 let databases = cache.get(cacheKey);
 if (!databases) {
-  databases = await makeRequest("/v1/tables/databases");
+  databases = await makeRequest('/v1/tables/databases');
   cache.set(cacheKey, databases, 300);
 }
 
@@ -2528,7 +2528,7 @@ const testClient = new HttpClient(TEST_API_KEY);
 
 // After
 const testClient = createClient(TEST_API_KEY, {
-  environment: "sit",
+  environment: 'sit',
 });
 ```
 
@@ -2571,7 +2571,7 @@ const testClient = createClient(TEST_API_KEY, {
 Keep the old implementation alongside the new one during migration:
 
 ```javascript
-const USE_SDK = process.env.USE_BOLTIC_SDK === "true";
+const USE_SDK = process.env.USE_BOLTIC_SDK === 'true';
 
 if (USE_SDK) {
   // Use SDK
@@ -2579,7 +2579,7 @@ if (USE_SDK) {
   return data;
 } else {
   // Use direct API
-  const response = await makeRequest("/v1/tables/databases");
+  const response = await makeRequest('/v1/tables/databases');
   return response.data;
 }
 ```
@@ -2590,22 +2590,22 @@ if (USE_SDK) {
 
 ```javascript
 // migration-helper.js
-const fs = require("fs");
-const path = require("path");
+const fs = require('fs');
+const path = require('path');
 
 class MigrationHelper {
   static replaceAPICallsInFile(filePath) {
-    let content = fs.readFileSync(filePath, "utf8");
+    let content = fs.readFileSync(filePath, 'utf8');
 
     // Replace common patterns
     content = content.replace(
       /makeRequest\('\/v1\/tables\/databases'\)/g,
-      "client.database.findAll()"
+      'client.database.findAll()'
     );
 
     content = content.replace(
       /makeRequest\('\/v1\/tables\/databases', \{[^}]+\}\)/g,
-      "client.database.create(data)"
+      'client.database.create(data)'
     );
 
     fs.writeFileSync(filePath, content);
@@ -2938,10 +2938,10 @@ name: Documentation
 on:
   push:
     branches: [main, develop]
-    paths: ["docs/**", "src/**/*.ts", "typedoc.config.js"]
+    paths: ['docs/**', 'src/**/*.ts', 'typedoc.config.js']
   pull_request:
     branches: [main]
-    paths: ["docs/**", "src/**/*.ts"]
+    paths: ['docs/**', 'src/**/*.ts']
 
 jobs:
   test-docs:
@@ -2955,8 +2955,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
-          cache: "npm"
+          node-version: '18'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -2979,8 +2979,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
-          cache: "npm"
+          node-version: '18'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -3028,7 +3028,7 @@ jobs:
       - name: Check links
         uses: lycheeverse/lychee-action@v1
         with:
-          args: "docs/**/*.md --exclude-all-private --exclude-mail"
+          args: 'docs/**/*.md --exclude-all-private --exclude-mail'
           fail: true
 ```
 
