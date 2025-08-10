@@ -44,8 +44,12 @@ export class BolticClient {
   private tableResource: TableResource;
   private columnResource: ColumnResource;
   private currentDatabase: DatabaseContext | null = null;
+  private clientOptions: ClientOptions;
 
   constructor(apiKey: string, options: ClientOptions = {}) {
+    // Store client options
+    this.clientOptions = options;
+
     // Initialize configuration
     this.configManager = new ConfigManager(
       apiKey,
@@ -195,11 +199,16 @@ export class BolticClient {
   // Public client information (safe to expose)
   get info() {
     const config = this.configManager.getConfig();
+    // Create safe options without headers
+    const safeOptions = { ...this.clientOptions };
+    delete safeOptions.headers;
+
     return {
       environment: config.environment,
       region: config.region,
       isAuthenticated: this.isAuthenticated(),
       currentDatabase: this.currentDatabase,
+      options: safeOptions,
       resources: {
         tables: {
           basePath: this.tableResource.getBasePath(),
@@ -226,11 +235,20 @@ export class BolticClient {
 
   // Override toString to show only safe information
   toString(): string {
+    // Create safe options without headers for display
+    const safeOptions = { ...this.clientOptions };
+    delete safeOptions.headers;
+
+    const optionsStr =
+      Object.keys(safeOptions).length > 0
+        ? `\n  options: ${JSON.stringify(safeOptions, null, 2)}`
+        : '\n  options: {}';
+
     return `BolticClient {
   environment: '${this.configManager.getConfig().environment}',
   region: '${this.configManager.getConfig().region}',
   isAuthenticated: ${this.isAuthenticated()},
-  currentDatabase: ${this.currentDatabase ? `'${this.currentDatabase.databaseName}'` : 'null'},
+  currentDatabase: ${this.currentDatabase ? `'${this.currentDatabase.databaseName}'` : 'null'},${optionsStr}
   resources: {
     tables: { available: true, operations: [create, findAll, findOne, update, rename, setAccess, delete, getMetadata] },
     columns: { available: true, operations: [create, findAll, findOne, update, delete] }
