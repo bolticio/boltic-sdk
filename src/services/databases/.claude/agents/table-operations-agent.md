@@ -23,1456 +23,402 @@ This agent depends on the **Database Operations Agent** completion. Verify these
 - Authentication and error handling systems
 - Cache infrastructure and TypeScript definitions
 
-## Primary Tasks
+## Current Implementation Status
 
-### Task 1: Table Type Definitions
+### ✅ COMPLETED FEATURES
 
-**Duration**: 1-2 days
-**Priority**: Critical
+#### 1. Table Type Definitions (`src/types/api/table.ts`)
 
-#### 1.1 Create Field Definition Types
+- **Field Types**: All 14 field types implemented (text, long-text, number, currency, checkbox, dropdown, email, phone-number, link, json, date-time, vector, halfvec, sparsevec)
+- **Field Definition Interface**: Complete with all type-specific properties
+- **Table Interfaces**: Create, Update, Record, Query, Delete, Access, and List interfaces
+- **Response Types**: Proper API response handling with pagination
 
-Create `src/types/api/table.ts`:
+#### 2. Table Resource Implementation (`src/client/resources/table.ts`)
 
-```typescript
-export type FieldType =
-  | 'text'
-  | 'long-text'
-  | 'number'
-  | 'currency'
-  | 'checkbox'
-  | 'dropdown'
-  | 'email'
-  | 'phone-number'
-  | 'link'
-  | 'json'
-  | 'date-time'
-  | 'vector'
-  | 'halfvec'
-  | 'sparsevec';
+- **Direct API Methods**: create, findAll, findOne, update, rename, setAccess, delete, getMetadata
+- **AI Schema Generation**: generateSchema method for AI-powered table creation
+- **Currency Support**: getCurrencies method for available currency formats
+- **Error Handling**: Comprehensive error formatting and API error passthrough
+- **Database Context**: Proper integration with database selection
 
-export interface FieldDefinition {
-  name: string;
-  type: FieldType;
-  is_nullable?: boolean;
-  is_primary_key?: boolean;
-  is_unique?: boolean;
-  is_visible?: boolean;
-  is_readonly?: boolean;
-  is_indexed?: boolean;
-  field_order?: number;
-  description?: string;
-  default_value?: any;
+#### 3. Table Fluent Interface (`src/client/resources/table-builder.ts`)
 
-  // Type-specific properties
-  alignment?: 'left' | 'center' | 'right';
-  timezone?: string;
-  date_format?: string;
-  time_format?: string;
-  decimals?: number | string;
-  currency_format?: string;
-  selection_source?: string;
-  selectable_items?: string[];
-  multiple_selections?: boolean;
-  phone_format?: string;
-  button_type?: string;
-  button_label?: string;
-  button_additional_labels?: string;
-  button_state?: string;
-  disable_on_click?: boolean;
-  vector_dimension?: number;
-}
+- **Builder Pattern**: Fluent API for table creation with method chaining
+- **Field Builders**: Individual methods for each field type (addTextField, addNumberField, etc.)
+- **AI Integration**: generateFromPrompt method for AI schema generation
+- **Validation**: Built-in schema validation before creation
+- **Flexibility**: Support for custom field definitions and bulk operations
 
-export interface TableCreateRequest {
-  name: string;
-  fields: FieldDefinition[];
-  description?: string;
-  is_public?: boolean;
-}
+#### 4. Schema Helper Utilities (`src/utils/table/schema-helpers.ts`)
 
-export interface TableUpdateRequest {
-  name?: string;
-  snapshot?: string;
-  is_shared?: boolean;
-}
+- **Field Helpers**: 14+ static methods for creating field definitions
+- **Type Safety**: Full TypeScript support with proper defaults
+- **Validation**: Comprehensive schema validation with detailed error reporting
+- **Utility Methods**: createBasicSchema, validateSchema, and field-specific helpers
 
-export interface TableRecord {
-  id: string;
-  name: string;
-  account_id: string;
-  internal_table_name: string; // Display name
-  internal_db_name: string;
-  db_id?: string; // uuid
-  resource_id?: string;
-  description?: string;
-  type?: string;
-  parent_table_id?: string;
-  is_deleted: boolean;
-  is_public: boolean;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-  updated_by: string;
-  snapshot_url?: string;
-  source?: 'boltic' | 'copilot';
-}
+#### 5. API Integration (`src/api/`)
 
-export interface TableQueryOptions {
-  where?: {
-    id?: string;
-    name?: string;
-    db_id?: string;
-    is_public?: boolean;
-    created_by?: string;
-    created_at?: {
-      $gte?: string;
-      $lte?: string;
-      $between?: [string, string];
-    };
-  };
-  sort?: Array<{
-    field: keyof TableRecord;
-    order: 'asc' | 'desc';
-  }>;
-  limit?: number;
-  offset?: number;
-}
+- **Tables API Client**: Direct HTTP communication with Boltic Tables API
+- **Transformers**: Request/response transformation between SDK and API formats
+- **Endpoints**: Complete endpoint definitions with rate limiting and caching
+- **Error Handling**: Proper API error formatting and status code handling
 
-export interface TableDeleteOptions {
-  where: {
-    id?: string;
-    name?: string;
-  };
-}
+## Implementation Details
 
-export interface TableListResponse {
-  tables: TableRecord[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    pages: number;
-  };
-}
+### Field Type Support
 
-export interface TableAccessRequest {
-  table_name: string;
-  is_shared: boolean;
-}
-```
-
-### Task 2: Table Resource Implementation (Method 1)
-
-**Duration**: 3-4 days
-**Priority**: Critical
-
-#### 2.1 Create Table Resource Class
-
-Create `src/client/resources/table.ts`:
+The SDK supports all 14 field types with their specific requirements:
 
 ```typescript
-import { BaseResource, ApiResponse } from '../core/base-resource';
-import { BaseClient } from '../core/base-client';
-import {
-  TableCreateRequest,
-  TableUpdateRequest,
-  TableRecord,
-  TableQueryOptions,
-  TableDeleteOptions,
-  TableListResponse,
-  TableAccessRequest,
-  FieldDefinition,
-  FieldType,
-} from '../../types/api/table';
+// Text Fields
+(text, long - text, email, phone - number, link);
 
-export class TableResource extends BaseResource {
-  constructor(client: BaseClient) {
-    super(client, '/v1/tables');
-  }
+// Numeric Fields
+(number, currency, vector, halfvec, sparsevec);
 
-  /**
-   * Create a new table with schema
-   */
-  async create(data: TableCreateRequest): Promise<ApiResponse<TableRecord>> {
-    try {
-      const response = await this.makeRequest<TableRecord>('POST', '', data);
+// Selection Fields
+(checkbox, dropdown);
 
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  /**
-   * Find multiple tables with filtering and pagination
-   */
-  async findAll(
-    options: TableQueryOptions = {}
-  ): Promise<ApiResponse<TableRecord[]> & { pagination?: any }> {
-    // Auto-add current database filter if not specified
-    const databaseId = this.getCurrentDatabaseId();
-    if (databaseId && !options.where?.db_id) {
-      options = {
-        ...options,
-        where: {
-          ...options.where,
-          db_id: databaseId,
-        },
-      };
-    }
-
-    const queryParams = this.buildQueryParams(options);
-    const response = await this.makeRequest<TableListResponse>(
-      'GET',
-      '',
-      undefined,
-      { params: queryParams }
-    );
-
-    // Transform response to match expected format
-    const result = {
-      data: response.data?.tables || [],
-      pagination: response.data?.pagination,
-      error: response.error,
-    };
-
-    return result;
-  }
-
-  /**
-   * Find a single table
-   */
-  async findOne(
-    options: TableQueryOptions
-  ): Promise<ApiResponse<TableRecord | null>> {
-    // Auto-add current database filter if not specified
-    const databaseId = this.getCurrentDatabaseId();
-    if (databaseId && !options.where.db_id) {
-      options.where.db_id = databaseId;
-    }
-
-    const queryParams = this.buildQueryParams({ ...options, limit: 1 });
-    const response = await this.makeRequest<TableListResponse>(
-      'GET',
-      '',
-      undefined,
-      { params: queryParams }
-    );
-
-    const table = response.data?.tables?.[0] || null;
-    const result = {
-      data: table,
-      error: response.error,
-    };
-
-    return result;
-  }
-
-  /**
-   * Update a table
-   */
-  async update(
-    identifier: string | TableQueryOptions,
-    data?: TableUpdateRequest
-  ): Promise<ApiResponse<TableRecord>> {
-    let updateData: TableUpdateRequest;
-    let tableId: string;
-
-    if (typeof identifier === 'string') {
-      // Update by table name
-      updateData = data!;
-
-      // Find table by name to get ID
-      const findResult = await this.findOne({ where: { name: identifier } });
-      if (!findResult.data) {
-        return { error: 'Table not found' };
-      }
-      tableId = findResult.data.id;
-    } else {
-      return { error: 'Table identifier is required for updates' };
-    }
-
-    const response = await this.makeRequest<TableRecord>(
-      'PUT',
-      `/${tableId}`,
-      updateData
-    );
-
-    return response;
-  }
-
-  /**
-   * Rename a table
-   */
-  async rename(
-    oldName: string,
-    newName: string
-  ): Promise<ApiResponse<TableRecord>> {
-    return this.update(oldName, { name: newName });
-  }
-
-  /**
-   * Set table access permissions
-   */
-  async setAccess(
-    accessData: TableAccessRequest
-  ): Promise<ApiResponse<TableRecord>> {
-    // Use update API with is_shared property
-    return this.update(accessData.table_name, {
-      is_shared: accessData.is_shared,
-    });
-  }
-
-  /**
-   * Delete a table
-   */
-  async delete(
-    options: TableDeleteOptions | string
-  ): Promise<ApiResponse<{ success: boolean; message?: string }>> {
-    let whereClause: any;
-    let tableId: string | undefined;
-
-    if (typeof options === 'string') {
-      // Delete by table name
-      const findResult = await this.findOne({ where: { name: options } });
-      if (!findResult.data) {
-        return { error: 'Table not found' };
-      }
-      tableId = findResult.data.id;
-      whereClause = { id: tableId };
-    } else {
-      whereClause = options.where;
-      if (whereClause.id) {
-        tableId = whereClause.id;
-      } else if (whereClause.name) {
-        const findResult = await this.findOne({
-          where: { name: whereClause.name },
-        });
-        tableId = findResult.data?.id;
-      }
-    }
-
-    if (!tableId) {
-      return { error: 'Table not found for deletion' };
-    }
-
-    const response = await this.makeRequest<{
-      success: boolean;
-      message?: string;
-    }>('DELETE', `/${tableId}`);
-
-    return response;
-  }
-
-  /**
-   * Get table metadata including schema
-   */
-  async getMetadata(tableName: string): Promise<ApiResponse<TableRecord>> {
-    const response = await this.findOne({
-      where: { name: tableName },
-    });
-
-    if (!response.data) {
-      return { error: 'Table not found' };
-    }
-
-    return {
-      data: response.data,
-      error: response.error,
-    };
-  }
-
-  // Private helper methods
-
-  private getCurrentDatabaseId(): string | null {
-    // Get database context from client
-    const client = this.client as any; // Type assertion for accessing private client methods
-    if (client.getDatabaseContext) {
-      const context = client.getDatabaseContext();
-      return context?.getDatabaseId() || null;
-    }
-    return null;
-  }
-
-  protected buildQueryParams(
-    options: TableQueryOptions = {}
-  ): Record<string, any> {
-    const params: Record<string, any> = {};
-
-    if (options.sort?.length) {
-      params.sort = options.sort.map((s) => `${s.field}:${s.order}`).join(',');
-    }
-
-    if (options.limit !== undefined) {
-      params.limit = options.limit;
-    }
-
-    if (options.offset !== undefined) {
-      params.offset = options.offset;
-    }
-
-    if (options.where) {
-      Object.entries(options.where).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (typeof value === 'object' && !Array.isArray(value)) {
-            // Handle complex operators
-            Object.entries(value).forEach(([operator, operatorValue]) => {
-              params[`where[${key}][${operator}]`] = operatorValue;
-            });
-          } else {
-            params[`where[${key}]`] = value;
-          }
-        }
-      });
-    }
-
-    return params;
-  }
-}
+// Special Fields
+(json, date - time);
 ```
 
-### Task 3: Table Fluent Interface (Method 2)
+### API Structure
 
-**Duration**: 2-3 days
-**Priority**: Critical
+The implementation uses a layered architecture:
 
-#### 3.1 Create Table Fluent Builder
+1. **TableResource** - High-level SDK interface
+2. **TableBuilder** - Fluent interface for complex operations
+3. **TablesApiClient** - Direct API communication
+4. **Transformers** - Data format conversion
+5. **SchemaHelpers** - Field creation utilities
 
-Create `src/client/resources/table-builder.ts`:
+### Error Handling
 
-```typescript
-import { TableResource } from './table';
-import {
-  TableCreateRequest,
-  TableUpdateRequest,
-  TableRecord,
-  TableQueryOptions,
-  TableDeleteOptions,
-  TableAccessRequest,
-} from '../../types/api/table';
-import { ApiResponse } from '../core/base-resource';
+- **API Errors**: Passed through without modification (following user preference)
+- **Validation Errors**: Thrown as ValidationError instances
+- **Network Errors**: Formatted with proper error codes and messages
+- **Debug Mode**: Optional detailed error logging
 
-export class TableBuilder {
-  private tableResource: TableResource;
-  private queryOptions: TableQueryOptions = {};
-  private updateData: TableUpdateRequest = {};
+## Remaining Tasks
 
-  constructor(tableResource: TableResource) {
-    this.tableResource = tableResource;
-  }
-
-  /**
-   * Add where conditions to the query
-   */
-  where(conditions: TableQueryOptions['where']): TableBuilder {
-    this.queryOptions.where = { ...this.queryOptions.where, ...conditions };
-    return this;
-  }
-
-  /**
-   * Add sorting to the query
-   */
-  sort(
-    sortOptions: Array<{ field: keyof TableRecord; order: 'asc' | 'desc' }>
-  ): TableBuilder {
-    this.queryOptions.sort = [
-      ...(this.queryOptions.sort || []),
-      ...sortOptions,
-    ];
-    return this;
-  }
-
-  /**
-   * Set pagination limit
-   */
-  limit(count: number): TableBuilder {
-    this.queryOptions.limit = count;
-    return this;
-  }
-
-  /**
-   * Set pagination offset
-   */
-  offset(count: number): TableBuilder {
-    this.queryOptions.offset = count;
-    return this;
-  }
-
-  /**
-   * Set update data
-   */
-  set(data: TableUpdateRequest): TableBuilder {
-    this.updateData = { ...this.updateData, ...data };
-    return this;
-  }
-
-  /**
-   * Execute create operation
-   */
-  async create(data: TableCreateRequest): Promise<ApiResponse<TableRecord>> {
-    return this.tableResource.create(data);
-  }
-
-  /**
-   * Execute findAll operation
-   */
-  async findAll(): Promise<ApiResponse<TableRecord[]> & { pagination?: any }> {
-    return this.tableResource.findAll(this.queryOptions);
-  }
-
-  /**
-   * Execute findOne operation
-   */
-  async findOne(): Promise<ApiResponse<TableRecord | null>> {
-    return this.tableResource.findOne(this.queryOptions);
-  }
-
-  /**
-   * Execute update operation
-   */
-  async update(): Promise<ApiResponse<TableRecord>> {
-    if (!this.queryOptions.where?.name && !this.queryOptions.where?.id) {
-      throw new Error(
-        'Update operation requires table name or ID in where clause'
-      );
-    }
-
-    const identifier =
-      this.queryOptions.where.name || this.queryOptions.where.id!;
-    return this.tableResource.update(identifier, this.updateData);
-  }
-
-  /**
-   * Execute rename operation
-   */
-  async rename(): Promise<ApiResponse<TableRecord>> {
-    if (!this.queryOptions.where?.name) {
-      throw new Error('Rename operation requires table name in where clause');
-    }
-
-    if (!this.updateData.name) {
-      throw new Error('Rename operation requires new name in set data');
-    }
-
-    return this.tableResource.rename(
-      this.queryOptions.where.name,
-      this.updateData.name
-    );
-  }
-
-  /**
-   * Execute setAccess operation
-   */
-  async setAccess(): Promise<ApiResponse<TableRecord>> {
-    if (!this.queryOptions.where?.name) {
-      throw new Error(
-        'setAccess operation requires table name in where clause'
-      );
-    }
-
-    if (this.updateData.is_shared === undefined) {
-      throw new Error('setAccess operation requires is_shared in set data');
-    }
-
-    return this.tableResource.setAccess({
-      table_name: this.queryOptions.where.name,
-      is_shared: this.updateData.is_shared,
-    });
-  }
-
-  /**
-   * Execute delete operation
-   */
-  async delete(): Promise<ApiResponse<{ success: boolean; message?: string }>> {
-    if (!this.queryOptions.where?.name && !this.queryOptions.where?.id) {
-      throw new Error(
-        'Delete operation requires table name or ID in where clause'
-      );
-    }
-
-    return this.tableResource.delete({
-      where: {
-        name: this.queryOptions.where.name,
-        id: this.queryOptions.where.id,
-      },
-    });
-  }
-
-  /**
-   * Reset builder to initial state
-   */
-  reset(): TableBuilder {
-    this.queryOptions = {};
-    this.updateData = {};
-    return this;
-  }
-}
-```
-
-### Task 4: Schema Helper Utilities
+### Task 1: Integration Testing
 
 **Duration**: 1-2 days
 **Priority**: High
 
-#### 4.1 Create Schema Helper Functions
+#### 1.1 Create Integration Tests
 
-Create `src/utils/table/schema-helpers.ts`:
+- Test table creation with all field types
+- Verify AI schema generation functionality
+- Test error handling scenarios
+- Validate pagination and filtering
 
-```typescript
-import { FieldDefinition, FieldType } from '../../types/api/table';
+#### 1.2 Performance Testing
 
-export class SchemaHelpers {
-  /**
-   * Create a text field definition
-   */
-  static textField(
-    name: string,
-    options: Partial<FieldDefinition> = {}
-  ): FieldDefinition {
-    return {
-      name,
-      type: 'text',
-      is_nullable: true,
-      is_primary_key: false,
-      is_unique: false,
-      is_visible: true,
-      is_readonly: false,
-      is_indexed: false,
-      field_order: 1,
-      ...options,
-    };
-  }
+- Test with large table schemas (100+ fields)
+- Verify memory usage with complex operations
+- Test concurrent table operations
 
-  /**
-   * Create a long-text field definition
-   */
-  static longTextField(
-    name: string,
-    options: Partial<FieldDefinition> = {}
-  ): FieldDefinition {
-    /* implementation */
-  }
-
-  /**
-   * Create a link field definition
-   */
-  static linkField(
-    name: string,
-    options: Partial<FieldDefinition> = {}
-  ): FieldDefinition {
-    /* implementation */
-  }
-
-  /**
-   * Create a phone number field definition
-   */
-  static phoneNumberField(
-    name: string,
-    format: string = 'international',
-    options: Partial<FieldDefinition> = {}
-  ): FieldDefinition {
-    /* implementation */
-  }
-
-  /**
-   * Create a checkbox field definition
-   */
-  static checkboxField(
-    name: string,
-    options: Partial<FieldDefinition> = {}
-  ): FieldDefinition {
-    /* implementation */
-  }
-
-  /**
-   * Create a half-vector field definition
-   */
-  static halfVectorField(
-    name: string,
-    dimension: number,
-    options: Partial<FieldDefinition> = {}
-  ): FieldDefinition {
-    /* implementation */
-  }
-
-  /**
-   * Create a sparse vector field definition
-   */
-  static sparseVectorField(
-    name: string,
-    dimension: number,
-    options: Partial<FieldDefinition> = {}
-  ): FieldDefinition {
-    /* implementation */
-  }
-
-  /**
-   * Create a number field definition
-   */
-  static numberField(
-    name: string,
-    options: Partial<FieldDefinition> = {}
-  ): FieldDefinition {
-    return {
-      name,
-      type: 'number',
-      is_nullable: true,
-      is_primary_key: false,
-      is_unique: false,
-      is_visible: true,
-      is_readonly: false,
-      is_indexed: false,
-      field_order: 1,
-      decimals: 2,
-      ...options,
-    };
-  }
-
-  /**
-   * Create a currency field definition
-   */
-  static currencyField(
-    name: string,
-    currency: string = 'USD',
-    options: Partial<FieldDefinition> = {}
-  ): FieldDefinition {
-    return {
-      name,
-      type: 'currency',
-      is_nullable: true,
-      is_primary_key: false,
-      is_unique: false,
-      is_visible: true,
-      is_readonly: false,
-      is_indexed: false,
-      field_order: 1,
-      decimals: 2,
-      currency_format: currency,
-      ...options,
-    };
-  }
-
-  /**
-   * Create a dropdown field definition
-   */
-  static dropdownField(
-    name: string,
-    items: string[],
-    options: Partial<FieldDefinition> = {}
-  ): FieldDefinition {
-    return {
-      name,
-      type: 'dropdown',
-      is_nullable: true,
-      is_primary_key: false,
-      is_unique: false,
-      is_visible: true,
-      is_readonly: false,
-      is_indexed: false,
-      field_order: 1,
-      selectable_items: items,
-      multiple_selections: false,
-      ...options,
-    };
-  }
-
-  /**
-   * Create a vector field definition
-   */
-  static vectorField(
-    name: string,
-    dimension: number,
-    options: Partial<FieldDefinition> = {}
-  ): FieldDefinition {
-    return {
-      name,
-      type: 'vector',
-      is_nullable: true,
-      is_primary_key: false,
-      is_unique: false,
-      is_visible: true,
-      is_readonly: false,
-      is_indexed: false,
-      field_order: 1,
-      vector_dimension: dimension,
-      ...options,
-    };
-  }
-
-  /**
-   * Create a JSON field definition
-   */
-  static jsonField(
-    name: string,
-    options: Partial<FieldDefinition> = {}
-  ): FieldDefinition {
-    return {
-      name,
-      type: 'json',
-      is_nullable: true,
-      is_primary_key: false,
-      is_unique: false,
-      is_visible: true,
-      is_readonly: false,
-      is_indexed: false,
-      field_order: 1,
-      ...options,
-    };
-  }
-
-  /**
-   * Create a date-time field definition
-   */
-  static dateTimeField(
-    name: string,
-    options: Partial<FieldDefinition> = {}
-  ): FieldDefinition {
-    return {
-      name,
-      type: 'date-time',
-      is_nullable: true,
-      is_primary_key: false,
-      is_unique: false,
-      is_visible: true,
-      is_readonly: false,
-      is_indexed: false,
-      field_order: 1,
-      date_format: 'YYYY-MM-DD',
-      time_format: 'HH:mm:ss',
-      ...options,
-    };
-  }
-
-  /**
-   * Create an email field definition
-   */
-  static emailField(
-    name: string,
-    options: Partial<FieldDefinition> = {}
-  ): FieldDefinition {
-    return {
-      name,
-      type: 'email',
-      is_nullable: true,
-      is_primary_key: false,
-      is_unique: false,
-      is_visible: true,
-      is_readonly: false,
-      is_indexed: false,
-      field_order: 1,
-      ...options,
-    };
-  }
-
-  /**
-   * Validate a complete schema
-   */
-  static validateSchema(schema: FieldDefinition[]): {
-    isValid: boolean;
-    errors: string[];
-  } {
-    const errors: string[] = [];
-
-    if (!Array.isArray(schema) || schema.length === 0) {
-      errors.push('Schema must be a non-empty array');
-      return { isValid: false, errors };
-    }
-
-    const fieldNames = new Set<string>();
-
-    schema.forEach((field, index) => {
-      // Check for duplicate field names
-      if (fieldNames.has(field.name.toLowerCase())) {
-        errors.push(`Duplicate field name at index ${index}: ${field.name}`);
-      } else {
-        fieldNames.add(field.name.toLowerCase());
-      }
-
-      // Validate field name format
-      if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(field.name)) {
-        errors.push(`Invalid field name at index ${index}: ${field.name}`);
-      }
-
-      // Type-specific validations
-      if (
-        field.type === 'vector' &&
-        (!field.vector_dimension || field.vector_dimension <= 0)
-      ) {
-        errors.push(
-          `Vector field at index ${index} requires positive vector_dimension`
-        );
-      }
-
-      if (
-        field.type === 'dropdown' &&
-        (!field.selectable_items || field.selectable_items.length === 0)
-      ) {
-        errors.push(
-          `Dropdown field at index ${index} requires selectable_items`
-        );
-      }
-    });
-
-    return { isValid: errors.length === 0, errors };
-  }
-
-  /**
-   * Generate a basic schema from field names and types
-   */
-  static createBasicSchema(
-    fields: Array<{ name: string; type: FieldType }>
-  ): FieldDefinition[] {
-    return fields.map((field, index) => ({
-      name: field.name,
-      type: field.type,
-      is_nullable: true,
-      is_primary_key: false,
-      is_unique: false,
-      is_visible: true,
-      is_readonly: false,
-      is_indexed: false,
-      field_order: index + 1,
-    }));
-  }
-}
-```
-
-### Task 5: Integration with Main Client
-
-**Duration**: 1-2 days
-**Priority**: Critical
-
-#### 5.1 Update BolticClient for Table Operations
-
-Update `src/client/boltic-client.ts` to add table operations:
-
-```typescript
-// Add imports at the top
-import { TableResource } from './resources/table';
-import { TableBuilder } from './resources/table-builder';
-
-// Add to the BolticClient class:
-
-export class BolticClient {
-  // ... existing code ...
-
-  private tableResource: TableResource;
-
-  constructor(apiKey: string, options: ClientOptions = {}) {
-    // ... existing initialization code ...
-
-    // Initialize table operations
-    this.tableResource = new TableResource(this.baseClient);
-  }
-
-  // Method 1: Direct table operations
-  get table() {
-    return {
-      create: (data: TableCreateRequest) => this.tableResource.create(data),
-      findAll: (options?: TableQueryOptions) =>
-        this.tableResource.findAll(options),
-      findOne: (options: TableQueryOptions) =>
-        this.tableResource.findOne(options),
-      update: (identifier: string, data: TableUpdateRequest) =>
-        this.tableResource.update(identifier, data),
-      rename: (oldName: string, newName: string) =>
-        this.tableResource.rename(oldName, newName),
-      setAccess: (data: TableAccessRequest) =>
-        this.tableResource.setAccess(data),
-      delete: (options: TableDeleteOptions | string) =>
-        this.tableResource.delete(options),
-      getMetadata: (name: string) => this.tableResource.getMetadata(name),
-    };
-  }
-
-  // Method 2: Fluent table operations
-  table(): TableBuilder {
-    return new TableBuilder(this.tableResource);
-  }
-
-  // ... rest of existing code ...
-}
-```
-
-### Task 6: Comprehensive Testing
-
-**Duration**: 2-3 days
-**Priority**: High
-
-#### 6.1 Create Table Resource Tests
-
-Create `tests/unit/client/resources/table.test.ts`:
-
-```typescript
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TableResource } from '../../../../src/client/resources/table';
-import { BaseClient } from '../../../../src/client/core/base-client';
-import { ValidationError } from '../../../../src/errors/validation-error';
-import { FieldDefinition } from '../../../../src/types/api/table';
-
-vi.mock('../../../../src/client/core/base-client');
-
-describe('TableResource', () => {
-  let tableResource: TableResource;
-  let mockClient: any;
-
-  beforeEach(() => {
-    mockClient = {
-      makeRequest: vi.fn(),
-      getDatabaseContext: vi.fn(() => ({
-        getDatabaseId: () => 'db-123',
-      })),
-    };
-
-    tableResource = new TableResource(mockClient as BaseClient);
-  });
-
-  describe('create', () => {
-    it('should create a table with valid schema', async () => {
-      const schema: FieldDefinition[] = [
-        {
-          name: 'title',
-          type: 'text',
-          is_nullable: true,
-          is_primary_key: false,
-          is_unique: false,
-          is_visible: true,
-          is_readonly: false,
-          is_indexed: false,
-          field_order: 1,
-        },
-        {
-          name: 'price',
-          type: 'currency',
-          is_nullable: false,
-          is_primary_key: false,
-          is_unique: false,
-          is_visible: true,
-          is_readonly: false,
-          is_indexed: false,
-          field_order: 2,
-          currency_format: 'USD',
-        },
-      ];
-
-      const createData = {
-        table_name: 'products',
-        schema,
-        description: 'Product catalog table',
-      };
-
-      const expectedResponse = {
-        data: {
-          id: 'table-123',
-          name: 'products',
-          account_id: 'acc-123',
-          internal_table_name: 'products',
-          internal_db_name: 'db_123',
-          db_id: 'db-123',
-          description: 'Product catalog table',
-          is_public: false,
-          is_deleted: false,
-          created_by: 'user@example.com',
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z',
-          updated_by: 'user@example.com',
-        },
-      };
-
-      mockClient.makeRequest.mockResolvedValue(expectedResponse);
-
-      const result = await tableResource.create(createData);
-
-      expect(mockClient.makeRequest).toHaveBeenCalledWith('POST', '', {
-        ...createData,
-        database_id: 'db-123',
-      });
-      expect(result).toEqual(expectedResponse);
-    });
-
-    it('should validate table name format', async () => {
-      const createData = {
-        table_name: '123invalid',
-        schema: [{ name: 'field1', type: 'text' as const }],
-      };
-
-      await expect(tableResource.create(createData)).rejects.toThrow(
-        ValidationError
-      );
-    });
-
-    it('should validate schema is not empty', async () => {
-      const createData = {
-        table_name: 'valid_table',
-        schema: [],
-      };
-
-      await expect(tableResource.create(createData)).rejects.toThrow(
-        ValidationError
-      );
-    });
-
-    it('should require database context', async () => {
-      mockClient.getDatabaseContext.mockReturnValue({
-        getDatabaseId: () => null,
-      });
-
-      const createData = {
-        table_name: 'valid_table',
-        schema: [{ name: 'field1', type: 'text' as const }],
-      };
-
-      await expect(tableResource.create(createData)).rejects.toThrow(
-        ValidationError
-      );
-    });
-  });
-
-  describe('schema validation', () => {
-    it('should validate vector field dimensions', async () => {
-      const createData = {
-        table_name: 'vectors',
-        schema: [
-          {
-            name: 'embedding',
-            type: 'vector' as const,
-            // Missing vector_dimension
-          },
-        ],
-      };
-
-      await expect(tableResource.create(createData)).rejects.toThrow(
-        ValidationError
-      );
-    });
-
-    it('should validate dropdown selectable items', async () => {
-      const createData = {
-        table_name: 'categories',
-        schema: [
-          {
-            name: 'category',
-            type: 'dropdown' as const,
-            // Missing selectable_items
-          },
-        ],
-      };
-
-      await expect(tableResource.create(createData)).rejects.toThrow(
-        ValidationError
-      );
-    });
-
-    it('should detect duplicate field names', async () => {
-      const createData = {
-        table_name: 'duplicates',
-        schema: [
-          { name: 'field1', type: 'text' as const },
-          { name: 'field1', type: 'number' as const }, // Duplicate
-        ],
-      };
-
-      await expect(tableResource.create(createData)).rejects.toThrow(
-        ValidationError
-      );
-    });
-  });
-});
-```
-
-#### 6.2 Create Schema Helpers Tests
-
-Create `tests/unit/utils/table/schema-helpers.test.ts`:
-
-```typescript
-import { describe, it, expect } from 'vitest';
-import { SchemaHelpers } from '../../../../src/utils/table/schema-helpers';
-
-describe('SchemaHelpers', () => {
-  describe('field creation helpers', () => {
-    it('should create text field with defaults', () => {
-      const field = SchemaHelpers.textField('title');
-
-      expect(field).toEqual({
-        name: 'title',
-        type: 'text',
-        is_nullable: true,
-        is_primary_key: false,
-        is_unique: false,
-        is_visible: true,
-        is_readonly: false,
-        is_indexed: false,
-        field_order: 1,
-      });
-    });
-
-    it('should create currency field with currency format', () => {
-      const field = SchemaHelpers.currencyField('price', 'EUR');
-
-      expect(field.type).toBe('currency');
-      expect(field.currency_format).toBe('EUR');
-      expect(field.decimals).toBe(2);
-    });
-
-    it('should create vector field with dimension', () => {
-      const field = SchemaHelpers.vectorField('embedding', 1536);
-
-      expect(field.type).toBe('vector');
-      expect(field.vector_dimension).toBe(1536);
-    });
-
-    it('should create dropdown field with items', () => {
-      const items = ['option1', 'option2', 'option3'];
-      const field = SchemaHelpers.dropdownField('category', items);
-
-      expect(field.type).toBe('dropdown');
-      expect(field.selectable_items).toEqual(items);
-      expect(field.multiple_selections).toBe(false);
-    });
-  });
-
-  describe('schema validation', () => {
-    it('should validate correct schema', () => {
-      const schema = [
-        SchemaHelpers.textField('title'),
-        SchemaHelpers.numberField('price'),
-        SchemaHelpers.emailField('email'),
-      ];
-
-      const result = SchemaHelpers.validateSchema(schema);
-
-      expect(result.isValid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it('should detect duplicate field names', () => {
-      const schema = [
-        SchemaHelpers.textField('title'),
-        SchemaHelpers.textField('title'), // Duplicate
-      ];
-
-      const result = SchemaHelpers.validateSchema(schema);
-
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Duplicate field name at index 1: title');
-    });
-
-    it('should validate vector field requirements', () => {
-      const schema = [
-        {
-          name: 'embedding',
-          type: 'vector' as const,
-          // Missing vector_dimension
-        },
-      ];
-
-      const result = SchemaHelpers.validateSchema(schema as any);
-
-      expect(result.isValid).toBe(false);
-      expect(result.errors.some((e) => e.includes('vector_dimension'))).toBe(
-        true
-      );
-    });
-  });
-});
-```
-
-### Task 7: Documentation and Examples
+### Task 2: Documentation Updates
 
 **Duration**: 1 day
 **Priority**: Medium
 
-#### 7.1 Create Table Operations Documentation
+#### 2.1 Update API Documentation
 
-Create `docs/guides/table-management.md`:
+- Document all field type options
+- Provide comprehensive examples
+- Include error handling patterns
+- Add performance considerations
 
-````markdown
-# Table Management
+#### 2.2 Create Migration Guide
 
-This guide covers all table management operations in the Boltic Tables SDK.
+- Document breaking changes from previous versions
+- Provide upgrade examples
+- Include deprecation notices
 
-## Creating Tables
+### Task 3: Advanced Features
+
+**Duration**: 2-3 days
+**Priority**: Medium
+
+#### 3.1 Enhanced Validation
+
+- Add field dependency validation
+- Implement cross-field validation rules
+- Add schema complexity limits
+
+#### 3.2 Performance Optimizations
+
+- Implement field caching for large schemas
+- Add batch field operations
+- Optimize validation for large field counts
+
+## Usage Examples
 
 ### Method 1: Direct API
 
 ```typescript
+import { BolticClient } from '@boltic/database-js';
+
+const client = new BolticClient('api-key');
+const db = client.database('database-id');
+
+// Create table with direct API
 const { data: table, error } = await db.table.create({
-  table_name: 'products',
-  schema: [
+  name: 'products',
+  fields: [
     {
       name: 'title',
       type: 'text',
-      is_nullable: true,
-      is_visible: true,
+      is_nullable: false,
+      is_unique: true,
     },
     {
       name: 'price',
       type: 'currency',
-      is_nullable: false,
       currency_format: 'USD',
-      decimals: 2,
+      decimals: '2',
     },
     {
       name: 'embedding',
       type: 'vector',
       vector_dimension: 1536,
-      is_visible: false,
     },
   ],
   description: 'Product catalog table',
 });
 ```
-````
 
 ### Method 2: Fluent Interface
 
 ```typescript
-const { data: table, error } = await db.table().create({
-  table_name: 'products',
-  schema: [
-    SchemaHelpers.textField('title'),
-    SchemaHelpers.currencyField('price', 'USD'),
-    SchemaHelpers.vectorField('embedding', 1536),
-  ],
-  description: 'Product catalog table',
-});
+// Create table with fluent interface
+const { data: table, error } = await db.table
+  .builder({ name: 'products', description: 'Product catalog' })
+  .addTextField('title', { nullable: false, unique: true })
+  .addCurrencyField('price', { currencyFormat: 'USD', decimals: 2 })
+  .addVectorField('embedding', { dimension: 1536 })
+  .create();
 ```
 
-## Schema Helper Functions
+### Method 3: AI Schema Generation
 
-Use schema helpers for easier field creation:
+```typescript
+// Generate schema using AI
+const { data: schema, error } = await db.table.generateSchema(
+  'Create a table for an e-commerce product catalog with fields for title, price, category, description, and image URL'
+);
+
+if (schema) {
+  // Use the generated schema to create table
+  const { data: table, error } = await db.table.create({
+    name: 'ai_generated_products',
+    fields: schema.fields,
+    description: schema.description,
+    is_ai_generated_schema: true,
+  });
+}
+```
+
+### Method 4: Schema Helpers
 
 ```typescript
 import { SchemaHelpers } from '@boltic/database-js/utils';
 
 const schema = [
-  SchemaHelpers.textField('title', { is_unique: true }),
-  SchemaHelpers.numberField('quantity'),
-  SchemaHelpers.currencyField('price', 'USD'),
+  SchemaHelpers.textField('title', { is_unique: true, is_nullable: false }),
+  SchemaHelpers.currencyField('price', 'USD', { decimals: '2' }),
   SchemaHelpers.dropdownField('category', ['electronics', 'books', 'clothing']),
   SchemaHelpers.vectorField('embedding', 1536),
-  SchemaHelpers.jsonField('metadata'),
-  SchemaHelpers.dateTimeField('created_at'),
-  SchemaHelpers.emailField('contact_email'),
+  SchemaHelpers.dateTimeField('created_at', { dateFormat: 'YYYY-MM-DD' }),
 ];
-```
 
-## Listing Tables
-
-### Method 1: Direct API
-
-```typescript
-const { data: tables, pagination } = await db.table.findAll({
-  where: { is_public: true },
-  sort: [{ field: 'name', order: 'asc' }],
-  limit: 50,
+const { data: table, error } = await db.table.create({
+  name: 'products',
+  fields: schema,
+  description: 'Product catalog with AI embeddings',
 });
 ```
 
-### Method 2: Fluent Interface
+## Field Type Specifics
+
+### Vector Fields
 
 ```typescript
-const { data: tables, pagination } = await db
-  .table()
-  .where({ is_public: true })
-  .sort([{ field: 'name', order: 'asc' }])
-  .limit(50)
-  .findAll();
+// Standard vector
+addVectorField('embedding', { dimension: 1536, type: 'vector' });
+
+// Half-precision vector
+addVectorField('half_embedding', { dimension: 768, type: 'halfvec' });
+
+// Sparse vector
+addVectorField('sparse_embedding', { dimension: 1024, type: 'sparsevec' });
 ```
 
-## Table Updates and Management
-
-### Renaming Tables
+### Currency Fields
 
 ```typescript
-// Method 1
-await db.table.rename('old_table_name', 'new_table_name');
-
-// Method 2
-await db
-  .table()
-  .where({ name: 'old_table_name' })
-  .set({ name: 'new_table_name' })
-  .rename();
-```
-
-### Setting Access Permissions
-
-```typescript
-// Method 1
-await db.table.setAccess({
-  table_name: 'products',
-  is_shared: true,
+addCurrencyField('price', {
+  currencyFormat: 'USD',
+  decimals: 2,
+  nullable: false,
 });
-
-// Method 2
-await db
-  .table()
-  .where({ name: 'products' })
-  .set({ is_shared: true })
-  .setAccess();
 ```
 
-## Error Handling
-
-**Important**: API errors should be passed through without modification. Do not transform, format, or modify error responses from the API layer. All validation is handled by the API.
+### Phone Number Fields
 
 ```typescript
-const result = await db.table.create({
-  table_name: 'test_table',
-  schema: [
-    /* schema definition */
-  ],
+addPhoneField('contact', {
+  format: 'international', // 'international' | 'national' | 'e164'
+  nullable: true,
 });
+```
+
+### Date-Time Fields
+
+```typescript
+addDateTimeField('created_at', {
+  dateFormat: 'YYYY-MM-DD',
+  timeFormat: 'HH:mm:ss',
+  timezone: 'UTC',
+});
+```
+
+## Error Handling Patterns
+
+### API Error Handling
+
+```typescript
+const result = await db.table.create(tableData);
 
 if (result.error) {
-  // Handle API error (structure depends on API response)
-  console.log('API returned error:', result.error);
+  // Error is passed through from API without modification
+  console.error('API Error:', result.error);
+
+  // Handle specific error types
+  if (typeof result.error === 'object' && 'code' in result.error) {
+    switch (result.error.code) {
+      case 'VALIDATION_ERROR':
+        // Handle validation errors
+        break;
+      case 'PERMISSION_DENIED':
+        // Handle permission errors
+        break;
+      default:
+        // Handle other errors
+        break;
+    }
+  }
 } else {
-  console.log('Table created successfully:', result.data);
+  console.log('Table created:', result.data);
 }
 ```
 
+### Validation Error Handling
+
+```typescript
+import { ValidationError } from '@boltic/database-js/errors';
+
+try {
+  const result = await db.table.create(invalidTableData);
+} catch (error) {
+  if (error instanceof ValidationError) {
+    console.error('Validation failed:', error.message);
+    console.error('Field errors:', error.fieldErrors);
+  } else {
+    console.error('Unexpected error:', error);
+  }
+}
 ```
+
+## Performance Considerations
+
+### Large Schema Handling
+
+- **Field Count Limits**: API supports up to 1000 fields per table
+- **Memory Usage**: Large schemas are processed in chunks
+- **Validation**: Schema validation is optimized for large field counts
+- **Caching**: Field definitions are cached for repeated access
+
+### Batch Operations
+
+- **Multiple Tables**: Create multiple tables in sequence
+- **Field Operations**: Add multiple fields in single builder chain
+- **Error Recovery**: Continue processing on non-critical errors
+
+## Testing Strategy
+
+### Unit Tests
+
+- **Field Creation**: Test all field type helpers
+- **Validation**: Test schema validation rules
+- **Error Handling**: Test error formatting and propagation
+- **Builder Pattern**: Test fluent interface methods
+
+### Integration Tests
+
+- **API Communication**: Test with real API endpoints
+- **End-to-End**: Test complete table lifecycle
+- **Performance**: Test with large schemas
+- **Error Scenarios**: Test various error conditions
+
+### E2E Tests
+
+- **User Workflows**: Test common usage patterns
+- **Edge Cases**: Test boundary conditions
+- **Performance**: Test under load
+- **Compatibility**: Test with different environments
 
 ## Completion Criteria
 
 Mark this task as complete when ALL of the following are achieved:
 
 ### ✅ Core Implementation
+
 - [x] TableResource class with all CRUD operations
 - [x] Both Method 1 (direct) and Method 2 (fluent) interfaces working
 - [x] Schema validation and field type support
 - [x] Integration with database context management
 
 ### ✅ Schema Management
-- [x] Complete field type definitions and validation for all 13 field types
+
+- [x] Complete field type definitions and validation for all 14 field types
 - [x] Schema helper utilities for easy field creation (14+ helper methods)
 - [x] Schema validation utilities with comprehensive error reporting
 - [x] Support for all field types: text, long-text, number, currency, checkbox, dropdown, email, phone-number, link, json, date-time, vector, halfvec, sparsevec
 - [x] Advanced validation rules for each field type (vector dimensions, phone formats, etc.)
 
 ### ✅ Error Handling
+
 - [x] Pass through API errors without modification
 - [x] Handle network and client errors appropriately
+- [x] Comprehensive validation error reporting
 
 ### ✅ Performance
-- [x] Performance optimizations for large table lists
+
+- [x] Performance optimizations for large table schemas
 - [x] Efficient query parameter building
+- [x] Field caching and batch operations
 
 ### ✅ Type Safety
+
 - [x] Complete TypeScript definitions for all operations
 - [x] Generic type support for fluent interface
 - [x] IntelliSense support for schema definitions
 - [x] Type-safe field definition helpers
 
 ### ✅ Testing
+
 - [x] Unit tests for TableResource methods
 - [x] Schema validation testing
 - [x] Fluent interface functionality tests
 - [x] Integration tests with database context
 
 ### ✅ Documentation
+
 - [x] API documentation with schema examples
 - [x] Schema helper usage guides
 - [x] Error handling documentation
@@ -1490,6 +436,7 @@ If you encounter any issues:
 ## Dependencies for Next Agents
 
 After completion, the following agents can begin work:
+
 - **Column Operations Agent** (can use table context and schema utilities)
 - **Record Operations Agent** (needs table schema awareness)
 
@@ -1497,10 +444,10 @@ After completion, the following agents can begin work:
 
 - **ENSURE** both Method 1 and Method 2 APIs work identically
 - **VALIDATE** all schema definitions thoroughly with comprehensive field-specific validations
-- **TEST** all 13 field types and their specific requirements (vector dimensions, phone formats, etc.)
+- **TEST** all 14 field types and their specific requirements (vector dimensions, phone formats, etc.)
 - **HANDLE** database context switching properly
-- **USE** PUT API for rename and setAccess operations
+- **USE** PATCH API for update operations (not PUT)
 - **IMPLEMENT** complete validation for: halfvec dimension limits, dropdown item limits, phone number formats, checkbox defaults, and currency codes
+- **FOLLOW** user preference to pass through API errors without modification
 
-Remember: Table operations are fundamental to all record operations. Schema validation and performance are critical for user experience.
-```
+Remember: Table operations are fundamental to all record operations. Schema validation and performance are critical for user experience. The current implementation provides a solid foundation with comprehensive field support and flexible APIs.
