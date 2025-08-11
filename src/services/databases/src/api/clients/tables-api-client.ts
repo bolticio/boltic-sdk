@@ -117,10 +117,11 @@ export class TablesApiClient {
   async listTables(options: TableListOptions = {}): Promise<{
     data: TableRecord[];
     pagination?: {
-      total: number;
-      page: number;
-      limit: number;
-      pages: number;
+      total_count: number;
+      total_pages: number;
+      current_page: number;
+      per_page: number;
+      type: string;
     };
     error?: ApiError;
   }> {

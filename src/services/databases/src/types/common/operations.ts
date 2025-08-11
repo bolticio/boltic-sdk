@@ -1,10 +1,9 @@
 export interface PaginationInfo {
-  currentPage: number;
-  totalPages: number;
-  totalCount: number;
-  pageSize: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
+  total_count: number;
+  total_pages: number;
+  current_page: number;
+  per_page: number;
+  type: string;
 }
 
 export interface CreateOperation<TCreate, TResult> {

@@ -333,6 +333,46 @@ export class TableResource extends BaseResource {
   }
 
   /**
+   * Get table ID by name using the tables API
+   */
+  static async getTableId(
+    tablesApiClient: TablesApiClient,
+    tableName: string
+  ): Promise<string | null> {
+    try {
+      // List tables to find the one with matching name
+      const result = await tablesApiClient.listTables({
+        where: { name: tableName },
+        limit: 1,
+      });
+
+      if (result.error) {
+        console.error('Failed to fetch tables:', result.error);
+        return null;
+      }
+
+      if (!result.data || result.data.length === 0) {
+        return null;
+      }
+
+      // Return the first matching table's ID
+      const tableId = result.data[0].id;
+      console.log(`Found table '${tableName}' with ID: ${tableId}`);
+      return tableId;
+    } catch (error) {
+      console.error('Error getting table ID:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get table ID by name using the tables API (instance method)
+   */
+  async getTableId(tableName: string): Promise<string | null> {
+    return TableResource.getTableId(this.tablesApiClient, tableName);
+  }
+
+  /**
    * Create a table builder for fluent API
    */
   builder(options: {

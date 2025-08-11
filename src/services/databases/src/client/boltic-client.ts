@@ -4,6 +4,14 @@ import {
   ColumnUpdateOptions,
 } from '../types/api/column';
 import {
+  RecordData,
+  RecordDeleteByIdsOptions,
+  RecordDeleteOptions,
+  RecordQueryOptions,
+  RecordUpdateByIdOptions,
+  RecordUpdateOptions,
+} from '../types/api/record';
+import {
   FieldDefinition,
   TableAccessRequest,
   TableCreateRequest,
@@ -18,6 +26,8 @@ import { BaseClient } from './core/base-client';
 import { ClientConfig, ConfigManager } from './core/config';
 import { ColumnResource } from './resources/column';
 import { ColumnBuilder } from './resources/column-builder';
+import { RecordResource } from './resources/record';
+import { RecordBuilder } from './resources/record-builder';
 import { TableResource } from './resources/table';
 import { TableBuilder } from './resources/table-builder';
 
@@ -43,6 +53,7 @@ export class BolticClient {
   private baseClient: BaseClient;
   private tableResource: TableResource;
   private columnResource: ColumnResource;
+  private recordResource: RecordResource;
   private currentDatabase: DatabaseContext | null = null;
   private clientOptions: ClientOptions;
 
@@ -73,6 +84,9 @@ export class BolticClient {
 
     // Initialize column operations
     this.columnResource = new ColumnResource(this.baseClient);
+
+    // Initialize record operations
+    this.recordResource = new RecordResource(this.baseClient);
   }
 
   // Database context management
@@ -139,8 +153,33 @@ export class BolticClient {
   from(tableName: string) {
     return {
       column: () => new ColumnBuilder(this.columnResource, tableName),
-      // This will be extended by Record Operations Agent
+      record: () => new RecordBuilder(this.recordResource, tableName),
     };
+  }
+
+  // Method 1: Direct record operations
+  get record() {
+    return {
+      insert: (tableName: string, data: RecordData) =>
+        this.recordResource.insert(tableName, data),
+      findAll: (tableName: string, options?: RecordQueryOptions) =>
+        this.recordResource.findAll(tableName, options),
+      findOne: (tableName: string, options: RecordQueryOptions) =>
+        this.recordResource.findOne(tableName, options),
+      update: (tableName: string, options: RecordUpdateOptions) =>
+        this.recordResource.update(tableName, options),
+      updateById: (tableName: string, options: RecordUpdateByIdOptions) =>
+        this.recordResource.updateById(tableName, options),
+      delete: (tableName: string, options: RecordDeleteOptions) =>
+        this.recordResource.delete(tableName, options),
+      deleteByIds: (tableName: string, options: RecordDeleteByIdsOptions) =>
+        this.recordResource.deleteByIds(tableName, options),
+    };
+  }
+
+  // Method 2: Fluent interface for record operations
+  records(tableName: string): RecordBuilder {
+    return new RecordBuilder(this.recordResource, tableName);
   }
 
   // Configuration and utility methods
@@ -157,7 +196,7 @@ export class BolticClient {
     const config = this.configManager.getConfig();
     const safeConfig = { ...config };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (safeConfig as any).apiKey;
+    delete (safeConfig as Record<string, unknown>).apiKey;
     return safeConfig;
   }
 

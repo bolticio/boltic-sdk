@@ -7,9 +7,6 @@ import {
   ColumnQueryOptions,
   ColumnRecord,
   ColumnUpdateOptions,
-  ColumnUpdateRequest,
-  DateFormatEnum,
-  TimeFormatEnum,
 } from '../../types/api/column';
 import { FieldDefinition } from '../../types/api/table';
 import { PaginationInfo } from '../../types/common/operations';
@@ -17,6 +14,7 @@ import { ApiResponse } from '../../types/common/responses';
 import { ColumnValidator } from '../../utils/validation/column-validator';
 import { BaseClient } from '../core/base-client';
 import { BaseResource } from '../core/base-resource';
+import { TableResource } from './table';
 
 export class ColumnResource extends BaseResource {
   private columnsApiClient: ColumnsApiClient;
@@ -54,7 +52,10 @@ export class ColumnResource extends BaseResource {
     column: FieldDefinition
   ): Promise<ApiResponse<ColumnRecord>> {
     // Get current table context
-    const tableId = await this.getTableId(tableName);
+    const tableId = await TableResource.getTableId(
+      this.tablesApiClient,
+      tableName
+    );
     if (!tableId) {
       throw new ValidationError('Table not found', [
         {
@@ -64,14 +65,9 @@ export class ColumnResource extends BaseResource {
       ]);
     }
 
-    // Apply default values and transform user-friendly formats
-    const processedData = this.processColumnData(column);
-
+    // Pass column data as-is without transformation
     try {
-      const result = await this.columnsApiClient.createColumn(
-        tableId,
-        processedData
-      );
+      const result = await this.columnsApiClient.createColumn(tableId, column);
 
       if (result.error) {
         return {
@@ -103,7 +99,10 @@ export class ColumnResource extends BaseResource {
     tableName: string,
     options: ColumnQueryOptions = {}
   ): Promise<ApiResponse<ColumnDetails[]> & { pagination?: PaginationInfo }> {
-    const tableId = await this.getTableId(tableName);
+    const tableId = await TableResource.getTableId(
+      this.tablesApiClient,
+      tableName
+    );
     if (!tableId) {
       throw new ValidationError('Table not found', [
         {
@@ -127,12 +126,11 @@ export class ColumnResource extends BaseResource {
         data: result.data,
         pagination: result.pagination
           ? {
-              currentPage: result.pagination.page,
-              totalPages: result.pagination.pages,
-              totalCount: result.pagination.total,
-              pageSize: result.pagination.limit,
-              hasNextPage: result.pagination.page < result.pagination.pages,
-              hasPreviousPage: result.pagination.page > 1,
+              total_count: result.pagination.total_count,
+              total_pages: result.pagination.total_pages,
+              current_page: result.pagination.current_page,
+              per_page: result.pagination.per_page,
+              type: result.pagination.type,
             }
           : undefined,
       };
@@ -163,7 +161,10 @@ export class ColumnResource extends BaseResource {
       );
     }
 
-    const tableId = await this.getTableId(tableName);
+    const tableId = await TableResource.getTableId(
+      this.tablesApiClient,
+      tableName
+    );
     if (!tableId) {
       throw new ValidationError('Table not found', [
         {
@@ -194,7 +195,6 @@ export class ColumnResource extends BaseResource {
 
     // Otherwise, use the list method with limit 1
     const queryOptions = { ...options, limit: 1 };
-    queryOptions.where!.table_id = tableId;
 
     const result = await this.columnsApiClient.listColumns(
       tableId,
@@ -225,7 +225,10 @@ export class ColumnResource extends BaseResource {
       options.set as Record<string, unknown>
     );
 
-    const tableId = await this.getTableId(tableName);
+    const tableId = await TableResource.getTableId(
+      this.tablesApiClient,
+      tableName
+    );
     if (!tableId) {
       throw new ValidationError('Table not found', [
         {
@@ -235,9 +238,7 @@ export class ColumnResource extends BaseResource {
       ]);
     }
 
-    // Process update data to transform user-friendly formats
-    const processedUpdateData = this.processUpdateData(options.set);
-
+    // Pass update data as-is without transformation
     try {
       let result;
 
@@ -246,7 +247,7 @@ export class ColumnResource extends BaseResource {
         result = await this.columnsApiClient.updateColumnByName(
           tableId,
           options.where.name,
-          processedUpdateData
+          options.set
         );
       } else {
         // Find the column to get its ID
@@ -278,7 +279,7 @@ export class ColumnResource extends BaseResource {
         result = await this.columnsApiClient.updateColumn(
           tableId,
           columnId,
-          processedUpdateData
+          options.set
         );
       }
 
@@ -307,7 +308,10 @@ export class ColumnResource extends BaseResource {
     tableName: string,
     options: ColumnDeleteOptions
   ): Promise<ApiResponse<{ success: boolean; message?: string }>> {
-    const tableId = await this.getTableId(tableName);
+    const tableId = await TableResource.getTableId(
+      this.tablesApiClient,
+      tableName
+    );
     if (!tableId) {
       throw new ValidationError('Table not found', [
         {
@@ -376,135 +380,6 @@ export class ColumnResource extends BaseResource {
         error: error instanceof Error ? error.message : 'Unknown error',
         details: error,
       };
-    }
-  }
-
-  /**
-   * Process single column data to apply default values and transform formats
-   */
-  private processColumnData(column: FieldDefinition): FieldDefinition {
-    // Set default values
-    const processedColumn: FieldDefinition = {
-      ...column,
-      // Required defaults
-      description: column.description ?? undefined,
-      default_value: column.default_value ?? undefined,
-      is_nullable: column.is_nullable ?? true,
-      is_indexed: column.is_indexed ?? false,
-      is_primary_key: column.is_primary_key ?? false,
-      is_unique: column.is_unique ?? false,
-
-      // Hardcoded defaults
-      is_visible: true,
-      is_readonly: false,
-      alignment: column.alignment ?? 'center',
-      field_order: column.field_order ?? 2,
-    };
-
-    // Type-specific defaults
-    switch (column.type) {
-      case 'number':
-        processedColumn.decimals = column.decimals ?? '0.00';
-        break;
-      case 'currency':
-        processedColumn.decimals = column.decimals ?? '0.00';
-        processedColumn.currency_format = column.currency_format ?? 'INR';
-        break;
-      case 'date-time':
-        processedColumn.date_format = column.date_format ?? 'MMDDYY';
-        processedColumn.timezone = column.timezone ?? 'utc';
-        // Only set time_format if user provides it
-        if (column.time_format) {
-          processedColumn.time_format = column.time_format;
-        }
-        break;
-      case 'phone-number':
-        processedColumn.phone_format =
-          column.phone_format ?? '+91 123 456 7890';
-        break;
-      case 'dropdown':
-        processedColumn.selection_source =
-          column.selection_source ?? 'provide-static-list';
-        break;
-    }
-
-    // Transform date and time formats if provided
-    if (
-      processedColumn.date_format &&
-      typeof processedColumn.date_format === 'string'
-    ) {
-      const dateFormatKey =
-        processedColumn.date_format as keyof typeof DateFormatEnum;
-      if (Object.keys(DateFormatEnum).includes(dateFormatKey)) {
-        processedColumn.date_format =
-          ColumnValidator.transformDateFormat(dateFormatKey);
-      }
-    }
-
-    if (
-      processedColumn.time_format &&
-      typeof processedColumn.time_format === 'string'
-    ) {
-      const timeFormatKey =
-        processedColumn.time_format as keyof typeof TimeFormatEnum;
-      if (Object.keys(TimeFormatEnum).includes(timeFormatKey)) {
-        processedColumn.time_format =
-          ColumnValidator.transformTimeFormat(timeFormatKey);
-      }
-    }
-
-    return processedColumn;
-  }
-
-  /**
-   * Process update data to transform user-friendly formats
-   */
-  private processUpdateData(data: ColumnUpdateRequest): ColumnUpdateRequest {
-    const processedData: ColumnUpdateRequest = { ...data };
-
-    // Transform date and time formats
-    if (data.date_format && typeof data.date_format === 'string') {
-      processedData.date_format = ColumnValidator.transformDateFormat(
-        data.date_format as keyof typeof DateFormatEnum
-      ) as keyof typeof DateFormatEnum;
-    }
-
-    if (data.time_format && typeof data.time_format === 'string') {
-      processedData.time_format = ColumnValidator.transformTimeFormat(
-        data.time_format as keyof typeof TimeFormatEnum
-      ) as keyof typeof TimeFormatEnum;
-    }
-
-    return processedData;
-  }
-
-  /**
-   * Get table ID by name using the tables API
-   */
-  private async getTableId(tableName: string): Promise<string | null> {
-    try {
-      // List tables to find the one with matching name
-      const result = await this.tablesApiClient.listTables({
-        where: { name: tableName },
-        limit: 1,
-      });
-
-      if (result.error) {
-        console.error('Failed to fetch tables:', result.error);
-        return null;
-      }
-
-      if (!result.data || result.data.length === 0) {
-        return null;
-      }
-
-      // Return the first matching table's ID
-      const tableId = result.data[0].id;
-      console.log(`Found table '${tableName}' with ID: ${tableId}`);
-      return tableId;
-    } catch (error) {
-      console.error('Error getting table ID:', error);
-      return null;
     }
   }
 
