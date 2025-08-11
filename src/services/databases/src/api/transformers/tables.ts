@@ -58,8 +58,10 @@ export interface TableListApiResponse {
   data: TableRecord[];
   pagination: {
     total_count: number;
+    total_pages: number;
     current_page: number;
     per_page: number;
+    type: string;
   };
 }
 
@@ -222,22 +224,21 @@ export function transformTableResponse(
 export function transformTableListResponse(response: TableListApiResponse): {
   tables: TableRecord[];
   pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    pages: number;
+    total_count: number;
+    total_pages: number;
+    current_page: number;
+    per_page: number;
+    type: string;
   };
 } {
   return {
-    tables: response.data || [],
+    tables: response.data,
     pagination: {
-      total: response.pagination?.total_count || 0,
-      page: response.pagination?.current_page || 1,
-      limit: response.pagination?.per_page || 10,
-      pages: Math.ceil(
-        (response.pagination?.total_count || 0) /
-          (response.pagination?.per_page || 10)
-      ),
+      total_count: response.pagination?.total_count,
+      total_pages: response.pagination?.total_pages,
+      current_page: response.pagination?.current_page,
+      per_page: response.pagination?.per_page,
+      type: response.pagination?.type,
     },
   };
 }

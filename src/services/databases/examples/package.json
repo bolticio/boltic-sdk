@@ -22,7 +22,9 @@
     "demo:tables-api:built": "npm run build:parent && tsx basic/tables-api-demo.ts",
     "demo:columns:built": "npm run build:parent && tsx basic/column-operations-demo.ts",
     "demo:validate:built": "npm run build:parent && tsx basic/validate-columns.ts",
-    "demo:comprehensive:built": "npm run build:parent && tsx basic/comprehensive-demo.ts"
+    "demo:comprehensive:built": "npm run build:parent && tsx basic/comprehensive-demo.ts",
+    "demo:records": "npx tsx comprehensive-records-demo.ts",
+    "demo:records:build": "npm run build && node dist/comprehensive-records-demo.js"
   },
   "dependencies": {
     "tsx": "^4.6.0",

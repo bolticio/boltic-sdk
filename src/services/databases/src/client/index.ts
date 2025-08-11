@@ -12,6 +12,8 @@ export * from './core/auth-manager';
 export * from './core/base-client';
 export * from './core/base-resource';
 export * from './core/config';
+export * from './resources/record';
+export * from './resources/record-builder';
 export * from './resources/table';
 export {
   createTableBuilder,

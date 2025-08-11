@@ -8,6 +8,18 @@ export * from './common/responses';
 
 // API types
 // export * from './api/database';
-// export * from './api/record';
+export * from './api/record';
 // export * from './api/sql';
-// export * from './api/table';
+export type {
+  AlignmentType,
+  FieldDefinition,
+  FieldType,
+  TableAccessRequest,
+  TableCreateRequest,
+  TableCreateResponse,
+  TableDeleteOptions,
+  TableListResponse,
+  TableQueryOptions,
+  TableRecord,
+  TableUpdateRequest,
+} from './api/table';
