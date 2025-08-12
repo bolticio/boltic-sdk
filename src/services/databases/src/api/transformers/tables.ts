@@ -149,7 +149,7 @@ export function transformTableListRequest(
 
   // Add filters
   if (options.where) {
-    request.filters = buildApiFilters(options.where, { validateFilters: true });
+    request.filters = buildApiFilters(options.where);
   }
 
   // Add shared filter
@@ -250,82 +250,4 @@ export function transformGenerateSchemaRequest(
   prompt: string
 ): GenerateSchemaApiRequest {
   return { prompt };
-}
-
-/**
- * Validate table name according to API requirements
- */
-export function validateTableName(name: string): {
-  valid: boolean;
-  error?: string;
-} {
-  if (!name || typeof name !== 'string') {
-    return { valid: false, error: 'Table name is required' };
-  }
-
-  if (name.length > 100) {
-    return { valid: false, error: 'Table name cannot exceed 100 characters' };
-  }
-
-  if (name.trim() !== name) {
-    return {
-      valid: false,
-      error: 'Table name cannot have leading or trailing whitespace',
-    };
-  }
-
-  if (name.length === 0) {
-    return { valid: false, error: 'Table name cannot be empty' };
-  }
-
-  return { valid: true };
-}
-
-/**
- * Validate table description according to API requirements
- */
-export function validateTableDescription(description?: string): {
-  valid: boolean;
-  error?: string;
-} {
-  if (description === undefined || description === null) {
-    return { valid: true };
-  }
-
-  if (typeof description !== 'string') {
-    return { valid: false, error: 'Description must be a string' };
-  }
-
-  if (description.length > 500) {
-    return { valid: false, error: 'Description cannot exceed 500 characters' };
-  }
-
-  return { valid: true };
-}
-
-/**
- * Validate fields array according to API requirements
- */
-export function validateFieldsArray(fields: FieldDefinition[]): {
-  valid: boolean;
-  error?: string;
-} {
-  if (!Array.isArray(fields)) {
-    return { valid: false, error: 'Fields must be an array' };
-  }
-
-  if (fields.length === 0) {
-    return { valid: false, error: 'At least one field is required' };
-  }
-
-  // Check for duplicate field names
-  const fieldNames = new Set();
-  for (const field of fields) {
-    if (fieldNames.has(field.name.toLowerCase())) {
-      return { valid: false, error: `Duplicate field name: ${field.name}` };
-    }
-    fieldNames.add(field.name.toLowerCase());
-  }
-
-  return { valid: true };
 }

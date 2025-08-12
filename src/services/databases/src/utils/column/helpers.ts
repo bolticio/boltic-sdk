@@ -1,5 +1,4 @@
 import {
-  ColumnDetails,
   ColumnUpdateRequest,
   DateFormatEnum,
   DecimalType,
@@ -7,7 +6,6 @@ import {
   TimeFormatEnum,
 } from '../../types/api/column';
 import { FieldDefinition, FieldType } from '../../types/api/table';
-import { ColumnValidator } from '../validation/column-validator';
 
 export class ColumnHelpers {
   /**
@@ -40,164 +38,27 @@ export class ColumnHelpers {
   }
 
   /**
-   * Validate column properties for a specific field type
+   * Apply default values to column definition
    */
-  static validateColumnForType(
-    column: Partial<ColumnDetails>,
-    type: FieldType
-  ): {
-    isValid: boolean;
-    errors: string[];
-  } {
-    const errors: string[] = [];
-
-    switch (type) {
-      case 'vector':
-      case 'halfvec':
-      case 'sparsevec':
-        if (!column.vector_dimension || column.vector_dimension <= 0) {
-          errors.push('Vector fields require a positive vector_dimension');
-        }
-        break;
-
-      case 'currency':
-        if (
-          column.currency_format &&
-          !/^[A-Z]{3}$/.test(column.currency_format)
-        ) {
-          errors.push('Currency format must be a 3-letter ISO code');
-        }
-        break;
-
-      case 'dropdown':
-        if (!column.selectable_items || column.selectable_items.length === 0) {
-          errors.push('Dropdown fields require selectable_items');
-        }
-        break;
-
-      case 'phone-number':
-        if (
-          column.phone_format &&
-          !this.isValidPhoneFormat(column.phone_format)
-        ) {
-          errors.push('Invalid phone format');
-        }
-        break;
+  static applyDefaultValues(column: Partial<FieldDefinition>): FieldDefinition {
+    if (!column.name || !column.type) {
+      throw new Error('Column name and type are required');
     }
 
-    return { isValid: errors.length === 0, errors };
-  }
-
-  /**
-   * Validate phone format using the defined types
-   */
-  private static isValidPhoneFormat(format: string): format is PhoneFormatType {
-    const validFormats: PhoneFormatType[] = [
-      '+91 123 456 7890',
-      '(123) 456-7890',
-      '+1 (123) 456-7890',
-      '+91 12 3456 7890',
-    ];
-    return validFormats.includes(format as PhoneFormatType);
-  }
-
-  /**
-   * Get default values for column properties
-   */
-  static getDefaultValues(): {
-    is_nullable: boolean;
-    is_unique: boolean;
-    is_indexed: boolean;
-    is_primary_key: boolean;
-    is_visible: boolean;
-    is_readonly: boolean;
-  } {
     return {
+      name: column.name,
+      type: column.type,
       is_nullable: true,
       is_unique: false,
       is_indexed: false,
       is_primary_key: false,
       is_visible: true,
       is_readonly: false,
+      field_order: 1,
+      alignment: 'center',
+      multiple_selections: false,
+      ...column,
     };
-  }
-
-  /**
-   * Apply default values to a column definition
-   */
-  static applyDefaultValues(column: Partial<FieldDefinition>): FieldDefinition {
-    const defaults = this.getDefaultValues();
-
-    return {
-      name: column.name || '',
-      type: column.type || 'text',
-      is_nullable: column.is_nullable ?? defaults.is_nullable,
-      is_unique: column.is_unique ?? defaults.is_unique,
-      is_indexed: column.is_indexed ?? defaults.is_indexed,
-      is_primary_key: column.is_primary_key ?? defaults.is_primary_key,
-      is_visible: defaults.is_visible, // Always true
-      is_readonly: defaults.is_readonly, // Always false
-      field_order: column.field_order,
-      description: column.description,
-      default_value: column.default_value,
-      alignment: column.alignment,
-      timezone: column.timezone,
-      date_format: column.date_format,
-      time_format: column.time_format,
-      decimals: column.decimals as DecimalType,
-      currency_format: column.currency_format,
-      selection_source: column.selection_source,
-      selectable_items: column.selectable_items,
-      multiple_selections: column.multiple_selections,
-      phone_format: column.phone_format as PhoneFormatType,
-      vector_dimension: column.vector_dimension,
-    };
-  }
-
-  /**
-   * Validate and transform column data for API calls
-   */
-  static processColumnForAPI(column: FieldDefinition): FieldDefinition {
-    const processedColumn = this.applyDefaultValues(column);
-
-    // Transform date and time formats if they are user-friendly keys
-    if (
-      processedColumn.date_format &&
-      typeof processedColumn.date_format === 'string'
-    ) {
-      // Check if it's a user-friendly format key
-      const dateFormatKey =
-        processedColumn.date_format as keyof typeof DateFormatEnum;
-      if (dateFormatKey && typeof dateFormatKey === 'string') {
-        try {
-          processedColumn.date_format =
-            ColumnValidator.transformDateFormat(dateFormatKey);
-        } catch (error) {
-          // If transformation fails, keep the original value
-          console.warn(`Invalid date format: ${dateFormatKey}`);
-        }
-      }
-    }
-
-    if (
-      processedColumn.time_format &&
-      typeof processedColumn.time_format === 'string'
-    ) {
-      // Check if it's a user-friendly format key
-      const timeFormatKey =
-        processedColumn.time_format as keyof typeof TimeFormatEnum;
-      if (timeFormatKey && typeof timeFormatKey === 'string') {
-        try {
-          processedColumn.time_format =
-            ColumnValidator.transformTimeFormat(timeFormatKey);
-        } catch (error) {
-          // If transformation fails, keep the original value
-          console.warn(`Invalid time format: ${timeFormatKey}`);
-        }
-      }
-    }
-
-    return processedColumn;
   }
 
   /**
@@ -213,13 +74,6 @@ export class ColumnHelpers {
       type,
       ...options,
     });
-  }
-
-  /**
-   * Validate column name format
-   */
-  static isValidColumnName(name: string): boolean {
-    return /^[a-zA-Z][a-zA-Z0-9_]*$/.test(name);
   }
 
   /**

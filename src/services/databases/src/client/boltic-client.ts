@@ -200,6 +200,21 @@ export class BolticClient {
     return safeConfig;
   }
 
+  // Get effective configuration (user config overriding defaults)
+  getEffectiveConfig() {
+    const config = this.configManager.getConfig();
+    return {
+      environment: config.environment,
+      region: config.region,
+      baseURL: config.baseURL,
+      timeout: config.timeout,
+      retryAttempts: config.retryAttempts,
+      retryDelay: config.retryDelay,
+      maxRetries: config.maxRetries,
+      debug: config.debug,
+    };
+  }
+
   async validateApiKey(): Promise<boolean> {
     return this.authManager.validateApiKeyAsync();
   }
@@ -238,16 +253,25 @@ export class BolticClient {
   // Public client information (safe to expose)
   get info() {
     const config = this.configManager.getConfig();
-    // Create safe options without headers
-    const safeOptions = { ...this.clientOptions };
-    delete safeOptions.headers;
+
+    // Get effective configuration (user config overriding defaults)
+    const configInfo = {
+      environment: config.environment,
+      region: config.region,
+      baseURL: config.baseURL,
+      timeout: config.timeout,
+      retryAttempts: config.retryAttempts,
+      retryDelay: config.retryDelay,
+      maxRetries: config.maxRetries,
+      debug: config.debug,
+    };
 
     return {
       environment: config.environment,
       region: config.region,
       isAuthenticated: this.isAuthenticated(),
       currentDatabase: this.currentDatabase,
-      options: safeOptions,
+      config: configInfo,
       resources: {
         tables: {
           basePath: this.tableResource.getBasePath(),
@@ -268,29 +292,47 @@ export class BolticClient {
           available: true,
           operations: ['create', 'findAll', 'findOne', 'update', 'delete'],
         },
+        records: {
+          basePath: '/v1/tables',
+          available: true,
+          operations: [
+            'insert',
+            'findAll',
+            'findOne',
+            'update',
+            'updateById',
+            'delete',
+            'deleteByIds',
+          ],
+        },
       },
     };
   }
 
   // Override toString to show only safe information
   toString(): string {
-    // Create safe options without headers for display
-    const safeOptions = { ...this.clientOptions };
-    delete safeOptions.headers;
+    const config = this.configManager.getConfig();
 
-    const optionsStr =
-      Object.keys(safeOptions).length > 0
-        ? `\n  options: ${JSON.stringify(safeOptions, null, 2)}`
-        : '\n  options: {}';
+    const configStr = `\n  config: {
+    environment: '${config.environment}',
+    region: '${config.region}',
+    baseURL: '${config.baseURL}',
+    timeout: ${config.timeout},
+    retryAttempts: ${config.retryAttempts},
+    retryDelay: ${config.retryDelay},
+    maxRetries: ${config.maxRetries},
+    debug: ${config.debug}
+  }`;
 
     return `BolticClient {
-  environment: '${this.configManager.getConfig().environment}',
-  region: '${this.configManager.getConfig().region}',
+  environment: '${config.environment}',
+  region: '${config.region}',
   isAuthenticated: ${this.isAuthenticated()},
-  currentDatabase: ${this.currentDatabase ? `'${this.currentDatabase.databaseName}'` : 'null'},${optionsStr}
+  currentDatabase: ${this.currentDatabase ? `'${this.currentDatabase.databaseName}'` : 'null'},${configStr}
   resources: {
     tables: { available: true, operations: [create, findAll, findOne, update, rename, setAccess, delete, getMetadata] },
-    columns: { available: true, operations: [create, findAll, findOne, update, delete] }
+    columns: { available: true, operations: [create, findAll, findOne, update, delete] },
+    records: { available: true, operations: [insert, findAll, findOne, update, updateById, delete, deleteByIds] }
   }
 }`;
   }
