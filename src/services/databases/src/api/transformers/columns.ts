@@ -138,7 +138,10 @@ function transformFieldDefinition(field: FieldDefinition): FieldDefinition {
       : undefined,
     decimals: field.decimals ?? undefined,
     currency_format: field.currency_format ?? undefined,
-    selection_source: field.selection_source ?? undefined,
+    selection_source:
+      field.type === 'dropdown' && !field.selection_source
+        ? 'provide-static-list'
+        : (field.selection_source ?? undefined),
     selectable_items: field.selectable_items ?? undefined,
     multiple_selections: field.multiple_selections ?? undefined,
     phone_format: field.phone_format ?? undefined,

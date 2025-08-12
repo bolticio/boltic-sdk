@@ -54,6 +54,7 @@ export interface TableCreateRequest {
 
 export interface TableUpdateRequest {
   name?: string;
+  description?: string;
   snapshot?: string;
   is_shared?: boolean;
 }

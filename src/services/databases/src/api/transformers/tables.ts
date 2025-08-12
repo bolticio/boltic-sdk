@@ -94,9 +94,9 @@ function transformFieldDefinition(field: FieldDefinition): FieldDefinition {
     is_nullable: field.is_nullable ?? true,
     is_primary_key: field.is_primary_key ?? false,
     is_unique: field.is_unique ?? false,
+    is_indexed: field.is_indexed ?? false,
     is_visible: field.is_visible ?? true,
     is_readonly: field.is_readonly ?? false,
-    is_indexed: field.is_indexed ?? false,
     field_order: field.field_order ?? 1,
     alignment: field.alignment ?? undefined,
     timezone: field.timezone ?? undefined,
@@ -104,7 +104,10 @@ function transformFieldDefinition(field: FieldDefinition): FieldDefinition {
     time_format: field.time_format ?? undefined,
     decimals: field.decimals ?? undefined,
     currency_format: field.currency_format ?? undefined,
-    selection_source: field.selection_source ?? undefined,
+    selection_source:
+      field.type === 'dropdown' && !field.selection_source
+        ? 'provide-static-list'
+        : (field.selection_source ?? undefined),
     selectable_items: field.selectable_items ?? undefined,
     multiple_selections: field.multiple_selections ?? false,
     phone_format: field.phone_format ?? undefined,

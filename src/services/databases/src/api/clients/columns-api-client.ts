@@ -89,7 +89,7 @@ export class ColumnsApiClient {
 
       const url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
       const transformedRequest = transformColumnCreateRequest(request);
-      console.log('transformedRequest', transformedRequest);
+
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
@@ -210,7 +210,7 @@ export class ColumnsApiClient {
         data: transformedRequest,
         timeout: this.config.timeout,
       });
-      console.log('response', response.data);
+
       if (response.data) {
         const transformed = transformColumnListResponse(
           response.data as ColumnListApiResponse
@@ -294,7 +294,7 @@ export class ColumnsApiClient {
           error: getColumnResult.error,
         };
       }
-      console.log('getColumnResult', getColumnResult);
+
       // Merge the existing column data with the update request
       const existingColumn = getColumnResult.data;
       const mergedData = this.mergeColumnData(existingColumn, updates);

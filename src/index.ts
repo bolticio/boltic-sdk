@@ -6,5 +6,17 @@ export * from './errors';
 export { BolticClient, createClient } from './services/databases/src/client';
 export type { ClientOptions, Region } from './services/databases/src/client';
 
+// Export common types
+export type {
+  FieldDefinition,
+  FieldType,
+  QueryOperator,
+  RecordData,
+  RecordWithId,
+  TableCreateRequest,
+  TableRecord,
+  WhereCondition,
+} from './services/databases/src/types';
+
 // Version information
 export const VERSION = '1.0.0';
