@@ -108,8 +108,7 @@ const client = createClient('your-api-key', {
   debug: false
 });
 
-// Set database context
-client.useDatabase('my-database', 'My Database');
+
 
 // Use table operations
 const tables = await client.tables.findAll();

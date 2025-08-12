@@ -43,7 +43,6 @@ export interface ClientOptions {
 }
 
 interface DatabaseContext {
-  databaseId: string;
   databaseName: string;
 }
 
@@ -87,13 +86,10 @@ export class BolticClient {
 
     // Initialize record operations
     this.recordResource = new RecordResource(this.baseClient);
-  }
 
-  // Database context management
-  useDatabase(databaseId: string, databaseName?: string): void {
+    // Set default database context
     this.currentDatabase = {
-      databaseId,
-      databaseName: databaseName || databaseId,
+      databaseName: 'Default',
     };
   }
 
