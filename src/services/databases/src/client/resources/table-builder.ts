@@ -171,7 +171,6 @@ export class TableBuilder {
       is_primary_key: options.primaryKey ?? false,
       is_indexed: options.indexed ?? false,
       selectable_items: options.items,
-      selection_source: 'provide-static-list',
       description: options.description,
       default_value: options.defaultValue,
     });

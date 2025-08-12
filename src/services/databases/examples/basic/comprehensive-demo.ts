@@ -29,7 +29,11 @@ const DEMO_COLUMNS = [
   { name: 'number_column', type: 'number' as const },
   { name: 'currency_column', type: 'currency' as const },
   { name: 'checkbox_column', type: 'checkbox' as const },
-  { name: 'dropdown_column', type: 'dropdown' as const },
+  {
+    name: 'dropdown_column',
+    type: 'dropdown' as const,
+    selectable_items: ['Option 1', 'Option 2', 'Option 3'],
+  },
   { name: 'phone_column', type: 'phone-number' as const },
   { name: 'link_column', type: 'link' as const },
   { name: 'json_column', type: 'json' as const },

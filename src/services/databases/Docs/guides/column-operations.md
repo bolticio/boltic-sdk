@@ -365,7 +365,6 @@ const result = await client
   description: 'Account status',
   is_nullable: false,
   is_indexed: true,
-  selection_source: 'provide-static-list',
   selectable_items: ['Active', 'Inactive', 'Suspended'],
   multiple_selections: false
 }

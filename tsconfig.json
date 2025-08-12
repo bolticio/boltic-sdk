@@ -24,6 +24,6 @@
     "sourceMap": true,
     "removeComments": false
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "sdk-test/comprehensive-database-operations-demo.ts"],
   "exclude": ["node_modules", "dist", "tests", "examples"]
 }

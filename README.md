@@ -98,19 +98,18 @@ console.log('Current database:', currentDb);
 
 ### Table Operations
 
+**Note**: The following columns are automatically added to all tables and cannot be modified:
+
+- `id`: Primary key (text, unique, not nullable)
+- `created_at`: Creation timestamp
+- `updated_at`: Last update timestamp
+
 ```typescript
 // Create a table
 const tableResult = await client.tables.create({
   name: 'users',
   description: 'User management table',
   fields: [
-    {
-      name: 'id',
-      type: 'text',
-      is_primary_key: true,
-      is_nullable: false,
-      is_unique: true,
-    },
     {
       name: 'name',
       type: 'text',
@@ -124,6 +123,11 @@ const tableResult = await client.tables.create({
     },
   ],
 });
+
+// Note: The following columns are automatically added to all tables:
+// - 'id': Primary key (text, unique, not nullable)
+// - 'created_at': Timestamp when record was created
+// - 'updated_at': Timestamp when record was last updated
 
 // List all tables
 const allTables = await client.tables.findAll();
@@ -384,12 +388,13 @@ async function main() {
       name: 'users',
       description: 'User management table',
       fields: [
-        { name: 'id', type: 'text', is_primary_key: true, is_unique: true },
         { name: 'name', type: 'text', is_nullable: false },
         { name: 'email', type: 'email', is_unique: true },
         { name: 'age', type: 'number', decimals: '0.00' },
       ],
     });
+
+    // Note: 'id', 'created_at', and 'updated_at' columns are automatically added
 
     if (tableResult.error) {
       console.error('Table creation failed:', tableResult.error);

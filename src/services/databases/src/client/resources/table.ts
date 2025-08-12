@@ -357,7 +357,6 @@ export class TableResource extends BaseResource {
 
       // Return the first matching table's ID
       const tableId = result.data[0].id;
-      console.log(`Found table '${tableName}' with ID: ${tableId}`);
       return tableId;
     } catch (error) {
       console.error('Error getting table ID:', error);

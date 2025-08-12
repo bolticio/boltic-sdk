@@ -85,6 +85,16 @@ console.log('Current database:', currentDb);
 
 ## Table Operations
 
+### Reserved Columns
+
+The following columns are automatically added to all tables and cannot be modified or deleted:
+
+- **`id`**: Primary key field (text type, unique, not nullable)
+- **`created_at`**: Timestamp when the record was created
+- **`updated_at`**: Timestamp when the record was last updated
+
+These columns are managed by the system and provide essential functionality for record identification and tracking.
+
 ### Creating Tables
 
 ```typescript
@@ -93,14 +103,6 @@ const tableResult = await client.tables.create({
   name: 'users',
   description: 'User management table',
   fields: [
-    {
-      name: 'id',
-      type: 'text',
-      is_primary_key: true,
-      is_nullable: false,
-      is_unique: true,
-      description: 'User ID',
-    },
     {
       name: 'name',
       type: 'text',
@@ -142,6 +144,11 @@ const tableResult = await client.tables.create({
     },
   ],
 });
+
+// Note: The following columns are automatically added to all tables:
+// - 'id': Primary key (text, unique, not nullable)
+// - 'created_at': Timestamp when record was created
+// - 'updated_at': Timestamp when record was last updated
 
 if (tableResult.error) {
   console.error('Table creation failed:', tableResult.error);
