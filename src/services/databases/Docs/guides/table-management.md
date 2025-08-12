@@ -10,9 +10,6 @@ Before working with tables, you need to set up the client and select a database 
 import { BolticClient } from '@boltic/database-js';
 
 const client = new BolticClient('your-api-key');
-
-// Set database context (required for table operations)
-client.useDatabase('your-database-id', 'My Database');
 ```
 
 ## Creating Tables
@@ -341,21 +338,6 @@ const { data: table } = await client.tables.create({
   schema: userSchema,
   description: 'User profiles and preferences with comprehensive validation',
 });
-```
-
-## Database Context Management
-
-```typescript
-// Switch between databases
-client.useDatabase('production-db', 'Production Database');
-const prodTables = await client.tables.findAll();
-
-client.useDatabase('staging-db', 'Staging Database');
-const stagingTables = await client.tables.findAll();
-
-// Check current database
-const currentDb = client.getCurrentDatabase();
-console.log('Current database:', currentDb?.databaseName);
 ```
 
 ## Best Practices

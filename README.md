@@ -1,6 +1,6 @@
 # boltic-sdk
 
-A powerful TypeScript SDK for seamless integration with the Boltic platform. Simplifies database operations, table management, column operations, and authentication for building modern applications.
+A powerful TypeScript SDK for seamless integration with the Boltic platform. Simplifies database operations, table management, column operations, record handling, and authentication for building modern applications.
 
 ## Features
 
@@ -8,9 +8,10 @@ A powerful TypeScript SDK for seamless integration with the Boltic platform. Sim
 - 🚀 **Modern Architecture**: ES modules and CommonJS support
 - 🔐 **Built-in Authentication**: Integrated API key management
 - 📊 **Database Operations**: Complete table and column management
+- 📝 **Record Operations**: Full CRUD operations with advanced querying
 - 🧪 **Testing Utilities**: Built-in testing helpers and mocks
 - 📦 **Zero Dependencies**: Lightweight with optional peer dependencies
-- 🌐 **Environment Support**: Production, development, and SIT environments
+- 🌐 **Multi-Region Support**: Asia Pacific and US Central regions
 
 ## Installation
 
@@ -25,52 +26,83 @@ import { createClient } from 'boltic-sdk';
 
 // Initialize the client
 const client = createClient('your-api-key', {
-  environment: 'production', // 'production', 'development', 'sit', or 'uat'
   region: 'asia-south1', // 'asia-south1' or 'us-central1'
   debug: false,
 });
 
-// Set database context
-client.useDatabase('your-database-id', 'Your Database Name');
-
 // Use the client
 const tables = client.tables;
 const columns = client.columns;
+const records = client.record;
 ```
 
-## Authentication
+## API Key Setup
+
+Get your API key from [boltic.io](https://boltic.io) and use it to initialize the client:
 
 ```typescript
 import { createClient } from 'boltic-sdk';
 
-const client = createClient('your-api-key', {
-  environment: 'production',
-  region: 'asia-south1', // Defaults to 'asia-south1'
+const client = createClient('your-api-key-here', {
+  region: 'asia-south1',
 });
-
-// Validate API key
-const isValid = await client.validateApiKey();
-console.log('API Key valid:', isValid);
-
-// Check authentication status
-const isAuthenticated = client.isAuthenticated();
 ```
 
-## Database and Table Operations
-
-### Setting Database Context
+## Configuration Options
 
 ```typescript
-// Set the database context before performing operations
-client.useDatabase('comprehensive-demo-db', 'My Demo Database');
+interface ClientOptions {
+  region?: 'asia-south1' | 'us-central1';
+  retryAttempts?: number;
+  retryDelay?: number;
+  maxRetries?: number;
+  timeout?: number;
+  debug?: boolean;
+}
+
+const client = createClient('your-api-key', {
+  region: 'asia-south1',
+  debug: true,
+  retryAttempts: 3,
+  retryDelay: 1000,
+  maxRetries: 3,
+  timeout: 30000,
+});
 ```
 
-### Creating Tables
+## Environment Variables
 
 ```typescript
-// Create a table with schema
+import dotenv from 'dotenv';
+import { createClient } from 'boltic-sdk';
+
+dotenv.config();
+
+const client = createClient(process.env.BOLTIC_API_KEY!, {
+  region: process.env.BOLTIC_REGION || 'asia-south1',
+  debug: process.env.DEBUG === 'true',
+});
+```
+
+## Database Context
+
+The client automatically uses a default database context for all operations:
+
+```typescript
+// Get current database context
+const currentDb = client.getCurrentDatabase();
+console.log('Current database:', currentDb);
+```
+
+## Basic Operations
+
+### Table Operations
+
+```typescript
+// Create a table
 const tableResult = await client.tables.create({
   name: 'users',
+  description: 'User management table',
   fields: [
     {
       name: 'id',
@@ -78,41 +110,23 @@ const tableResult = await client.tables.create({
       is_primary_key: true,
       is_nullable: false,
       is_unique: true,
-      description: 'User ID',
     },
     {
       name: 'name',
       type: 'text',
       is_nullable: false,
-      description: 'User name',
     },
     {
       name: 'email',
       type: 'email',
       is_nullable: false,
       is_unique: true,
-      description: 'User email',
     },
   ],
 });
 
-if (tableResult.error) {
-  console.error('Table creation failed:', tableResult.error);
-} else {
-  console.log('Table created:', tableResult.data);
-}
-```
-
-### Listing and Filtering Tables
-
-```typescript
 // List all tables
 const allTables = await client.tables.findAll();
-
-// Filter tables by name
-const filteredTables = await client.tables.findAll({
-  where: { name: 'users' },
-});
 
 // Get a specific table
 const table = await client.tables.findOne({
@@ -120,113 +134,57 @@ const table = await client.tables.findOne({
 });
 ```
 
-### Updating Table Access
+### Column Operations
 
 ```typescript
-// Make table public/shared
-const updateResult = await client.tables.setAccess({
-  table_name: 'users',
-  is_shared: true,
+// Create a column
+const columnResult = await client.columns.create('users', {
+  name: 'age',
+  type: 'number',
+  decimals: '0.00',
+  description: 'User age',
 });
-```
 
-## Column Operations
-
-### Creating Columns
-
-```typescript
-// Create different types of columns
-const columnTypes = [
-  {
-    name: 'description',
-    type: 'long-text',
-    description: 'User description',
-  },
-  {
-    name: 'age',
-    type: 'number',
-    decimals: '0.00',
-    description: 'User age',
-  },
-  {
-    name: 'salary',
-    type: 'currency',
-    currency_format: 'USD',
-    decimals: '0.00',
-    description: 'User salary',
-  },
-  {
-    name: 'is_active',
-    type: 'checkbox',
-    default_value: true,
-    description: 'User status',
-  },
-  {
-    name: 'role',
-    type: 'dropdown',
-    selectable_items: ['Admin', 'User', 'Guest'],
-    multiple_selections: false,
-    description: 'User role',
-  },
-  {
-    name: 'phone',
-    type: 'phone-number',
-    phone_format: '+1 123 456 7890',
-    description: 'Phone number',
-  },
-];
-
-for (const columnData of columnTypes) {
-  const result = await client.columns.create('users', columnData);
-  if (result.error) {
-    console.error(`Failed to create ${columnData.type} column:`, result.error);
-  } else {
-    console.log(`Created ${columnData.type} column:`, result.data);
-  }
-}
-```
-
-### Listing and Filtering Columns
-
-```typescript
 // List all columns in a table
 const allColumns = await client.columns.findAll('users');
 
-// Filter columns by type
-const textColumns = await client.columns.findAll('users', {
-  where: { type: 'text' },
-});
-
-// Get a specific column
-const column = await client.columns.findOne('users', {
-  where: { name: 'email' },
-});
-```
-
-### Updating Columns
-
-```typescript
-// Update column properties
+// Update a column
 const updateResult = await client.columns.update('users', {
-  where: { name: 'description' },
-  set: {
-    description: 'Updated user description',
-    is_visible: true,
-    is_indexed: true,
-  },
+  where: { name: 'age' },
+  set: { description: 'Updated age description' },
 });
 ```
 
-### Deleting Columns
+### Record Operations
 
 ```typescript
-// Delete a column
-const deleteResult = await client.columns.delete('users', {
-  where: { name: 'description' },
+// Insert a record
+const recordData = {
+  name: 'John Doe',
+  email: 'john.doe@example.com',
+  age: 30,
+};
+
+const insertResult = await client.record.insert('users', recordData);
+
+// Find all records
+const allRecords = await client.record.findAll('users');
+
+// Find records with filters
+const filteredRecords = await client.record.findAll('users', {
+  filters: [{ age: { $gte: 25 } }, { name: { $like: 'John%' } }],
+});
+
+// Update records
+const updateResult = await client.record.update('users', {
+  set: { age: 31 },
+  filters: [{ email: 'john.doe@example.com' }],
 });
 ```
 
-## Advanced Vector Columns
+## Advanced Features
+
+### Vector Columns for AI/ML
 
 ```typescript
 // Create vector columns for AI/ML applications
@@ -256,32 +214,41 @@ for (const vectorColumn of vectorColumns) {
 }
 ```
 
-## Configuration Options
+### Interceptors
 
 ```typescript
-interface ClientOptions {
-  environment?: 'production' | 'development' | 'sit' | 'uat';
-  region?: 'asia-south1' | 'us-central1';
-  debug?: boolean;
-  retryAttempts?: number;
-  retryDelay?: number;
-  maxRetries?: number;
-  timeout?: number;
-  headers?: Record<string, string>;
-}
-
-const client = createClient('your-api-key', {
-  environment: 'production',
-  region: 'asia-south1',
-  debug: true,
-  retryAttempts: 3,
-  retryDelay: 1000,
-  maxRetries: 3,
-  timeout: 30000,
-  headers: {
-    'Custom-Header': 'value',
-  },
+// Add request interceptor
+const requestId = client.addRequestInterceptor((config) => {
+  config.headers['X-Request-ID'] = crypto.randomUUID();
+  return config;
 });
+
+// Add response interceptor
+const responseId = client.addResponseInterceptor((response) => {
+  console.log('Response received:', response.status);
+  return response;
+});
+
+// Remove interceptors
+client.removeInterceptor('request', requestId);
+client.removeInterceptor('response', responseId);
+```
+
+### Configuration Management
+
+```typescript
+// Update API key
+client.updateApiKey('new-api-key');
+
+// Update configuration
+client.updateConfig({
+  debug: true,
+  timeout: 45000,
+});
+
+// Get current configuration
+const config = client.getConfig();
+console.log('Current config:', config);
 ```
 
 ## Error Handling
@@ -314,29 +281,7 @@ The SDK supports multiple regions for global deployment:
 - **`asia-south1`** (default): Asia Pacific (Mumbai) region
 - **`us-central1`**: US Central (Iowa) region
 
-Each region has its own API endpoints and environment configurations (SIT, UAT, Production).
-
-## Environment Variables
-
-```env
-BOLTIC_API_KEY=your-api-key-here
-DEBUG=false
-```
-
-Then use with dotenv:
-
-```typescript
-import { createClient } from 'boltic-sdk';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const client = createClient(process.env.BOLTIC_API_KEY!, {
-  environment: 'production',
-  region: 'asia-south1',
-  debug: process.env.DEBUG === 'true',
-});
-```
+Each region has its own API endpoints and environment configurations.
 
 ## Module Formats
 
@@ -354,6 +299,138 @@ import { createClient } from 'boltic-sdk';
 const { createClient } = require('boltic-sdk');
 ```
 
+### TypeScript
+
+```typescript
+import { createClient, ClientOptions, BolticClient } from 'boltic-sdk';
+
+const options: ClientOptions = {
+  region: 'asia-south1',
+  debug: true,
+  timeout: 30000,
+  maxRetries: 3,
+};
+
+const client: BolticClient = createClient('your-api-key', options);
+```
+
+## File Format Examples
+
+### JavaScript (.js)
+
+```javascript
+const { createClient } = require('boltic-sdk');
+
+const client = createClient('your-api-key');
+
+async function main() {
+  const tables = await client.tables.findAll();
+  console.log('Tables:', tables);
+}
+
+main().catch(console.error);
+```
+
+### TypeScript (.ts)
+
+```typescript
+import { createClient, ClientOptions } from 'boltic-sdk';
+
+const options: ClientOptions = {
+  region: 'asia-south1',
+  debug: true,
+};
+
+const client = createClient('your-api-key', options);
+
+async function main(): Promise<void> {
+  const tables = await client.tables.findAll();
+  console.log('Tables:', tables);
+}
+
+main().catch(console.error);
+```
+
+### ES Modules (.mjs)
+
+```javascript
+import { createClient } from 'boltic-sdk';
+
+const client = createClient('your-api-key');
+
+async function main() {
+  const tables = await client.tables.findAll();
+  console.log('Tables:', tables);
+}
+
+main().catch(console.error);
+```
+
+## Complete Example
+
+```typescript
+import { createClient } from 'boltic-sdk';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+async function main() {
+  // Initialize client
+  const client = createClient(process.env.BOLTIC_API_KEY!);
+
+  try {
+    // Create a table
+    const tableResult = await client.tables.create({
+      name: 'users',
+      description: 'User management table',
+      fields: [
+        { name: 'id', type: 'text', is_primary_key: true, is_unique: true },
+        { name: 'name', type: 'text', is_nullable: false },
+        { name: 'email', type: 'email', is_unique: true },
+        { name: 'age', type: 'number', decimals: '0.00' },
+      ],
+    });
+
+    if (tableResult.error) {
+      console.error('Table creation failed:', tableResult.error);
+      return;
+    }
+
+    console.log('Table created:', tableResult.data);
+
+    // Insert a record
+    const recordResult = await client.record.insert('users', {
+      name: 'John Doe',
+      email: 'john@example.com',
+      age: 30,
+    });
+
+    if (recordResult.error) {
+      console.error('Record insertion failed:', recordResult.error);
+      return;
+    }
+
+    console.log('Record inserted:', recordResult.data);
+
+    // Query records
+    const records = await client.record.findAll('users', {
+      filters: [{ age: { $gte: 25 } }],
+      sort: [{ field: 'name', order: 'asc' }],
+    });
+
+    console.log('Records found:', records);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+main().catch(console.error);
+```
+
+## Database Operations
+
+For comprehensive database operations including advanced table management, column operations, and record handling, see the [@boltic/database-js README](./src/services/databases/README.md).
+
 ## API Reference
 
 ### Core Client
@@ -362,7 +439,7 @@ const { createClient } = require('boltic-sdk');
 
 ### Database Context
 
-- **`client.useDatabase(databaseId: string, databaseName?: string)`**: Set database context
+- **`client.getCurrentDatabase()`**: Get current database context
 
 ### Authentication
 
@@ -374,8 +451,11 @@ const { createClient } = require('boltic-sdk');
 - **`client.tables.create(data)`**: Create a new table
 - **`client.tables.findAll(options?)`**: List tables with optional filtering
 - **`client.tables.findOne(options)`**: Get a specific table
-- **`client.tables.setAccess(options)`**: Update table access settings
-- **`client.tables.delete(tableName)`**: Delete a table
+- **`client.tables.update(identifier, data)`**: Update table properties
+- **`client.tables.rename(oldName, newName)`**: Rename a table
+- **`client.tables.setAccess(data)`**: Update table access settings
+- **`client.tables.delete(options)`**: Delete a table
+- **`client.tables.getMetadata(name)`**: Get table metadata
 
 ### Columns
 
@@ -384,6 +464,16 @@ const { createClient } = require('boltic-sdk');
 - **`client.columns.findOne(tableName, options)`**: Get a specific column
 - **`client.columns.update(tableName, options)`**: Update column properties
 - **`client.columns.delete(tableName, options)`**: Delete a column
+
+### Records
+
+- **`client.record.insert(tableName, data)`**: Insert a new record
+- **`client.record.findAll(tableName, options?)`**: List records with optional filtering
+- **`client.record.findOne(tableName, options)`**: Get a specific record
+- **`client.record.update(tableName, options)`**: Update records by filters
+- **`client.record.updateById(tableName, options)`**: Update record by ID
+- **`client.record.delete(tableName, options)`**: Delete records by filters
+- **`client.record.deleteByIds(tableName, options)`**: Delete records by IDs
 
 ## Development
 
@@ -415,10 +505,10 @@ npm run lint
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## Support
+
+For support, email support@boltic.io or create an issue on [GitHub](https://github.com/bolticio/boltic-sdk).
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For support, email support@boltic.io or create an issue on GitHub.

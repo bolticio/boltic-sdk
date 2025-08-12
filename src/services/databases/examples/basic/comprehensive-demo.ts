@@ -20,9 +20,6 @@ if (!apiKey) {
 // Initialize the client
 const client = new BolticClient(apiKey, { debug, environment: 'sit' });
 
-// Set database context
-client.useDatabase('comprehensive-demo-db', 'Comprehensive Demo Database');
-
 // Demo configuration
 const DEMO_TABLE_NAME = 'comprehensive-demo-table';
 const DEMO_COLUMNS = [
