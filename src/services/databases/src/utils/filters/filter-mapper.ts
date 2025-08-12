@@ -107,61 +107,9 @@ export function mapWhereToFilters(where: WhereCondition): ApiFilter[] {
 /**
  * Build API filters with validation
  */
-export function buildApiFilters(
-  where: WhereCondition,
-  options: { validateFilters?: boolean } = {}
-): ApiFilter[] {
+export function buildApiFilters(where: WhereCondition): ApiFilter[] {
   const filters = mapWhereToFilters(where);
-
-  if (options.validateFilters) {
-    validateFilters(filters);
-  }
-
   return filters;
-}
-
-/**
- * Validate API filters
- */
-function validateFilters(filters: ApiFilter[]): void {
-  filters.forEach((filter, index) => {
-    if (!filter.field || typeof filter.field !== 'string') {
-      throw new Error(`Filter ${index}: field must be a non-empty string`);
-    }
-
-    if (!filter.operator || typeof filter.operator !== 'string') {
-      throw new Error(`Filter ${index}: operator must be a non-empty string`);
-    }
-
-    if (!Array.isArray(filter.values)) {
-      throw new Error(`Filter ${index}: values must be an array`);
-    }
-
-    // Validate operator-specific requirements
-    if (
-      filter.operator === FILTER_OPERATORS.BETWEEN &&
-      filter.values.length !== 2
-    ) {
-      throw new Error(
-        `Filter ${index}: between operator requires exactly 2 values`
-      );
-    }
-
-    if (filter.operator === FILTER_OPERATORS.IN && filter.values.length === 0) {
-      throw new Error(
-        `Filter ${index}: in operator requires at least one value`
-      );
-    }
-
-    if (
-      filter.operator === FILTER_OPERATORS.NOT_IN &&
-      filter.values.length === 0
-    ) {
-      throw new Error(
-        `Filter ${index}: not in operator requires at least one value`
-      );
-    }
-  });
 }
 
 /**
@@ -199,28 +147,4 @@ export function mapFiltersToWhere(filters: ApiFilter[]): WhereCondition {
   });
 
   return where;
-}
-
-/**
- * Validate field name for API compatibility
- */
-export function validateFieldName(fieldName: string): boolean {
-  if (!fieldName || typeof fieldName !== 'string') {
-    return false;
-  }
-
-  // Check for valid field name pattern
-  const validPattern = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
-  return validPattern.test(fieldName);
-}
-
-/**
- * Sanitize field name for API
- */
-export function sanitizeFieldName(fieldName: string): string {
-  if (!validateFieldName(fieldName)) {
-    throw new Error(`Invalid field name: ${fieldName}`);
-  }
-
-  return fieldName.trim();
 }

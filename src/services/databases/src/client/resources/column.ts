@@ -11,7 +11,6 @@ import {
 import { FieldDefinition } from '../../types/api/table';
 import { PaginationInfo } from '../../types/common/operations';
 import { ApiResponse } from '../../types/common/responses';
-import { ColumnValidator } from '../../utils/validation/column-validator';
 import { BaseClient } from '../core/base-client';
 import { BaseResource } from '../core/base-resource';
 import { TableResource } from './table';
@@ -221,10 +220,6 @@ export class ColumnResource extends BaseResource {
     tableName: string,
     options: ColumnUpdateOptions
   ): Promise<ApiResponse<ColumnDetails>> {
-    ColumnValidator.validateUpdateRequest(
-      options.set as Record<string, unknown>
-    );
-
     const tableId = await TableResource.getTableId(
       this.tablesApiClient,
       tableName
