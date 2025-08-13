@@ -1,16 +1,18 @@
 import { ColumnsApiClient } from '../../api/clients/columns-api-client';
 import { TablesApiClient } from '../../api/clients/tables-api-client';
-import { ApiError, ValidationError } from '../../errors';
 import {
-  ColumnDeleteOptions,
   ColumnDetails,
   ColumnQueryOptions,
   ColumnRecord,
-  ColumnUpdateOptions,
+  ColumnUpdateRequest,
 } from '../../types/api/column';
 import { FieldDefinition } from '../../types/api/table';
-import { PaginationInfo } from '../../types/common/operations';
-import { ApiResponse } from '../../types/common/responses';
+import {
+  BolticErrorResponse,
+  BolticListResponse,
+  BolticSuccessResponse,
+  isErrorResponse,
+} from '../../types/common/responses';
 import { BaseClient } from '../core/base-client';
 import { BaseResource } from '../core/base-resource';
 import { TableResource } from './table';
@@ -49,364 +51,285 @@ export class ColumnResource extends BaseResource {
   async create(
     tableName: string,
     column: FieldDefinition
-  ): Promise<ApiResponse<ColumnRecord>> {
-    // Get current table context
-    const tableId = await TableResource.getTableId(
-      this.tablesApiClient,
-      tableName
-    );
-    if (!tableId) {
-      throw new ValidationError('Table not found', [
-        {
-          field: 'table',
-          message: `Table '${tableName}' not found in current database`,
-        },
-      ]);
-    }
-
-    // Pass column data as-is without transformation
+  ): Promise<BolticSuccessResponse<ColumnRecord> | BolticErrorResponse> {
     try {
+      // Get table ID first
+      const tableId = await this.getTableId(tableName);
+      if (!tableId) {
+        return {
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
+        };
+      }
+
       const result = await this.columnsApiClient.createColumn(tableId, column);
 
-      if (result.error) {
-        return {
-          error: result.error.message,
-          details: result.error,
-        };
+      if (isErrorResponse(result)) {
+        return result;
       }
 
-      return {
-        data: result.data,
-      };
+      return result as BolticSuccessResponse<ColumnRecord>;
     } catch (error) {
-      if (error instanceof ApiError && error.statusCode === 409) {
-        throw new ValidationError('Column already exists', [
-          {
-            field: 'columns',
-            message: 'Column already exists in the table',
-          },
-        ]);
-      }
-      throw error;
+      return {
+        data: {},
+        error: {
+          code: 'CREATE_COLUMN_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
+      };
     }
   }
 
   /**
-   * Find columns in a table with filtering and pagination
+   * Add multiple columns to existing table
    */
-  async findAll(
+  async createMany(
+    tableName: string,
+    columns: FieldDefinition[]
+  ): Promise<BolticListResponse<ColumnRecord> | BolticErrorResponse> {
+    try {
+      // Get table ID first
+      const tableId = await this.getTableId(tableName);
+      if (!tableId) {
+        return {
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
+        };
+      }
+
+      const result = await this.columnsApiClient.createColumns(tableId, {
+        columns,
+      });
+
+      if (isErrorResponse(result)) {
+        return result;
+      }
+
+      return result as BolticListResponse<ColumnRecord>;
+    } catch (error) {
+      return {
+        data: {},
+        error: {
+          code: 'CREATE_COLUMNS_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
+      };
+    }
+  }
+
+  /**
+   * List all columns in a table
+   */
+  async list(
     tableName: string,
     options: ColumnQueryOptions = {}
-  ): Promise<ApiResponse<ColumnDetails[]> & { pagination?: PaginationInfo }> {
-    const tableId = await TableResource.getTableId(
-      this.tablesApiClient,
-      tableName
-    );
-    if (!tableId) {
-      throw new ValidationError('Table not found', [
-        {
-          field: 'table',
-          message: `Table '${tableName}' not found in current database`,
-        },
-      ]);
-    }
-
+  ): Promise<BolticListResponse<ColumnDetails> | BolticErrorResponse> {
     try {
+      // Get table ID first
+      const tableId = await this.getTableId(tableName);
+      if (!tableId) {
+        return {
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
+        };
+      }
+
       const result = await this.columnsApiClient.listColumns(tableId, options);
 
-      if (result.error) {
+      if (isErrorResponse(result)) {
+        return result;
+      }
+
+      return result as BolticListResponse<ColumnDetails>;
+    } catch (error) {
+      return {
+        data: {},
+        error: {
+          code: 'LIST_COLUMNS_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
+      };
+    }
+  }
+
+  /**
+   * Get a single column by name
+   */
+  async get(
+    tableName: string,
+    columnName: string
+  ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
+    try {
+      // Get table ID first
+      const tableId = await this.getTableId(tableName);
+      if (!tableId) {
         return {
-          error: result.error.message,
-          details: result.error,
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
+        };
+      }
+
+      const result = await this.columnsApiClient.findColumnByName(
+        tableId,
+        columnName
+      );
+
+      if (isErrorResponse(result)) {
+        return result;
+      }
+
+      if (!result.data) {
+        return {
+          data: {},
+          error: {
+            code: 'COLUMN_NOT_FOUND',
+            message: `Column '${columnName}' not found in table '${tableName}'`,
+          },
         };
       }
 
       return {
         data: result.data,
-        pagination: result.pagination
-          ? {
-              total_count: result.pagination.total_count,
-              total_pages: result.pagination.total_pages,
-              current_page: result.pagination.current_page,
-              per_page: result.pagination.per_page,
-              type: result.pagination.type,
-            }
-          : undefined,
+        message: 'Column found successfully',
       };
     } catch (error) {
       return {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        details: error,
-      };
-    }
-  }
-
-  /**
-   * Find a single column
-   */
-  async findOne(
-    tableName: string,
-    options: ColumnQueryOptions
-  ): Promise<ApiResponse<ColumnDetails | null>> {
-    if (!options.where || Object.keys(options.where).length === 0) {
-      throw new ValidationError(
-        'findOne requires at least one where condition',
-        [
-          {
-            field: 'where',
-            message: 'Where clause is required for findOne operation',
-          },
-        ]
-      );
-    }
-
-    const tableId = await TableResource.getTableId(
-      this.tablesApiClient,
-      tableName
-    );
-    if (!tableId) {
-      throw new ValidationError('Table not found', [
-        {
-          field: 'table',
-          message: `Table '${tableName}' not found in current database`,
+        data: {},
+        error: {
+          code: 'GET_COLUMN_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
         },
-      ]);
-    }
-
-    // If searching by name, use the optimized findColumnByName method
-    if (options.where.name && !options.where.id) {
-      const result = await this.columnsApiClient.findColumnByName(
-        tableId,
-        options.where.name
-      );
-
-      if (result.error) {
-        return {
-          error: result.error.message,
-          details: result.error,
-        };
-      }
-
-      return {
-        data: result.data,
       };
     }
-
-    // Otherwise, use the list method with limit 1
-    const queryOptions = { ...options, limit: 1 };
-
-    const result = await this.columnsApiClient.listColumns(
-      tableId,
-      queryOptions
-    );
-
-    if (result.error) {
-      return {
-        error: result.error.message,
-        details: result.error,
-      };
-    }
-
-    const column = result.data[0] || null;
-    return {
-      data: column,
-    };
   }
 
   /**
-   * Update a column
+   * Update a column by name
    */
   async update(
     tableName: string,
-    options: ColumnUpdateOptions
-  ): Promise<ApiResponse<ColumnDetails>> {
-    const tableId = await TableResource.getTableId(
-      this.tablesApiClient,
-      tableName
-    );
-    if (!tableId) {
-      throw new ValidationError('Table not found', [
-        {
-          field: 'table',
-          message: `Table '${tableName}' not found in current database`,
-        },
-      ]);
-    }
-
-    // Pass update data as-is without transformation
+    columnName: string,
+    updates: ColumnUpdateRequest
+  ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
-      let result;
-
-      // If updating by name, use the optimized method
-      if (options.where.name && !options.where.id) {
-        result = await this.columnsApiClient.updateColumnByName(
-          tableId,
-          options.where.name,
-          options.set
-        );
-      } else {
-        // Find the column to get its ID
-        let columnId: string;
-        if (options.where.id) {
-          columnId = options.where.id;
-        } else if (options.where.name) {
-          const findResult = await this.findOne(tableName, {
-            where: { name: options.where.name },
-          });
-          if (!findResult.data) {
-            throw new ValidationError('Column not found', [
-              {
-                field: 'column',
-                message: `Column '${options.where.name}' not found in table '${tableName}'`,
-              },
-            ]);
-          }
-          columnId = findResult.data.id;
-        } else {
-          throw new ValidationError('Column identifier required', [
-            {
-              field: 'where',
-              message: 'Column ID or name is required for update operation',
-            },
-          ]);
-        }
-
-        result = await this.columnsApiClient.updateColumn(
-          tableId,
-          columnId,
-          options.set
-        );
-      }
-
-      if (result.error) {
+      // Get table ID first
+      const tableId = await this.getTableId(tableName);
+      if (!tableId) {
         return {
-          error: result.error.message,
-          details: result.error,
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
         };
       }
 
-      return {
-        data: result.data,
-      };
+      const result = await this.columnsApiClient.updateColumnByName(
+        tableId,
+        columnName,
+        updates
+      );
+
+      if (isErrorResponse(result)) {
+        return result;
+      }
+
+      return result as BolticSuccessResponse<ColumnDetails>;
     } catch (error) {
       return {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        details: error,
+        data: {},
+        error: {
+          code: 'UPDATE_COLUMN_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
       };
     }
   }
 
   /**
-   * Delete a column
+   * Delete a column by name
    */
   async delete(
     tableName: string,
-    options: ColumnDeleteOptions
-  ): Promise<ApiResponse<{ success: boolean; message?: string }>> {
-    const tableId = await TableResource.getTableId(
-      this.tablesApiClient,
-      tableName
-    );
-    if (!tableId) {
-      throw new ValidationError('Table not found', [
-        {
-          field: 'table',
-          message: `Table '${tableName}' not found in current database`,
-        },
-      ]);
-    }
-
+    columnName: string
+  ): Promise<
+    | BolticSuccessResponse<{ success: boolean; message?: string }>
+    | BolticErrorResponse
+  > {
     try {
-      let result;
-
-      // If deleting by name, use the optimized method
-      if (options.where.name && !options.where.id) {
-        result = await this.columnsApiClient.deleteColumnByName(
-          tableId,
-          options.where.name
-        );
-      } else {
-        // Find the column to get its ID
-        let columnId: string;
-        if (options.where.id) {
-          columnId = options.where.id;
-        } else if (options.where.name) {
-          const findResult = await this.findOne(tableName, {
-            where: { name: options.where.name },
-          });
-          if (!findResult.data) {
-            throw new ValidationError('Column not found', [
-              {
-                field: 'column',
-                message: `Column '${options.where.name}' not found in table '${tableName}'`,
-              },
-            ]);
-          }
-          columnId = findResult.data.id;
-        } else {
-          throw new ValidationError('Column identifier required', [
-            {
-              field: 'where',
-              message: 'Column ID or name is required for delete operation',
-            },
-          ]);
-        }
-
-        result = await this.columnsApiClient.deleteColumn(tableId, columnId);
+      // Get table ID first
+      const tableId = await this.getTableId(tableName);
+      if (!tableId) {
+        return {
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
+        };
       }
 
-      if (result.error) {
-        return {
-          error: result.error.message,
-          details: result.error,
-        };
+      const result = await this.columnsApiClient.deleteColumnByName(
+        tableId,
+        columnName
+      );
+
+      if (isErrorResponse(result)) {
+        return result;
       }
 
       return {
         data: {
-          success: result.success,
-          message: result.success
-            ? 'Column deleted successfully'
-            : 'Failed to delete column',
+          success: true,
+          message: 'Column deleted successfully',
         },
       };
     } catch (error) {
       return {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        details: error,
+        data: {},
+        error: {
+          code: 'DELETE_COLUMN_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
       };
     }
   }
 
-  protected buildQueryParams(
-    options: ColumnQueryOptions = {}
-  ): Record<string, unknown> {
-    const params: Record<string, unknown> = {};
+  /**
+   * Helper method to get table ID by name
+   */
+  private async getTableId(tableName: string): Promise<string | null> {
+    try {
+      // Use the table resource to find the table by name
+      const tableResource = new TableResource(this.client);
+      const tableResult = await tableResource.findByName(tableName);
 
-    if (options.fields?.length) {
-      params.fields = options.fields.join(',');
+      if (tableResult.data) {
+        return tableResult.data.id;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error getting table ID:', error);
+      return null;
     }
-
-    if (options.sort?.length) {
-      params.sort = options.sort.map((s) => `${s.field}:${s.order}`).join(',');
-    }
-
-    if (options.limit !== undefined) {
-      params.limit = options.limit;
-    }
-
-    if (options.offset !== undefined) {
-      params.offset = options.offset;
-    }
-
-    if (options.where) {
-      Object.entries(options.where).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          params[`where[${key}]`] = value;
-        }
-      });
-    }
-
-    return params;
   }
 }

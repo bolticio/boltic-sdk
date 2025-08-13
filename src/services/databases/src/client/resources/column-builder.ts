@@ -1,56 +1,58 @@
 import {
   ColumnDetails,
   ColumnQueryOptions,
-  ColumnRecord,
   ColumnUpdateRequest,
 } from '../../types/api/column';
-import { FieldDefinition } from '../../types/api/table';
-import { PaginationInfo } from '../../types/common/operations';
-import { ApiResponse } from '../../types/common/responses';
+import {
+  BolticErrorResponse,
+  BolticListResponse,
+  BolticSuccessResponse,
+} from '../../types/common/responses';
 import { ColumnResource } from './column';
 
+export interface ColumnBuilderOptions {
+  tableName: string;
+  columnResource: ColumnResource;
+}
+
+/**
+ * Column Builder - provides a fluent interface for building column queries and operations
+ */
 export class ColumnBuilder {
-  private columnResource: ColumnResource;
   private tableName: string;
+  private columnResource: ColumnResource;
   private queryOptions: ColumnQueryOptions = {};
   private updateData: ColumnUpdateRequest = {};
 
-  constructor(columnResource: ColumnResource, tableName: string) {
-    this.columnResource = columnResource;
-    this.tableName = tableName;
+  constructor(options: ColumnBuilderOptions) {
+    this.tableName = options.tableName;
+    this.columnResource = options.columnResource;
   }
 
   /**
-   * Add where conditions to the query
+   * Add filter conditions
    */
-  where(conditions: ColumnQueryOptions['where']): ColumnBuilder {
+  where(conditions: Partial<ColumnQueryOptions['where']>): ColumnBuilder {
     this.queryOptions.where = { ...this.queryOptions.where, ...conditions };
     return this;
   }
 
   /**
-   * Specify fields to select
+   * Set sorting
    */
-  fields(fieldList: Array<keyof ColumnDetails>): ColumnBuilder {
-    this.queryOptions.fields = fieldList;
-    return this;
-  }
-
-  /**
-   * Add sorting to the query
-   */
-  sort(
-    sortOptions: Array<{ field: keyof ColumnDetails; order: 'asc' | 'desc' }>
+  orderBy(
+    field: keyof ColumnDetails,
+    direction: 'asc' | 'desc' = 'asc'
   ): ColumnBuilder {
-    this.queryOptions.sort = [
-      ...(this.queryOptions.sort || []),
-      ...sortOptions,
-    ];
+    if (!this.queryOptions.sort) {
+      this.queryOptions.sort = [];
+    }
+    this.queryOptions.sort.push({ field, order: direction });
     return this;
   }
 
   /**
-   * Set pagination limit
+   * Set limit
    */
   limit(count: number): ColumnBuilder {
     this.queryOptions.limit = count;
@@ -58,7 +60,7 @@ export class ColumnBuilder {
   }
 
   /**
-   * Set pagination offset
+   * Set offset
    */
   offset(count: number): ColumnBuilder {
     this.queryOptions.offset = count;
@@ -66,7 +68,15 @@ export class ColumnBuilder {
   }
 
   /**
-   * Set update data
+   * Set fields to select
+   */
+  select(fields: Array<keyof ColumnDetails>): ColumnBuilder {
+    this.queryOptions.fields = fields;
+    return this;
+  }
+
+  /**
+   * Set data for update operations
    */
   set(data: ColumnUpdateRequest): ColumnBuilder {
     this.updateData = { ...this.updateData, ...data };
@@ -74,62 +84,102 @@ export class ColumnBuilder {
   }
 
   /**
-   * Execute create operation
+   * Execute list operation (was findAll)
    */
-  async create(data: FieldDefinition): Promise<ApiResponse<ColumnRecord>> {
-    return this.columnResource.create(this.tableName, data);
-  }
-
-  /**
-   * Execute findAll operation
-   */
-  async findAll(): Promise<
-    ApiResponse<ColumnDetails[]> & { pagination?: PaginationInfo }
+  async list(): Promise<
+    BolticListResponse<ColumnDetails> | BolticErrorResponse
   > {
-    return this.columnResource.findAll(this.tableName, this.queryOptions);
+    return this.columnResource.list(this.tableName, this.queryOptions);
   }
 
   /**
-   * Execute findOne operation
+   * Execute get operation (was findOne) - requires column name
    */
-  async findOne(): Promise<ApiResponse<ColumnDetails | null>> {
-    return this.columnResource.findOne(this.tableName, this.queryOptions);
-  }
-
-  /**
-   * Execute update operation
-   */
-  async update(): Promise<ApiResponse<ColumnDetails>> {
-    return this.columnResource.update(this.tableName, {
-      set: this.updateData,
-      where: this.queryOptions.where || {},
-    });
-  }
-
-  /**
-   * Execute delete operation
-   */
-  async delete(): Promise<ApiResponse<{ success: boolean; message?: string }>> {
-    if (!this.queryOptions.where?.name && !this.queryOptions.where?.id) {
-      throw new Error(
-        'Delete operation requires column name or ID in where clause'
-      );
+  async get(): Promise<
+    BolticSuccessResponse<ColumnDetails> | BolticErrorResponse
+  > {
+    if (!this.queryOptions.where?.name) {
+      return {
+        data: {},
+        error: {
+          code: 'MISSING_COLUMN_NAME',
+          message: 'Column name is required for get operation',
+        },
+      };
     }
 
-    return this.columnResource.delete(this.tableName, {
-      where: {
-        name: this.queryOptions.where.name,
-        id: this.queryOptions.where.id,
-      },
-    });
+    return this.columnResource.get(
+      this.tableName,
+      this.queryOptions.where.name as string
+    );
   }
 
   /**
-   * Reset builder to initial state
+   * Execute update operation - requires column name
    */
-  reset(): ColumnBuilder {
-    this.queryOptions = {};
-    this.updateData = {};
-    return this;
+  async update(): Promise<
+    BolticSuccessResponse<ColumnDetails> | BolticErrorResponse
+  > {
+    if (!this.queryOptions.where?.name) {
+      return {
+        data: {},
+        error: {
+          code: 'MISSING_COLUMN_NAME',
+          message: 'Column name is required for update operation',
+        },
+      };
+    }
+
+    return this.columnResource.update(
+      this.tableName,
+      this.queryOptions.where.name as string,
+      this.updateData
+    );
   }
+
+  /**
+   * Execute delete operation - requires column name
+   */
+  async delete(): Promise<
+    | BolticSuccessResponse<{ success: boolean; message?: string }>
+    | BolticErrorResponse
+  > {
+    if (!this.queryOptions.where?.name) {
+      return {
+        data: {},
+        error: {
+          code: 'MISSING_COLUMN_NAME',
+          message: 'Column name is required for delete operation',
+        },
+      };
+    }
+
+    return this.columnResource.delete(
+      this.tableName,
+      this.queryOptions.where.name as string
+    );
+  }
+
+  /**
+   * Get the built query options (for debugging)
+   */
+  getQueryOptions(): ColumnQueryOptions {
+    return { ...this.queryOptions };
+  }
+
+  /**
+   * Get the update data (for debugging)
+   */
+  getUpdateData(): ColumnUpdateRequest {
+    return { ...this.updateData };
+  }
+}
+
+/**
+ * Create a new column builder
+ */
+export function createColumnBuilder(
+  options: ColumnBuilderOptions
+): ColumnBuilder {
+  return new ColumnBuilder(options);
 }

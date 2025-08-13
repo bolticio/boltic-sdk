@@ -8,16 +8,6 @@ import type { Environment } from '../../types/config/environment';
 import { createHttpAdapter } from '../../utils/http';
 import { HttpAdapter } from '../../utils/http/adapter';
 import { TABLE_ENDPOINTS, buildEndpointPath } from '../endpoints/tables';
-import {
-  TableApiResponse,
-  TableListApiResponse,
-  transformGenerateSchemaRequest,
-  transformTableCreateRequest,
-  transformTableListRequest,
-  transformTableListResponse,
-  transformTableResponse,
-  transformTableUpdateRequest,
-} from '../transformers/tables';
 
 export interface TablesApiClientConfig {
   apiKey: string;
@@ -40,11 +30,31 @@ export interface TableListOptions extends TableQueryOptions {
   isShared?: boolean;
 }
 
-export interface ApiError {
-  code: string;
-  message: string;
-  details?: unknown;
-  statusCode?: number;
+// Boltic API Response Structure interfaces
+interface BolticSuccessResponse<T = unknown> {
+  data: T;
+  message?: string;
+}
+
+interface BolticListResponse<T = unknown> {
+  data: T[];
+  pagination?: {
+    total_count: number;
+    total_pages: number;
+    current_page: number;
+    per_page: number;
+    type: string;
+  };
+  message?: string;
+}
+
+interface BolticErrorResponse {
+  data: {};
+  error: {
+    code?: string;
+    message?: string;
+    meta?: string[];
+  };
 }
 
 /**
@@ -83,78 +93,54 @@ export class TablesApiClient {
   async createTable(
     request: TableCreateRequest,
     options: TableCreateOptions = {}
-  ): Promise<{ data: TableCreateResponse; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<TableCreateResponse> | BolticErrorResponse> {
     try {
       const endpoint = TABLE_ENDPOINTS.create;
       const url = `${this.baseURL}${endpoint.path}`;
-      const transformedRequest = transformTableCreateRequest(request, options);
+
+      // Prepare request data without transformation
+      const requestData = {
+        ...request,
+        ...options,
+      };
 
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: transformedRequest,
+        data: requestData,
         timeout: this.config.timeout,
       });
 
-      if (response.data) {
-        // Return the nested data directly without double wrapping
-        return response.data as { data: TableCreateResponse; error?: ApiError };
-      }
-
-      throw new Error('Invalid response from API');
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<TableCreateResponse>;
     } catch (error) {
-      return {
-        data: {} as TableCreateResponse,
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
   /**
    * List tables with filtering and pagination
    */
-  async listTables(options: TableListOptions = {}): Promise<{
-    data: TableRecord[];
-    pagination?: {
-      total_count: number;
-      total_pages: number;
-      current_page: number;
-      per_page: number;
-      type: string;
-    };
-    error?: ApiError;
-  }> {
+  async listTables(
+    options: TableListOptions = {}
+  ): Promise<BolticListResponse<TableRecord> | BolticErrorResponse> {
     try {
       const endpoint = TABLE_ENDPOINTS.list;
       const url = `${this.baseURL}${endpoint.path}`;
-      const transformedRequest = transformTableListRequest(options);
 
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: transformedRequest,
+        data: options,
         timeout: this.config.timeout,
       });
 
-      if (response.data) {
-        const transformed = transformTableListResponse(
-          response.data as TableListApiResponse
-        );
-
-        return {
-          data: transformed.tables,
-          pagination: transformed.pagination,
-        };
-      }
-
-      throw new Error('Invalid response from API');
+      // Return raw response without transformation
+      return response.data as BolticListResponse<TableRecord>;
     } catch (error) {
-      return {
-        data: [],
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -163,7 +149,7 @@ export class TablesApiClient {
    */
   async getTable(
     tableId: string
-  ): Promise<{ data: TableRecord; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<TableRecord> | BolticErrorResponse> {
     try {
       const endpoint = TABLE_ENDPOINTS.get;
       const url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
@@ -175,18 +161,10 @@ export class TablesApiClient {
         timeout: this.config.timeout,
       });
 
-      if (response.data) {
-        return {
-          data: transformTableResponse(response.data as TableApiResponse),
-        };
-      }
-
-      throw new Error('Invalid response from API');
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<TableRecord>;
     } catch (error) {
-      return {
-        data: {} as TableRecord,
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -201,32 +179,23 @@ export class TablesApiClient {
       is_shared?: boolean;
       snapshot?: string;
     }
-  ): Promise<{ data: TableRecord; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<TableRecord> | BolticErrorResponse> {
     try {
       const endpoint = TABLE_ENDPOINTS.update;
       const url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
-      const transformedRequest = transformTableUpdateRequest(updates);
 
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: transformedRequest,
+        data: updates,
         timeout: this.config.timeout,
       });
 
-      if (response.data) {
-        return {
-          data: transformTableResponse(response.data as TableApiResponse),
-        };
-      }
-
-      throw new Error('Invalid response from API');
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<TableRecord>;
     } catch (error) {
-      return {
-        data: {} as TableRecord,
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -235,89 +204,86 @@ export class TablesApiClient {
    */
   async deleteTable(
     tableId: string
-  ): Promise<{ success: boolean; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
       const endpoint = TABLE_ENDPOINTS.delete;
       const url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
 
-      await this.httpAdapter.request({
+      const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
         timeout: this.config.timeout,
       });
 
-      return { success: true };
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<{ message: string }>;
     } catch (error) {
-      return {
-        success: false,
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
   /**
    * Generate table schema using AI
    */
-  async generateSchema(prompt: string): Promise<{
-    data?: {
-      fields: Array<{
-        name: string;
-        type: string;
+  async generateSchema(prompt: string): Promise<
+    | BolticSuccessResponse<{
+        fields: Array<{
+          name: string;
+          type: string;
+          description?: string;
+        }>;
+        name?: string;
         description?: string;
-      }>;
-      name?: string;
-      description?: string;
-    };
-    error?: ApiError;
-  }> {
+      }>
+    | BolticErrorResponse
+  > {
     try {
       if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
-        throw new Error('Prompt is required for schema generation');
+        return this.formatErrorResponse(
+          new Error('Prompt is required for schema generation')
+        );
       }
 
       const endpoint = TABLE_ENDPOINTS.generateSchema;
       const url = `${this.baseURL}${endpoint.path}`;
-      const transformedRequest = transformGenerateSchemaRequest(prompt.trim());
 
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: transformedRequest,
+        data: { prompt: prompt.trim() },
         timeout: this.config.timeout || 30000, // Longer timeout for AI operations
       });
 
-      return response.data as {
-        data?: {
-          fields: Array<{
-            name: string;
-            type: string;
-            description?: string;
-          }>;
-          name?: string;
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<{
+        fields: Array<{
+          name: string;
+          type: string;
           description?: string;
-        };
-        error?: ApiError;
-      };
+        }>;
+        name?: string;
+        description?: string;
+      }>;
     } catch (error) {
-      return {
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
   /**
    * Get available currencies from the API
    */
-  async getCurrencies(): Promise<{
-    data?: Array<{
-      code: string;
-      name: string;
-      symbol: string;
-    }>;
-    error?: ApiError;
-  }> {
+  async getCurrencies(): Promise<
+    | BolticSuccessResponse<
+        Array<{
+          code: string;
+          name: string;
+          symbol: string;
+        }>
+      >
+    | BolticErrorResponse
+  > {
     try {
       const endpoint = TABLE_ENDPOINTS.getCurrencies;
       const url = `${this.baseURL}${endpoint.path}`;
@@ -329,18 +295,16 @@ export class TablesApiClient {
         timeout: this.config.timeout,
       });
 
-      return response.data as {
-        data?: Array<{
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<
+        Array<{
           code: string;
           name: string;
           symbol: string;
-        }>;
-        error?: ApiError;
-      };
+        }>
+      >;
     } catch (error) {
-      return {
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -355,44 +319,54 @@ export class TablesApiClient {
     };
   }
 
-  private formatError(error: unknown): ApiError {
+  private formatErrorResponse(error: unknown): BolticErrorResponse {
     if (this.config.debug) {
       console.error('Tables API Error:', error);
     }
 
-    // Handle different error types
+    // Handle different error types following Boltic format
     if (error && typeof error === 'object' && 'response' in error) {
       const apiError = error as {
         response?: {
-          data?: {
-            error?: { code?: string; message?: string; details?: unknown };
-          };
+          data?: BolticErrorResponse;
           status?: number;
         };
       };
+
+      // If API already returned Boltic format, use it
+      if (apiError.response?.data?.error) {
+        return apiError.response.data;
+      }
+
+      // Otherwise format it to Boltic structure
       return {
-        code: apiError.response?.data?.error?.code || 'API_ERROR',
-        message:
-          apiError.response?.data?.error?.message ||
-          (error as unknown as Error).message ||
-          'Unknown API error',
-        details: apiError.response?.data?.error?.details,
-        statusCode: apiError.response?.status,
+        data: {},
+        error: {
+          code: 'API_ERROR',
+          message: (error as unknown as Error).message || 'Unknown API error',
+          meta: [`Status: ${apiError.response?.status || 'unknown'}`],
+        },
       };
     }
 
     if (error && typeof error === 'object' && 'message' in error) {
       return {
-        code: 'CLIENT_ERROR',
-        message: (error as Error).message,
-        details: error,
+        data: {},
+        error: {
+          code: 'CLIENT_ERROR',
+          message: (error as Error).message,
+          meta: ['Client-side error occurred'],
+        },
       };
     }
 
     return {
-      code: 'UNKNOWN_ERROR',
-      message: 'An unexpected error occurred',
-      details: error,
+      data: {},
+      error: {
+        code: 'UNKNOWN_ERROR',
+        message: 'An unexpected error occurred',
+        meta: ['Unknown error type'],
+      },
     };
   }
 }

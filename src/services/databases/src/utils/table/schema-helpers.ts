@@ -86,6 +86,7 @@ export class SchemaHelpers {
       is_readonly: false,
       is_indexed: false,
       field_order: 1,
+      selection_source: 'provide-static-list',
       selectable_items: items,
       multiple_selections: false,
       ...options,

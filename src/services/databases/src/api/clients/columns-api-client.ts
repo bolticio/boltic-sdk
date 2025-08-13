@@ -4,26 +4,12 @@ import {
   ColumnQueryOptions,
   ColumnRecord,
   ColumnUpdateRequest,
-  DateFormatEnum,
-  DecimalType,
-  PhoneFormatType,
-  TimeFormatEnum,
 } from '../../types/api/column';
 import { FieldDefinition } from '../../types/api/table';
 import type { Environment } from '../../types/config/environment';
 import { createHttpAdapter } from '../../utils/http';
 import { HttpAdapter } from '../../utils/http/adapter';
 import { COLUMN_ENDPOINTS, buildEndpointPath } from '../endpoints/columns';
-import {
-  ColumnApiResponse,
-  ColumnListApiResponse,
-  transformColumnCreateRequest,
-  transformColumnCreateResponse,
-  transformColumnListRequest,
-  transformColumnListResponse,
-  transformColumnResponse,
-  transformColumnUpdateRequest,
-} from '../transformers/columns';
 
 export interface ColumnsApiClientConfig {
   apiKey: string;
@@ -40,11 +26,31 @@ export interface ColumnListOptions extends ColumnQueryOptions {
   pageSize?: number;
 }
 
-export interface ApiError {
-  code: string;
-  message: string;
-  details?: unknown;
-  statusCode?: number;
+// Boltic API Response Structure interfaces
+interface BolticSuccessResponse<T = unknown> {
+  data: T;
+  message?: string;
+}
+
+interface BolticListResponse<T = unknown> {
+  data: T[];
+  pagination?: {
+    total_count: number;
+    total_pages: number;
+    current_page: number;
+    per_page: number;
+    type: string;
+  };
+  message?: string;
+}
+
+interface BolticErrorResponse {
+  data: {};
+  error: {
+    code?: string;
+    message?: string;
+    meta?: string[];
+  };
 }
 
 /**
@@ -83,66 +89,30 @@ export class ColumnsApiClient {
   async createColumn(
     tableId: string,
     request: FieldDefinition
-  ): Promise<{ data: ColumnRecord; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<ColumnRecord> | BolticErrorResponse> {
     try {
       const endpoint = COLUMN_ENDPOINTS.create;
-
       const url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
-      const transformedRequest = transformColumnCreateRequest(request);
 
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: transformedRequest,
+        data: request,
         timeout: this.config.timeout,
       });
 
-      if (response.data) {
-        if (this.config.debug) {
-          console.log(
-            'Column API Response:',
-            JSON.stringify(response.data, null, 2)
-          );
-        }
-
-        try {
-          // Try to transform the response
-          const transformedData = transformColumnCreateResponse(
-            response.data as { data: { id: string }; message?: string }
-          );
-
-          if (this.config.debug) {
-            console.log(
-              'Transformed Column Data:',
-              JSON.stringify(transformedData, null, 2)
-            );
-          }
-
-          return {
-            data: transformedData,
-          };
-        } catch (transformError) {
-          if (this.config.debug) {
-            console.error('Transform error:', transformError);
-            console.log('Raw response data:', response.data);
-          }
-
-          // Return a basic structure if transformation fails
-          return {
-            data: {
-              id: 'unknown',
-            } as ColumnRecord,
-          };
-        }
+      if (this.config.debug) {
+        console.log(
+          'Column API Response:',
+          JSON.stringify(response.data, null, 2)
+        );
       }
 
-      throw new Error('Invalid response from API');
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<ColumnRecord>;
     } catch (error) {
-      return {
-        data: {} as ColumnRecord,
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -152,7 +122,7 @@ export class ColumnsApiClient {
   async createColumns(
     tableId: string,
     request: ColumnCreateRequest
-  ): Promise<{ data: ColumnRecord[]; error?: ApiError }> {
+  ): Promise<BolticListResponse<ColumnRecord> | BolticErrorResponse> {
     try {
       const columns = request.columns;
       const createdColumns: ColumnRecord[] = [];
@@ -160,24 +130,20 @@ export class ColumnsApiClient {
       for (const column of columns) {
         const result = await this.createColumn(tableId, column);
 
-        if (result.error) {
-          return {
-            data: createdColumns,
-            error: result.error,
-          };
+        if ('error' in result) {
+          return result;
         }
 
         createdColumns.push(result.data);
       }
 
+      // Return in Boltic list format
       return {
         data: createdColumns,
+        message: 'Columns created successfully',
       };
     } catch (error) {
-      return {
-        data: [],
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -187,47 +153,23 @@ export class ColumnsApiClient {
   async listColumns(
     tableId: string,
     options: ColumnListOptions = {}
-  ): Promise<{
-    data: ColumnDetails[];
-    pagination?: {
-      total_count: number;
-      total_pages: number;
-      current_page: number;
-      per_page: number;
-      type: string;
-    };
-    error?: ApiError;
-  }> {
+  ): Promise<BolticListResponse<ColumnDetails> | BolticErrorResponse> {
     try {
       const endpoint = COLUMN_ENDPOINTS.list;
       const url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}?no_cache=true`;
-      const transformedRequest = transformColumnListRequest(options);
 
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: transformedRequest,
+        data: options,
         timeout: this.config.timeout,
       });
 
-      if (response.data) {
-        const transformed = transformColumnListResponse(
-          response.data as ColumnListApiResponse
-        );
-
-        return {
-          data: transformed.columns,
-          pagination: transformed.pagination,
-        };
-      }
-
-      throw new Error('Invalid response from API');
+      // Return raw response without transformation
+      return response.data as BolticListResponse<ColumnDetails>;
     } catch (error) {
-      return {
-        data: [],
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -237,7 +179,7 @@ export class ColumnsApiClient {
   async getColumn(
     tableId: string,
     columnId: string
-  ): Promise<{ data: ColumnDetails; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
       // Use listColumns with filter on ID since get endpoint is not available
       const listResult = await this.listColumns(tableId, {
@@ -245,34 +187,29 @@ export class ColumnsApiClient {
         limit: 1,
       });
 
-      if (listResult.error) {
-        return {
-          data: {} as ColumnDetails,
-          error: listResult.error,
-        };
+      if ('error' in listResult) {
+        return listResult;
       }
 
       const column = listResult.data[0] || null;
 
       if (!column) {
         return {
-          data: {} as ColumnDetails,
+          data: {},
           error: {
             code: 'COLUMN_NOT_FOUND',
             message: `Column with ID '${columnId}' not found in table`,
-            statusCode: 404,
+            meta: ['Column not found'],
           },
         };
       }
 
       return {
         data: column,
+        message: 'Column retrieved successfully',
       };
     } catch (error) {
-      return {
-        data: {} as ColumnDetails,
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -283,95 +220,27 @@ export class ColumnsApiClient {
     tableId: string,
     columnId: string,
     updates: ColumnUpdateRequest
-  ): Promise<{ data: ColumnDetails; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
-      // First, get the existing column data
-      const getColumnResult = await this.getColumn(tableId, columnId);
-
-      if (getColumnResult.error) {
-        return {
-          data: {} as ColumnDetails,
-          error: getColumnResult.error,
-        };
-      }
-
-      // Merge the existing column data with the update request
-      const existingColumn = getColumnResult.data;
-      const mergedData = this.mergeColumnData(existingColumn, updates);
-
       const endpoint = COLUMN_ENDPOINTS.update;
       const url = `${this.baseURL}${buildEndpointPath(endpoint, {
         table_id: tableId,
         field_id: columnId,
       })}`;
-      const transformedRequest = transformColumnUpdateRequest(mergedData);
 
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: transformedRequest,
+        data: updates,
         timeout: this.config.timeout,
       });
 
-      if (response.data) {
-        return {
-          data: transformColumnResponse(response.data as ColumnApiResponse),
-        };
-      }
-
-      throw new Error('Invalid response from API');
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<ColumnDetails>;
     } catch (error) {
-      return {
-        data: {} as ColumnDetails,
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
-  }
-
-  /**
-   * Helper method to merge existing column data with update request
-   */
-  private mergeColumnData(
-    existingColumn: ColumnDetails,
-    updates: ColumnUpdateRequest
-  ): ColumnUpdateRequest {
-    return {
-      name: updates.name ?? existingColumn.name,
-      type: updates.type ?? existingColumn.type,
-      description: updates.description ?? existingColumn.description,
-      is_nullable: updates.is_nullable ?? existingColumn.is_nullable,
-      is_unique: updates.is_unique ?? existingColumn.is_unique,
-      is_indexed: updates.is_indexed ?? existingColumn.is_indexed,
-      is_visible: updates.is_visible ?? existingColumn.is_visible,
-      is_primary_key: updates.is_primary_key ?? existingColumn.is_primary_key,
-      is_readonly: updates.is_readonly ?? existingColumn.is_readonly,
-      default_value: updates.default_value ?? existingColumn.default_value,
-      field_order: updates.field_order ?? existingColumn.field_order,
-      alignment: updates.alignment ?? existingColumn.alignment,
-      decimals: updates.decimals ?? (existingColumn.decimals as DecimalType),
-      currency_format:
-        updates.currency_format ?? existingColumn.currency_format,
-      selection_source:
-        updates.selection_source ??
-        (existingColumn.selection_source as 'provide-static-list' | undefined),
-      selectable_items:
-        updates.selectable_items ?? existingColumn.selectable_items,
-      multiple_selections:
-        updates.multiple_selections ?? existingColumn.multiple_selections,
-      phone_format:
-        updates.phone_format ??
-        (existingColumn.phone_format as PhoneFormatType),
-      date_format:
-        updates.date_format ??
-        (existingColumn.date_format as keyof typeof DateFormatEnum),
-      time_format:
-        updates.time_format ??
-        (existingColumn.time_format as keyof typeof TimeFormatEnum),
-      timezone: updates.timezone ?? existingColumn.timezone,
-      vector_dimension:
-        updates.vector_dimension ?? existingColumn.vector_dimension,
-    };
   }
 
   /**
@@ -380,7 +249,7 @@ export class ColumnsApiClient {
   async deleteColumn(
     tableId: string,
     columnId: string
-  ): Promise<{ success: boolean; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
       const endpoint = COLUMN_ENDPOINTS.delete;
       const url = `${this.baseURL}${buildEndpointPath(endpoint, {
@@ -388,19 +257,17 @@ export class ColumnsApiClient {
         field_id: columnId,
       })}`;
 
-      await this.httpAdapter.request({
+      const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
         timeout: this.config.timeout,
       });
 
-      return { success: true };
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<{ message: string }>;
     } catch (error) {
-      return {
-        success: false,
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -410,29 +277,26 @@ export class ColumnsApiClient {
   async findColumnByName(
     tableId: string,
     columnName: string
-  ): Promise<{ data: ColumnDetails | null; error?: ApiError }> {
+  ): Promise<
+    BolticSuccessResponse<ColumnDetails | null> | BolticErrorResponse
+  > {
     try {
       const listResult = await this.listColumns(tableId, {
         where: { name: columnName },
         limit: 1,
       });
 
-      if (listResult.error) {
-        return {
-          data: null,
-          error: listResult.error,
-        };
+      if ('error' in listResult) {
+        return listResult;
       }
 
       const column = listResult.data[0] || null;
       return {
         data: column,
+        message: column ? 'Column found' : 'Column not found',
       };
     } catch (error) {
-      return {
-        data: null,
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -443,25 +307,22 @@ export class ColumnsApiClient {
     tableId: string,
     columnName: string,
     updates: ColumnUpdateRequest
-  ): Promise<{ data: ColumnDetails; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
       // First find the column to get its ID
       const findResult = await this.findColumnByName(tableId, columnName);
 
-      if (findResult.error) {
-        return {
-          data: {} as ColumnDetails,
-          error: findResult.error,
-        };
+      if ('error' in findResult) {
+        return findResult;
       }
 
       if (!findResult.data) {
         return {
-          data: {} as ColumnDetails,
+          data: {},
           error: {
             code: 'COLUMN_NOT_FOUND',
             message: `Column '${columnName}' not found in table`,
-            statusCode: 404,
+            meta: ['404'],
           },
         };
       }
@@ -469,10 +330,7 @@ export class ColumnsApiClient {
       // Update using the column ID
       return await this.updateColumn(tableId, findResult.data.id, updates);
     } catch (error) {
-      return {
-        data: {} as ColumnDetails,
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -482,25 +340,22 @@ export class ColumnsApiClient {
   async deleteColumnByName(
     tableId: string,
     columnName: string
-  ): Promise<{ success: boolean; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
       // First find the column to get its ID
       const findResult = await this.findColumnByName(tableId, columnName);
 
-      if (findResult.error) {
-        return {
-          success: false,
-          error: findResult.error,
-        };
+      if ('error' in findResult) {
+        return findResult;
       }
 
       if (!findResult.data) {
         return {
-          success: false,
+          data: {},
           error: {
             code: 'COLUMN_NOT_FOUND',
             message: `Column '${columnName}' not found in table`,
-            statusCode: 404,
+            meta: ['Column not found'],
           },
         };
       }
@@ -508,10 +363,7 @@ export class ColumnsApiClient {
       // Delete using the column ID
       return await this.deleteColumn(tableId, findResult.data.id);
     } catch (error) {
-      return {
-        success: false,
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -524,44 +376,54 @@ export class ColumnsApiClient {
     };
   }
 
-  private formatError(error: unknown): ApiError {
+  private formatErrorResponse(error: unknown): BolticErrorResponse {
     if (this.config.debug) {
       console.error('Columns API Error:', error);
     }
 
-    // Handle different error types
+    // Handle different error types following Boltic format
     if (error && typeof error === 'object' && 'response' in error) {
       const apiError = error as {
         response?: {
-          data?: {
-            error?: { code?: string; message?: string; details?: unknown };
-          };
+          data?: BolticErrorResponse;
           status?: number;
         };
       };
+
+      // If API already returned Boltic format, use it
+      if (apiError.response?.data?.error) {
+        return apiError.response.data;
+      }
+
+      // Otherwise format it to Boltic structure
       return {
-        code: apiError.response?.data?.error?.code || 'API_ERROR',
-        message:
-          apiError.response?.data?.error?.message ||
-          (error as unknown as Error).message ||
-          'Unknown API error',
-        details: apiError.response?.data?.error?.details,
-        statusCode: apiError.response?.status,
+        data: {},
+        error: {
+          code: 'API_ERROR',
+          message: (error as unknown as Error).message || 'Unknown API error',
+          meta: [`Status: ${apiError.response?.status || 'unknown'}`],
+        },
       };
     }
 
     if (error && typeof error === 'object' && 'message' in error) {
       return {
-        code: 'CLIENT_ERROR',
-        message: (error as Error).message,
-        details: error,
+        data: {},
+        error: {
+          code: 'CLIENT_ERROR',
+          message: (error as Error).message,
+          meta: ['Client-side error occurred'],
+        },
       };
     }
 
     return {
-      code: 'UNKNOWN_ERROR',
-      message: 'An unexpected error occurred',
-      details: error,
+      data: {},
+      error: {
+        code: 'UNKNOWN_ERROR',
+        message: 'An unexpected error occurred',
+        meta: ['Unknown error type'],
+      },
     };
   }
 }

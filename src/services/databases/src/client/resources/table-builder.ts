@@ -4,7 +4,13 @@ import {
   FieldDefinition,
   FieldType,
   TableCreateRequest,
+  TableCreateResponse,
 } from '../../types/api/table';
+import {
+  BolticErrorResponse,
+  BolticSuccessResponse,
+  isErrorResponse,
+} from '../../types/common/responses';
 
 export interface TableBuilderOptions {
   name: string;
@@ -30,22 +36,45 @@ export class TableBuilder {
   constructor(options: TableBuilderOptions, tablesApiClient?: TablesApiClient) {
     this.tableName = options.name;
     this.description = options.description;
-    this.isPublic = options.is_ai_generated_schema ?? false;
     this.tablesApiClient = tablesApiClient;
+  }
+
+  /**
+   * Set table name
+   */
+  name(name: string): TableBuilder {
+    this.tableName = name;
+    return this;
+  }
+
+  /**
+   * Set table description
+   */
+  describe(description: string): TableBuilder {
+    this.description = description;
+    return this;
+  }
+
+  /**
+   * Set if table is public
+   */
+  public(isPublic: boolean = true): TableBuilder {
+    this.isPublic = isPublic;
+    return this;
   }
 
   /**
    * Add a text field
    */
-  addTextField(
+  text(
     name: string,
     options: {
       nullable?: boolean;
       unique?: boolean;
-      primaryKey?: boolean;
       indexed?: boolean;
-      description?: string;
       defaultValue?: string;
+      description?: string;
+      alignment?: 'left' | 'center' | 'right';
     } = {}
   ): TableBuilder {
     this.fields.push({
@@ -53,10 +82,37 @@ export class TableBuilder {
       type: 'text',
       is_nullable: options.nullable ?? true,
       is_unique: options.unique ?? false,
-      is_primary_key: options.primaryKey ?? false,
       is_indexed: options.indexed ?? false,
-      description: options.description,
+      is_primary_key: false,
       default_value: options.defaultValue,
+      description: options.description,
+      alignment: options.alignment || 'left',
+      field_order: this.fields.length + 1,
+    });
+    return this;
+  }
+
+  /**
+   * Add a long text field
+   */
+  longText(
+    name: string,
+    options: {
+      nullable?: boolean;
+      description?: string;
+      alignment?: 'left' | 'center' | 'right';
+    } = {}
+  ): TableBuilder {
+    this.fields.push({
+      name,
+      type: 'long-text',
+      is_nullable: options.nullable ?? true,
+      is_unique: false,
+      is_indexed: false,
+      is_primary_key: false,
+      description: options.description,
+      alignment: options.alignment || 'left',
+      field_order: this.fields.length + 1,
     });
     return this;
   }
@@ -64,16 +120,16 @@ export class TableBuilder {
   /**
    * Add a number field
    */
-  addNumberField(
+  number(
     name: string,
     options: {
       nullable?: boolean;
       unique?: boolean;
-      primaryKey?: boolean;
       indexed?: boolean;
-      decimals?: number;
-      description?: string;
       defaultValue?: number;
+      description?: string;
+      decimals?: string;
+      alignment?: 'left' | 'center' | 'right';
     } = {}
   ): TableBuilder {
     this.fields.push({
@@ -81,11 +137,13 @@ export class TableBuilder {
       type: 'number',
       is_nullable: options.nullable ?? true,
       is_unique: options.unique ?? false,
-      is_primary_key: options.primaryKey ?? false,
       is_indexed: options.indexed ?? false,
-      decimals: options.decimals?.toString() ?? '0.00',
-      description: options.description,
+      is_primary_key: false,
       default_value: options.defaultValue,
+      description: options.description,
+      decimals: options.decimals,
+      alignment: options.alignment || 'right',
+      field_order: this.fields.length + 1,
     });
     return this;
   }
@@ -93,30 +151,29 @@ export class TableBuilder {
   /**
    * Add a currency field
    */
-  addCurrencyField(
+  currency(
     name: string,
     options: {
-      currencyFormat: string;
       nullable?: boolean;
-      unique?: boolean;
-      primaryKey?: boolean;
-      indexed?: boolean;
-      decimals?: number;
-      description?: string;
       defaultValue?: number;
-    }
+      description?: string;
+      currencyFormat?: string;
+      decimals?: string;
+    } = {}
   ): TableBuilder {
     this.fields.push({
       name,
       type: 'currency',
       is_nullable: options.nullable ?? true,
-      is_unique: options.unique ?? false,
-      is_primary_key: options.primaryKey ?? false,
-      is_indexed: options.indexed ?? false,
-      currency_format: options.currencyFormat,
-      decimals: options.decimals?.toString() ?? '0.00',
-      description: options.description,
+      is_unique: false,
+      is_indexed: false,
+      is_primary_key: false,
       default_value: options.defaultValue,
+      description: options.description,
+      currency_format: options.currencyFormat,
+      decimals: options.decimals,
+      alignment: 'right',
+      field_order: this.fields.length + 1,
     });
     return this;
   }
@@ -124,26 +181,25 @@ export class TableBuilder {
   /**
    * Add a checkbox field
    */
-  addCheckboxField(
+  checkbox(
     name: string,
     options: {
       nullable?: boolean;
-      unique?: boolean;
-      primaryKey?: boolean;
-      indexed?: boolean;
-      description?: string;
       defaultValue?: boolean;
+      description?: string;
     } = {}
   ): TableBuilder {
     this.fields.push({
       name,
       type: 'checkbox',
       is_nullable: options.nullable ?? true,
-      is_unique: options.unique ?? false,
-      is_primary_key: options.primaryKey ?? false,
-      is_indexed: options.indexed ?? false,
-      description: options.description,
+      is_unique: false,
+      is_indexed: false,
+      is_primary_key: false,
       default_value: options.defaultValue,
+      description: options.description,
+      alignment: 'center',
+      field_order: this.fields.length + 1,
     });
     return this;
   }
@@ -151,28 +207,30 @@ export class TableBuilder {
   /**
    * Add a dropdown field
    */
-  addDropdownField(
+  dropdown(
     name: string,
+    items: string[],
     options: {
-      items: string[];
       nullable?: boolean;
-      unique?: boolean;
-      primaryKey?: boolean;
-      indexed?: boolean;
+      multiple?: boolean;
+      defaultValue?: string | string[];
       description?: string;
-      defaultValue?: string;
-    }
+    } = {}
   ): TableBuilder {
     this.fields.push({
       name,
       type: 'dropdown',
       is_nullable: options.nullable ?? true,
-      is_unique: options.unique ?? false,
-      is_primary_key: options.primaryKey ?? false,
-      is_indexed: options.indexed ?? false,
-      selectable_items: options.items,
-      description: options.description,
+      is_unique: false,
+      is_indexed: false,
+      is_primary_key: false,
       default_value: options.defaultValue,
+      description: options.description,
+      selection_source: 'provide-static-list',
+      selectable_items: items,
+      multiple_selections: options.multiple ?? false,
+      alignment: 'left',
+      field_order: this.fields.length + 1,
     });
     return this;
   }
@@ -180,15 +238,13 @@ export class TableBuilder {
   /**
    * Add an email field
    */
-  addEmailField(
+  email(
     name: string,
     options: {
       nullable?: boolean;
       unique?: boolean;
-      primaryKey?: boolean;
       indexed?: boolean;
       description?: string;
-      defaultValue?: string;
     } = {}
   ): TableBuilder {
     this.fields.push({
@@ -196,10 +252,11 @@ export class TableBuilder {
       type: 'email',
       is_nullable: options.nullable ?? true,
       is_unique: options.unique ?? false,
-      is_primary_key: options.primaryKey ?? false,
       is_indexed: options.indexed ?? false,
+      is_primary_key: false,
       description: options.description,
-      default_value: options.defaultValue,
+      alignment: 'left',
+      field_order: this.fields.length + 1,
     });
     return this;
   }
@@ -207,28 +264,73 @@ export class TableBuilder {
   /**
    * Add a phone number field
    */
-  addPhoneField(
+  phone(
     name: string,
     options: {
-      format?: 'international' | 'national' | 'e164';
       nullable?: boolean;
-      unique?: boolean;
-      primaryKey?: boolean;
-      indexed?: boolean;
       description?: string;
-      defaultValue?: string;
+      format?: string;
     } = {}
   ): TableBuilder {
     this.fields.push({
       name,
       type: 'phone-number',
       is_nullable: options.nullable ?? true,
-      is_unique: options.unique ?? false,
-      is_primary_key: options.primaryKey ?? false,
-      is_indexed: options.indexed ?? false,
-      phone_format: options.format,
+      is_unique: false,
+      is_indexed: false,
+      is_primary_key: false,
       description: options.description,
-      default_value: options.defaultValue,
+      phone_format: options.format,
+      alignment: 'left',
+      field_order: this.fields.length + 1,
+    });
+    return this;
+  }
+
+  /**
+   * Add a link field
+   */
+  link(
+    name: string,
+    options: {
+      nullable?: boolean;
+      description?: string;
+    } = {}
+  ): TableBuilder {
+    this.fields.push({
+      name,
+      type: 'link',
+      is_nullable: options.nullable ?? true,
+      is_unique: false,
+      is_indexed: false,
+      is_primary_key: false,
+      description: options.description,
+      alignment: 'left',
+      field_order: this.fields.length + 1,
+    });
+    return this;
+  }
+
+  /**
+   * Add a JSON field
+   */
+  json(
+    name: string,
+    options: {
+      nullable?: boolean;
+      description?: string;
+    } = {}
+  ): TableBuilder {
+    this.fields.push({
+      name,
+      type: 'json',
+      is_nullable: options.nullable ?? true,
+      is_unique: false,
+      is_indexed: false,
+      is_primary_key: false,
+      description: options.description,
+      alignment: 'left',
+      field_order: this.fields.length + 1,
     });
     return this;
   }
@@ -236,137 +338,113 @@ export class TableBuilder {
   /**
    * Add a date-time field
    */
-  addDateTimeField(
+  dateTime(
     name: string,
     options: {
+      nullable?: boolean;
+      description?: string;
       dateFormat?: string;
       timeFormat?: string;
       timezone?: string;
-      nullable?: boolean;
-      unique?: boolean;
-      primaryKey?: boolean;
-      indexed?: boolean;
-      description?: string;
-      defaultValue?: string;
     } = {}
   ): TableBuilder {
     this.fields.push({
       name,
       type: 'date-time',
       is_nullable: options.nullable ?? true,
-      is_unique: options.unique ?? false,
-      is_primary_key: options.primaryKey ?? false,
-      is_indexed: options.indexed ?? false,
+      is_unique: false,
+      is_indexed: false,
+      is_primary_key: false,
+      description: options.description,
       date_format: options.dateFormat,
       time_format: options.timeFormat,
       timezone: options.timezone,
-      description: options.description,
-      default_value: options.defaultValue,
+      alignment: 'left',
+      field_order: this.fields.length + 1,
     });
     return this;
   }
 
   /**
-   * Add a vector field for AI/ML operations
+   * Add a vector field
    */
-  addVectorField(
+  vector(
     name: string,
+    dimension: number,
     options: {
-      dimension: number;
-      type?: 'vector' | 'halfvec' | 'sparsevec';
       nullable?: boolean;
-      unique?: boolean;
-      primaryKey?: boolean;
-      indexed?: boolean;
       description?: string;
-    }
+    } = {}
   ): TableBuilder {
     this.fields.push({
       name,
-      type: options.type || 'vector',
+      type: 'vector',
       is_nullable: options.nullable ?? true,
-      is_unique: options.unique ?? false,
-      is_primary_key: options.primaryKey ?? false,
-      is_indexed: options.indexed ?? false,
-      vector_dimension: options.dimension,
+      is_unique: false,
+      is_indexed: false,
+      is_primary_key: false,
       description: options.description,
+      vector_dimension: dimension,
+      alignment: 'left',
+      field_order: this.fields.length + 1,
     });
     return this;
   }
 
   /**
-   * Add a custom field with full configuration
+   * Generate schema using AI
    */
-  addField(field: FieldDefinition): TableBuilder {
-    // Validate field name
-    if (!field.name || !/^[a-zA-Z][a-zA-Z0-9_]*$/.test(field.name)) {
-      throw new ValidationError('Invalid field name', [
-        {
-          field: 'name',
-          message:
-            'Field name must start with a letter and contain only letters, numbers, and underscores',
-        },
-      ]);
-    }
-
-    // Check for duplicate field names
-    if (
-      this.fields.some((f) => f.name.toLowerCase() === field.name.toLowerCase())
-    ) {
-      throw new ValidationError('Duplicate field name', [
-        {
-          field: 'name',
-          message: `Field name '${field.name}' already exists`,
-        },
-      ]);
-    }
-
-    // Set field order
-    field.field_order = this.fields.length + 1;
-
-    this.fields.push(field);
-    return this;
-  }
-
-  /**
-   * Generate schema from natural language prompt
-   */
-  async generateFromPrompt(
-    options: GenerateSchemaOptions
-  ): Promise<TableBuilder> {
+  async generateFromAI(options: GenerateSchemaOptions): Promise<TableBuilder> {
     if (!this.tablesApiClient) {
-      throw new Error('TablesApiClient is required for schema generation');
+      throw new Error('TablesApiClient is required for AI schema generation');
     }
 
     try {
       const result = await this.tablesApiClient.generateSchema(options.prompt);
 
-      if (result.error) {
-        throw new Error(`Schema generation failed: ${result.error}`);
+      if (isErrorResponse(result)) {
+        throw new Error(
+          `Schema generation failed: ${result.error.message || 'Unknown error'}`
+        );
       }
 
-      if (result.data?.fields && Array.isArray(result.data.fields)) {
-        this.fields = []; // Clear existing fields
-        result.data.fields.forEach(
-          (
-            field: { name: string; type: string; description?: string },
-            index: number
-          ) => {
-            const fieldDefinition: FieldDefinition = {
-              name: field.name,
-              type: field.type as FieldType,
-              is_nullable: true,
-              is_primary_key: false,
-              is_unique: false,
-              is_indexed: false,
-              field_order: index + 1,
-              description: field.description,
-            };
-            this.fields.push(fieldDefinition);
-          }
-        );
-        if (result.data.name) this.tableName = result.data.name;
-        if (result.data.description) this.description = result.data.description;
+      // Type-safe access to success response data
+      const schemaData = result.data;
+      if (
+        schemaData &&
+        typeof schemaData === 'object' &&
+        'fields' in schemaData
+      ) {
+        const typedData = schemaData as {
+          fields: Array<{ name: string; type: string; description?: string }>;
+          name?: string;
+          description?: string;
+        };
+
+        if (typedData.fields && Array.isArray(typedData.fields)) {
+          this.fields = []; // Clear existing fields
+          typedData.fields.forEach(
+            (
+              field: { name: string; type: string; description?: string },
+              index: number
+            ) => {
+              const fieldDefinition: FieldDefinition = {
+                name: field.name,
+                type: field.type as FieldType,
+                is_nullable: true,
+                is_primary_key: false,
+                is_unique: false,
+                is_indexed: false,
+                field_order: index + 1,
+                description: field.description,
+              };
+              this.fields.push(fieldDefinition);
+            }
+          );
+
+          if (typedData.name) this.tableName = typedData.name;
+          if (typedData.description) this.description = typedData.description;
+        }
       }
 
       return this;
@@ -374,78 +452,76 @@ export class TableBuilder {
       throw new ValidationError('Schema generation failed', [
         {
           field: 'prompt',
-          message:
-            error instanceof Error ? error.message : 'Unknown error occurred',
+          message: error instanceof Error ? error.message : 'Unknown error',
         },
       ]);
     }
   }
 
   /**
-   * Set table description
+   * Add a custom field
    */
-  setDescription(description: string): TableBuilder {
-    this.description = description;
+  addField(field: FieldDefinition): TableBuilder {
+    this.fields.push({
+      ...field,
+      field_order: field.field_order || this.fields.length + 1,
+    });
     return this;
   }
 
   /**
-   * Set table visibility
+   * Remove a field by name
    */
-  setPublic(isPublic: boolean): TableBuilder {
-    this.isPublic = isPublic;
-    return this;
-  }
-
-  /**
-   * Get the current field count
-   */
-  getFieldCount(): number {
-    return this.fields.length;
-  }
-
-  /**
-   * Get field names
-   */
-  getFieldNames(): string[] {
-    return this.fields.map((f) => f.name);
-  }
-
-  /**
-   * Check if a field exists
-   */
-  hasField(fieldName: string): boolean {
-    return this.fields.some(
-      (f) => f.name.toLowerCase() === fieldName.toLowerCase()
-    );
-  }
-
-  /**
-   * Remove a field
-   */
-  removeField(fieldName: string): TableBuilder {
-    this.fields = this.fields.filter(
-      (f) => f.name.toLowerCase() !== fieldName.toLowerCase()
-    );
-
-    // Update field orders
+  removeField(name: string): TableBuilder {
+    this.fields = this.fields.filter((field) => field.name !== name);
+    // Reorder remaining fields
     this.fields.forEach((field, index) => {
       field.field_order = index + 1;
     });
-
     return this;
   }
 
   /**
-   * Build the table creation request
+   * Get current fields
+   */
+  getFields(): FieldDefinition[] {
+    return [...this.fields];
+  }
+
+  /**
+   * Get current table name
+   */
+  getName(): string {
+    return this.tableName;
+  }
+
+  /**
+   * Get current description
+   */
+  getDescription(): string | undefined {
+    return this.description;
+  }
+
+  /**
+   * Build the table request object
    */
   build(): TableCreateRequest {
+    if (!this.tableName) {
+      throw new ValidationError('Table name is required', [
+        { field: 'name', message: 'Table name cannot be empty' },
+      ]);
+    }
+
+    if (this.fields.length === 0) {
+      throw new ValidationError('At least one field is required', [
+        { field: 'fields', message: 'Table must have at least one field' },
+      ]);
+    }
+
     return {
       name: this.tableName,
       description: this.description,
       fields: this.fields,
-      is_ai_generated_schema: this.isPublic,
-      is_template: false,
     };
   }
 
@@ -454,7 +530,7 @@ export class TableBuilder {
    */
   async create(
     options: { is_ai_generated_schema?: boolean; is_template?: boolean } = {}
-  ): Promise<{ data: { id: string; message: string }; error?: unknown }> {
+  ): Promise<BolticSuccessResponse<TableCreateResponse> | BolticErrorResponse> {
     if (!this.tablesApiClient) {
       throw new Error('TablesApiClient is required for table creation');
     }

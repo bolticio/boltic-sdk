@@ -166,7 +166,7 @@ export function transformColumnListRequest(
   if (options.page !== undefined || options.pageSize !== undefined) {
     request.page = {
       page_no: options.page || 1,
-      page_size: options.pageSize || 50,
+      page_size: options.pageSize || 1000,
     };
   }
 
@@ -233,8 +233,15 @@ export function transformColumnUpdateRequest(
   if (updates.decimals !== undefined) apiRequest.decimals = updates.decimals;
   if (updates.currency_format !== undefined)
     apiRequest.currency_format = updates.currency_format;
-  if (updates.selection_source !== undefined)
+
+  // Handle selection_source for dropdown columns
+  // Always hardcode to "provide-static-list" for dropdown columns or when selectable_items are provided
+  if (updates.type === 'dropdown' || updates.selectable_items !== undefined) {
+    apiRequest.selection_source = 'provide-static-list';
+  } else if (updates.selection_source !== undefined) {
     apiRequest.selection_source = updates.selection_source;
+  }
+
   if (updates.selectable_items !== undefined)
     apiRequest.selectable_items = updates.selectable_items;
   if (updates.multiple_selections !== undefined)
