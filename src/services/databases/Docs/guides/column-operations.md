@@ -77,7 +77,7 @@ The SDK provides sensible defaults for all column properties. Only `name` and `t
 - **Currency fields**: `currency_format: "INR"`
 - **Date-time fields**: `date_format: "MMDDYY"`, `timezone: "utc"`
 - **Phone fields**: `phone_format: "+91 123 456 7890"`
-- **Dropdown fields**: `selection_source: "provide-static-list"`
+- **Dropdown fields**: `selectable_items: ["Option 1", "Option 2"]`, `multiple_selections: true`
 
 ### Time Format
 

@@ -1,45 +1,34 @@
-import {
-  ColumnDeleteOptions,
-  ColumnQueryOptions,
-  ColumnUpdateOptions,
-} from '../types/api/column';
+import { ColumnQueryOptions, ColumnUpdateRequest } from '../types/api/column';
 import {
   RecordData,
   RecordDeleteByIdsOptions,
   RecordDeleteOptions,
   RecordQueryOptions,
-  RecordUpdateByIdOptions,
   RecordUpdateOptions,
 } from '../types/api/record';
 import {
   FieldDefinition,
-  TableAccessRequest,
   TableCreateRequest,
-  TableDeleteOptions,
   TableQueryOptions,
   TableUpdateRequest,
 } from '../types/api/table';
-import type { Environment, Region } from '../types/config/environment';
-import type { HttpRequestConfig, HttpResponse } from '../utils/http/adapter';
+import { Environment, EnvironmentConfig } from '../types/config/environment';
+import { HttpRequestConfig, HttpResponse } from '../utils/http/adapter';
 import { AuthManager } from './core/auth-manager';
 import { BaseClient } from './core/base-client';
 import { ClientConfig, ConfigManager } from './core/config';
 import { ColumnResource } from './resources/column';
-import { ColumnBuilder } from './resources/column-builder';
 import { RecordResource } from './resources/record';
-import { RecordBuilder } from './resources/record-builder';
+import { createRecordBuilder, RecordBuilder } from './resources/record-builder';
 import { TableResource } from './resources/table';
-import { TableBuilder } from './resources/table-builder';
+import { createTableBuilder, TableBuilder } from './resources/table-builder';
 
-export interface ClientOptions {
+export interface ClientOptions extends Partial<EnvironmentConfig> {
   environment?: Environment;
-  region?: Region;
+  region?: 'asia-south1' | 'us-central1';
+  debug?: boolean;
   retryAttempts?: number;
   retryDelay?: number;
-  maxRetries?: number;
-  timeout?: number;
-  debug?: boolean;
-  headers?: Record<string, string>;
 }
 
 interface DatabaseContext {
@@ -97,75 +86,111 @@ export class BolticClient {
     return this.currentDatabase;
   }
 
-  getDatabaseContext(): DatabaseContext | null {
-    return this.currentDatabase;
-  }
-
-  // Method 1: Direct table operations
+  // Direct table operations
   get tables() {
     return {
       create: (data: TableCreateRequest) => this.tableResource.create(data),
       findAll: (options?: TableQueryOptions) =>
         this.tableResource.findAll(options),
+      findById: (id: string) => this.tableResource.findById(id),
+      findByName: (name: string) => this.tableResource.findByName(name),
       findOne: (options: TableQueryOptions) =>
         this.tableResource.findOne(options),
-      update: (identifier: string, data: TableUpdateRequest) =>
-        this.tableResource.update(identifier, data),
-      rename: (oldName: string, newName: string) =>
-        this.tableResource.rename(oldName, newName),
-      setAccess: (data: TableAccessRequest) =>
-        this.tableResource.setAccess(data),
-      delete: (options: TableDeleteOptions | string) =>
-        this.tableResource.delete(options),
-      getMetadata: (name: string) => this.tableResource.getMetadata(name),
+      update: (id: string, data: TableUpdateRequest) =>
+        this.tableResource.update(id, data),
+      updateByName: (name: string, data: TableUpdateRequest) =>
+        this.tableResource.updateByName(name, data),
+      delete: (id: string) => this.tableResource.delete(id),
+      deleteByName: (name: string) => this.tableResource.deleteByName(name),
+      generateSchema: (prompt: string) =>
+        this.tableResource.generateSchema(prompt),
+      getCurrencies: () => this.tableResource.getCurrencies(),
     };
   }
 
-  // Method 1: Direct column operations
+  // Direct column operations
   get columns() {
     return {
       create: (tableName: string, column: FieldDefinition) =>
         this.columnResource.create(tableName, column),
-      findAll: (tableName: string, options?: ColumnQueryOptions) =>
-        this.columnResource.findAll(tableName, options),
-      findOne: (tableName: string, options: ColumnQueryOptions) =>
-        this.columnResource.findOne(tableName, options),
-      update: (tableName: string, options: ColumnUpdateOptions) =>
-        this.columnResource.update(tableName, options),
-      delete: (tableName: string, options: ColumnDeleteOptions) =>
-        this.columnResource.delete(tableName, options),
+      createMany: (tableName: string, columns: FieldDefinition[]) =>
+        this.columnResource.createMany(tableName, columns),
+      list: (tableName: string, options?: ColumnQueryOptions) =>
+        this.columnResource.list(tableName, options),
+      get: (tableName: string, columnName: string) =>
+        this.columnResource.get(tableName, columnName),
+      update: (
+        tableName: string,
+        columnName: string,
+        updates: ColumnUpdateRequest
+      ) => this.columnResource.update(tableName, columnName, updates),
+      delete: (tableName: string, columnName: string) =>
+        this.columnResource.delete(tableName, columnName),
     };
   }
 
-  // Method 2: Fluent table operations
-  table(): TableBuilder {
-    return new TableBuilder({
-      name: 'table',
-      description: 'Table created via fluent API',
-    });
+  // Fluent table operations
+  table(name: string): TableBuilder {
+    const tableBuilder = createTableBuilder({ name });
+    return tableBuilder;
   }
 
-  // Method 2: Fluent column operations with table context
+  // Method 3: Table-scoped operations
   from(tableName: string) {
     return {
-      column: () => new ColumnBuilder(this.columnResource, tableName),
-      record: () => new RecordBuilder(this.recordResource, tableName),
+      // Column operations for this table
+      columns: () => ({
+        create: (column: FieldDefinition) =>
+          this.columnResource.create(tableName, column),
+        list: (options?: ColumnQueryOptions) =>
+          this.columnResource.list(tableName, options),
+        get: (columnName: string) =>
+          this.columnResource.get(tableName, columnName),
+        update: (columnName: string, updates: ColumnUpdateRequest) =>
+          this.columnResource.update(tableName, columnName, updates),
+        delete: (columnName: string) =>
+          this.columnResource.delete(tableName, columnName),
+      }),
+
+      // Record operations for this table
+      records: () => ({
+        insert: (data: RecordData) =>
+          this.recordResource.insert(tableName, data),
+        list: (options?: RecordQueryOptions) =>
+          this.recordResource.list(tableName, options),
+        get: (recordId: string) => this.recordResource.get(tableName, recordId),
+        update: (options: RecordUpdateOptions) =>
+          this.recordResource.update(tableName, options),
+        updateById: (recordId: string, data: RecordData) =>
+          this.recordResource.updateById(tableName, recordId, data),
+        delete: (options: RecordDeleteOptions) =>
+          this.recordResource.delete(tableName, options),
+        deleteByIds: (options: RecordDeleteByIdsOptions) =>
+          this.recordResource.deleteByIds(tableName, options),
+      }),
+
+      // Fluent record builder for this table
+      record: () =>
+        createRecordBuilder({
+          tableName,
+          recordResource: this.recordResource,
+        }),
     };
   }
 
-  // Method 1: Direct record operations
-  get record() {
+  // Direct record operations
+  get records() {
     return {
       insert: (tableName: string, data: RecordData) =>
         this.recordResource.insert(tableName, data),
-      findAll: (tableName: string, options?: RecordQueryOptions) =>
-        this.recordResource.findAll(tableName, options),
-      findOne: (tableName: string, options: RecordQueryOptions) =>
-        this.recordResource.findOne(tableName, options),
+      list: (tableName: string, options?: RecordQueryOptions) =>
+        this.recordResource.list(tableName, options),
+      get: (tableName: string, recordId: string) =>
+        this.recordResource.get(tableName, recordId),
       update: (tableName: string, options: RecordUpdateOptions) =>
         this.recordResource.update(tableName, options),
-      updateById: (tableName: string, options: RecordUpdateByIdOptions) =>
-        this.recordResource.updateById(tableName, options),
+      updateById: (tableName: string, recordId: string, data: RecordData) =>
+        this.recordResource.updateById(tableName, recordId, data),
       delete: (tableName: string, options: RecordDeleteOptions) =>
         this.recordResource.delete(tableName, options),
       deleteByIds: (tableName: string, options: RecordDeleteByIdsOptions) =>
@@ -173,12 +198,15 @@ export class BolticClient {
     };
   }
 
-  // Method 2: Fluent interface for record operations
-  records(tableName: string): RecordBuilder {
-    return new RecordBuilder(this.recordResource, tableName);
+  // Method 4: Create fluent record builder
+  record(tableName: string): RecordBuilder {
+    return createRecordBuilder({
+      tableName,
+      recordResource: this.recordResource,
+    });
   }
 
-  // Configuration and utility methods
+  // Configuration management
   updateApiKey(newApiKey: string): void {
     this.configManager.updateConfig({ apiKey: newApiKey });
     this.authManager.updateApiKey(newApiKey);
@@ -186,31 +214,14 @@ export class BolticClient {
 
   updateConfig(updates: Partial<ClientConfig>): void {
     this.configManager.updateConfig(updates);
+    this.baseClient.updateConfig(this.configManager.getConfig());
   }
 
-  getConfig(): Omit<ClientConfig, 'apiKey'> {
-    const config = this.configManager.getConfig();
-    const safeConfig = { ...config };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (safeConfig as Record<string, unknown>).apiKey;
-    return safeConfig;
+  getConfig(): ClientConfig {
+    return this.configManager.getConfig();
   }
 
-  // Get effective configuration (user config overriding defaults)
-  getEffectiveConfig() {
-    const config = this.configManager.getConfig();
-    return {
-      environment: config.environment,
-      region: config.region,
-      baseURL: config.baseURL,
-      timeout: config.timeout,
-      retryAttempts: config.retryAttempts,
-      retryDelay: config.retryDelay,
-      maxRetries: config.maxRetries,
-      debug: config.debug,
-    };
-  }
-
+  // Authentication management
   async validateApiKey(): Promise<boolean> {
     return this.authManager.validateApiKeyAsync();
   }
@@ -219,18 +230,24 @@ export class BolticClient {
     return this.authManager.isAuthenticated();
   }
 
+  // HTTP client access
   getHttpClient(): BaseClient {
     return this.baseClient;
   }
 
+  // Interceptor management
   addRequestInterceptor(
-    interceptor: (config: HttpRequestConfig) => HttpRequestConfig
+    interceptor: (
+      config: HttpRequestConfig
+    ) => HttpRequestConfig | Promise<HttpRequestConfig>
   ): number {
     return this.baseClient.getInterceptors().request.use(interceptor);
   }
 
   addResponseInterceptor(
-    onFulfilled?: (response: HttpResponse) => HttpResponse,
+    onFulfilled?: (
+      response: HttpResponse
+    ) => HttpResponse | Promise<HttpResponse>,
     onRejected?: (error: unknown) => unknown
   ): number {
     return this.baseClient
@@ -238,118 +255,47 @@ export class BolticClient {
       .response.use(onFulfilled, onRejected);
   }
 
-  removeInterceptor(type: 'request' | 'response', id: number): void {
-    if (type === 'request') {
-      this.baseClient.getInterceptors().request.eject(id);
-    } else {
-      this.baseClient.getInterceptors().response.eject(id);
+  ejectRequestInterceptor(id: number): void {
+    this.baseClient.getInterceptors().request.eject(id);
+  }
+
+  ejectResponseInterceptor(id: number): void {
+    this.baseClient.getInterceptors().response.eject(id);
+  }
+
+  // Connection testing
+  async testConnection(): Promise<boolean> {
+    try {
+      return await this.authManager.validateApiKeyAsync();
+    } catch (error) {
+      return false;
     }
   }
 
-  // Public client information (safe to expose)
-  get info() {
-    const config = this.configManager.getConfig();
-
-    // Get effective configuration (user config overriding defaults)
-    const configInfo = {
-      environment: config.environment,
-      region: config.region,
-      baseURL: config.baseURL,
-      timeout: config.timeout,
-      retryAttempts: config.retryAttempts,
-      retryDelay: config.retryDelay,
-      maxRetries: config.maxRetries,
-      debug: config.debug,
-    };
-
-    return {
-      environment: config.environment,
-      region: config.region,
-      isAuthenticated: this.isAuthenticated(),
-      currentDatabase: this.currentDatabase,
-      config: configInfo,
-      resources: {
-        tables: {
-          basePath: this.tableResource.getBasePath(),
-          available: true,
-          operations: [
-            'create',
-            'findAll',
-            'findOne',
-            'update',
-            'rename',
-            'setAccess',
-            'delete',
-            'getMetadata',
-          ],
-        },
-        columns: {
-          basePath: this.columnResource.getBasePath(),
-          available: true,
-          operations: ['create', 'findAll', 'findOne', 'update', 'delete'],
-        },
-        records: {
-          basePath: '/v1/tables',
-          available: true,
-          operations: [
-            'insert',
-            'findAll',
-            'findOne',
-            'update',
-            'updateById',
-            'delete',
-            'deleteByIds',
-          ],
-        },
-      },
-    };
+  // Get client version
+  getVersion(): string {
+    return '1.0.0';
   }
 
-  // Override toString to show only safe information
-  toString(): string {
-    const config = this.configManager.getConfig();
-
-    const configStr = `\n  config: {
-    environment: '${config.environment}',
-    region: '${config.region}',
-    baseURL: '${config.baseURL}',
-    timeout: ${config.timeout},
-    retryAttempts: ${config.retryAttempts},
-    retryDelay: ${config.retryDelay},
-    maxRetries: ${config.maxRetries},
-    debug: ${config.debug}
-  }`;
-
-    return `BolticClient {
-  environment: '${config.environment}',
-  region: '${config.region}',
-  isAuthenticated: ${this.isAuthenticated()},
-  currentDatabase: ${this.currentDatabase ? `'${this.currentDatabase.databaseName}'` : 'null'},${configStr}
-  resources: {
-    tables: { available: true, operations: [create, findAll, findOne, update, rename, setAccess, delete, getMetadata] },
-    columns: { available: true, operations: [create, findAll, findOne, update, delete] },
-    records: { available: true, operations: [insert, findAll, findOne, update, updateById, delete, deleteByIds] }
-  }
-}`;
+  // Environment helpers
+  getEnvironment(): Environment {
+    return this.configManager.getConfig().environment;
   }
 
-  // Override console.log behavior
-  [Symbol.for('nodejs.util.inspect.custom')]() {
-    return this.info;
+  getRegion(): string {
+    return this.configManager.getConfig().region;
   }
 
-  // Custom inspect method for Node.js
-  [Symbol.for('util.inspect.custom')]() {
-    return this.info;
+  // Debug helpers
+  enableDebug(): void {
+    this.configManager.updateConfig({ debug: true });
   }
 
-  // Override valueOf to return safe info
-  valueOf() {
-    return this.info;
+  disableDebug(): void {
+    this.configManager.updateConfig({ debug: false });
   }
 
-  // Override toJSON to return safe info
-  toJSON() {
-    return this.info;
+  isDebugEnabled(): boolean {
+    return this.configManager.getConfig().debug || false;
   }
 }

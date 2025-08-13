@@ -208,8 +208,8 @@ const vectorColumns = [
   {
     name: 'sparse_features',
     type: 'sparsevec',
-    vector_dimension: 1024,
-    description: 'Sparse vector features',
+    vector_dimension: 5,
+    description: 'Sparse vector features (example: {1:1,3:2,5:3}/5)',
   },
 ];
 

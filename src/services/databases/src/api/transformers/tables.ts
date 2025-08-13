@@ -133,7 +133,7 @@ export function transformTableListRequest(
   if (options.page !== undefined || options.pageSize !== undefined) {
     request.page = {
       page_no: options.page ?? 1,
-      page_size: options.pageSize ?? options.limit ?? 10,
+      page_size: options.pageSize ?? options.limit ?? 1000,
     };
   } else if (options.limit !== undefined) {
     request.page = {
@@ -200,24 +200,24 @@ export function transformTableResponse(
   response: TableApiResponse
 ): TableRecord {
   return {
-    id: response.data.id,
-    name: response.data.name,
-    account_id: '', // Will be filled by API
-    internal_table_name: response.data.internal_table_name,
-    internal_db_name: '', // Will be filled by API
-    db_id: '', // Will be filled by API
-    resource_id: '',
-    description: response.data.description,
-    type: '',
-    parent_table_id: '',
-    is_deleted: false,
-    is_public: response.data.is_public,
-    created_by: response.data.created_by,
-    created_at: response.data.created_at,
-    updated_at: response.data.updated_at,
-    updated_by: response.data.updated_by,
-    snapshot_url: response.data.snapshot_url,
-    source: 'boltic',
+    id: response.data.id || '',
+    name: response.data.name || '',
+    account_id: '', // Not provided by API
+    internal_table_name: response.data.internal_table_name || '',
+    internal_db_name: '', // Not provided by API
+    db_id: '', // Not provided by API
+    resource_id: '', // Not provided by API
+    description: response.data.description || '',
+    type: '', // Not provided by API
+    parent_table_id: '', // Not provided by API
+    is_deleted: false, // Not provided by API
+    is_public: response.data.is_public || false,
+    created_by: response.data.created_by || '',
+    created_at: response.data.created_at || '',
+    updated_at: response.data.updated_at || '',
+    updated_by: response.data.updated_by || '',
+    snapshot_url: response.data.snapshot_url || '',
+    source: 'boltic', // Default value
   };
 }
 

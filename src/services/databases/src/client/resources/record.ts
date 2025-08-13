@@ -4,7 +4,6 @@ import {
   RecordData,
   RecordDeleteByIdsOptions,
   RecordDeleteOptions,
-  RecordDeleteResponse,
   RecordQueryOptions,
   RecordUpdateByIdOptions,
   RecordUpdateOptions,
@@ -13,8 +12,12 @@ import {
 import { BaseClient } from '../core/base-client';
 import { TableResource } from './table';
 
-import { PaginationInfo } from '../../types/common/operations';
-import { ApiResponse } from '../../types/common/responses';
+import {
+  BolticErrorResponse,
+  BolticListResponse,
+  BolticSuccessResponse,
+  isErrorResponse,
+} from '../../types/common/responses';
 
 export class RecordResource {
   private apiClient: RecordsApiClient;
@@ -44,148 +47,117 @@ export class RecordResource {
   async insert(
     tableName: string,
     data: RecordData
-  ): Promise<ApiResponse<RecordWithId>> {
+  ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
       // Get table ID first
-      const tableId = await TableResource.getTableId(
-        this.tablesApiClient,
-        tableName
-      );
-
+      const tableId = await this.getTableId(tableName);
       if (!tableId) {
         return {
-          error: `Table '${tableName}' not found`,
-          code: 'TABLE_NOT_FOUND',
-          details: null,
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
         };
       }
 
-      // Include table_id in the request payload (same pattern as column APIs)
-      const requestOptions = { ...data, table_id: tableId };
-      const result = await this.apiClient.insertRecord(requestOptions);
+      // Include table_id in the request payload
+      const requestData = { ...data, table_id: tableId };
+      const result = await this.apiClient.insertRecord(requestData);
 
-      if (result.error) {
-        return {
-          error: result.error.message,
-          code: result.error.code,
-          details: result.error.details,
-        };
+      if (isErrorResponse(result)) {
+        return result;
       }
 
-      return {
-        data: result.data,
-      };
+      return result as BolticSuccessResponse<RecordWithId>;
     } catch (error) {
       return {
-        error:
-          error instanceof Error ? error.message : 'Unknown error occurred',
-        code: 'INSERT_ERROR',
-        details: error,
+        data: {},
+        error: {
+          code: 'INSERT_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
       };
     }
   }
 
   /**
-   * Find all records
+   * Get a single record by ID
    */
-  async findAll(
+  async get(
     tableName: string,
-    options: RecordQueryOptions = {}
-  ): Promise<ApiResponse<RecordWithId[]> & { pagination?: PaginationInfo }> {
+    recordId: string
+  ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
       // Get table ID first
-      const tableId = await TableResource.getTableId(
-        this.tablesApiClient,
-        tableName
-      );
+      const tableId = await this.getTableId(tableName);
       if (!tableId) {
         return {
-          error: `Table '${tableName}' not found`,
-          code: 'TABLE_NOT_FOUND',
-          details: null,
-          pagination: undefined,
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
         };
       }
 
-      // Include table_id in the request payload (same pattern as column APIs)
+      const result = await this.apiClient.getRecord(recordId, tableId);
+
+      if (isErrorResponse(result)) {
+        return result;
+      }
+
+      return result as BolticSuccessResponse<RecordWithId>;
+    } catch (error) {
+      return {
+        data: {},
+        error: {
+          code: 'GET_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
+      };
+    }
+  }
+
+  /**
+   * List records with filtering and pagination
+   */
+  async list(
+    tableName: string,
+    options: RecordQueryOptions = {}
+  ): Promise<BolticListResponse<RecordWithId> | BolticErrorResponse> {
+    try {
+      // Get table ID first
+      const tableId = await this.getTableId(tableName);
+      if (!tableId) {
+        return {
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
+        };
+      }
+
+      // Include table_id in the request payload
       const requestOptions = { ...options, table_id: tableId };
       const result = await this.apiClient.listRecords(requestOptions);
 
-      if (result.error) {
-        return {
-          error: result.error.message,
-          code: result.error.code,
-          details: result.error.details,
-          pagination: undefined,
-        };
+      if (isErrorResponse(result)) {
+        return result;
       }
 
-      return {
-        data: result.data,
-        pagination: result.pagination,
-      };
+      return result as BolticListResponse<RecordWithId>;
     } catch (error) {
       return {
-        error:
-          error instanceof Error ? error.message : 'Unknown error occurred',
-        code: 'FIND_ALL_ERROR',
-        details: error,
-        pagination: undefined,
-      };
-    }
-  }
-
-  /**
-   * Find a single record
-   */
-  async findOne(
-    tableName: string,
-    options: RecordQueryOptions
-  ): Promise<ApiResponse<RecordWithId | null>> {
-    if (!options.filters || options.filters.length === 0) {
-      throw new Error('findOne requires at least one filter');
-    }
-
-    try {
-      // Get table ID first
-      const tableId = await TableResource.getTableId(
-        this.tablesApiClient,
-        tableName
-      );
-      if (!tableId) {
-        return {
-          error: `Table '${tableName}' not found`,
-          code: 'TABLE_NOT_FOUND',
-          details: null,
-        };
-      }
-
-      const queryOptions = {
-        ...options,
-        page: { page_no: 1, page_size: 1 },
-        table_id: tableId,
-      };
-
-      const result = await this.apiClient.listRecords(queryOptions);
-
-      if (result.error) {
-        return {
-          error: result.error.message,
-          code: result.error.code,
-          details: result.error.details,
-        };
-      }
-
-      // Return the first record or null
-      return {
-        data: result.data && result.data.length > 0 ? result.data[0] : null,
-      };
-    } catch (error) {
-      return {
-        error:
-          error instanceof Error ? error.message : 'Unknown error occurred',
-        code: 'FIND_ONE_ERROR',
-        details: error,
+        data: {},
+        error: {
+          code: 'LIST_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
       };
     }
   }
@@ -196,42 +168,37 @@ export class RecordResource {
   async update(
     tableName: string,
     options: RecordUpdateOptions
-  ): Promise<ApiResponse<RecordWithId[]>> {
+  ): Promise<BolticListResponse<RecordWithId> | BolticErrorResponse> {
     try {
       // Get table ID first
-      const tableId = await TableResource.getTableId(
-        this.tablesApiClient,
-        tableName
-      );
+      const tableId = await this.getTableId(tableName);
       if (!tableId) {
         return {
-          error: `Table '${tableName}' not found`,
-          code: 'TABLE_NOT_FOUND',
-          details: null,
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
         };
       }
 
-      // Include table_id in the request payload (same pattern as column APIs)
+      // Include table_id in the request payload
       const requestOptions = { ...options, table_id: tableId };
       const result = await this.apiClient.updateRecords(requestOptions);
 
-      if (result.error) {
-        return {
-          error: result.error.message,
-          code: result.error.code,
-          details: result.error.details,
-        };
+      if (isErrorResponse(result)) {
+        return result;
       }
 
-      return {
-        data: result.data,
-      };
+      return result as BolticListResponse<RecordWithId>;
     } catch (error) {
       return {
-        error:
-          error instanceof Error ? error.message : 'Unknown error occurred',
-        code: 'UPDATE_ERROR',
-        details: error,
+        data: {},
+        error: {
+          code: 'UPDATE_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
       };
     }
   }
@@ -241,46 +208,46 @@ export class RecordResource {
    */
   async updateById(
     tableName: string,
-    options: RecordUpdateByIdOptions
-  ): Promise<ApiResponse<RecordWithId>> {
+    recordId: string,
+    data: RecordData
+  ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
       // Get table ID first
-      const tableId = await TableResource.getTableId(
-        this.tablesApiClient,
-        tableName
-      );
+      const tableId = await this.getTableId(tableName);
       if (!tableId) {
         return {
-          error: `Table '${tableName}' not found`,
-          code: 'TABLE_NOT_FOUND',
-          details: null,
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
         };
       }
 
-      // Include table_id in the request payload (same pattern as column APIs)
-      const requestOptions = { ...options, table_id: tableId };
+      // Include table_id in the request payload
+      const requestOptions: RecordUpdateByIdOptions & { table_id: string } = {
+        id: recordId,
+        set: data,
+        table_id: tableId,
+      };
       const result = await this.apiClient.updateRecordById(
-        options.id,
+        recordId,
         requestOptions
       );
 
-      if (result.error) {
-        return {
-          error: result.error.message,
-          code: result.error.code,
-          details: result.error.details,
-        };
+      if (isErrorResponse(result)) {
+        return result;
       }
 
-      return {
-        data: result.data,
-      };
+      return result as BolticSuccessResponse<RecordWithId>;
     } catch (error) {
       return {
-        error:
-          error instanceof Error ? error.message : 'Unknown error occurred',
-        code: 'UPDATE_BY_ID_ERROR',
-        details: error,
+        data: {},
+        error: {
+          code: 'UPDATE_BY_ID_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
       };
     }
   }
@@ -291,88 +258,99 @@ export class RecordResource {
   async delete(
     tableName: string,
     options: RecordDeleteOptions
-  ): Promise<ApiResponse<RecordDeleteResponse>> {
+  ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
       // Get table ID first
-      const tableId = await TableResource.getTableId(
-        this.tablesApiClient,
-        tableName
-      );
+      const tableId = await this.getTableId(tableName);
       if (!tableId) {
         return {
-          error: `Table '${tableName}' not found`,
-          code: 'TABLE_NOT_FOUND',
-          details: null,
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
         };
       }
 
-      // Include table_id in the request payload (same pattern as column APIs)
+      // Include table_id in the request payload
       const requestOptions = { ...options, table_id: tableId };
       const result = await this.apiClient.deleteRecords(requestOptions);
 
-      if (result.error) {
-        return {
-          error: result.error.message,
-          code: result.error.code,
-          details: result.error.details,
-        };
+      if (isErrorResponse(result)) {
+        return result;
       }
 
-      return {
-        data: { message: 'Records deleted successfully' },
-      };
+      return result as BolticSuccessResponse<{ message: string }>;
     } catch (error) {
       return {
-        error:
-          error instanceof Error ? error.message : 'Unknown error occurred',
-        code: 'DELETE_ERROR',
-        details: error,
+        data: {},
+        error: {
+          code: 'DELETE_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
       };
     }
   }
 
   /**
-   * Delete multiple records by IDs
+   * Delete records by IDs
    */
   async deleteByIds(
     tableName: string,
     options: RecordDeleteByIdsOptions
-  ): Promise<ApiResponse<RecordDeleteResponse>> {
+  ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
       // Get table ID first
-      const tableId = await TableResource.getTableId(
-        this.tablesApiClient,
-        tableName
-      );
+      const tableId = await this.getTableId(tableName);
       if (!tableId) {
         return {
-          error: `Table '${tableName}' not found`,
-          code: 'TABLE_NOT_FOUND',
-          details: null,
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
         };
       }
 
-      // Include table_id in the request payload (same pattern as column APIs)
+      // Include table_id in the request payload
       const requestOptions = { ...options, table_id: tableId };
       const result = await this.apiClient.deleteRecordsByIds(requestOptions);
 
-      if (result.error) {
-        return {
-          error: result.error.message,
-          code: result.error.code,
-        };
+      if (isErrorResponse(result)) {
+        return result;
       }
 
-      return {
-        data: result.data,
-      };
+      return result as BolticSuccessResponse<{ message: string }>;
     } catch (error) {
       return {
-        error:
-          error instanceof Error ? error.message : 'Unknown error occurred',
-        code: 'DELETE_BY_IDS_ERROR',
-        details: error,
+        data: {},
+        error: {
+          code: 'DELETE_BY_IDS_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
       };
+    }
+  }
+
+  /**
+   * Helper method to get table ID by name
+   */
+  private async getTableId(tableName: string): Promise<string | null> {
+    try {
+      // Use the table resource to find the table by name
+      const tableResource = new TableResource(this.client);
+      const tableResult = await tableResource.findByName(tableName);
+
+      if (tableResult.data) {
+        return tableResult.data.id;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error getting table ID:', error);
+      return null;
     }
   }
 }

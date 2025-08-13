@@ -344,6 +344,29 @@ const multipleRecords = [
 for (const record of multipleRecords) {
   await client.record.insert('users', record);
 }
+
+// Insert record with sparse vector example
+const sparseVectorRecord = {
+  name: 'AI Model User',
+  email: 'ai@example.com',
+  age: 25,
+  sparse_features: { 1: 1, 3: 2, 5: 3 }, // Sparse vector: {1:1,3:2,5:3}/5
+  // This represents a 5-dimensional vector where positions 1, 3, 5 have values 1, 2, 3
+  // and positions 2, 4 are implicitly 0
+};
+
+const sparseInsertResult = await client.record.insert(
+  'users',
+  sparseVectorRecord
+);
+if (sparseInsertResult.error) {
+  console.error(
+    'Sparse vector record insertion failed:',
+    sparseInsertResult.error
+  );
+} else {
+  console.log('Sparse vector record inserted:', sparseInsertResult.data);
+}
 ```
 
 ### Querying Records
@@ -435,15 +458,24 @@ const vectorColumns = [
   {
     name: 'sparse_features',
     type: 'sparsevec',
-    vector_dimension: 1024,
-    description: 'Sparse vector features',
+    vector_dimension: 5,
+    description: 'Sparse vector features (example: {1:1,3:2,5:3}/5)',
   },
 ];
 
-for (const vectorColumn of vectorColumns) {
-  await client.columns.create('users', vectorColumn);
-}
+// Sparse Vector Format Example:
+// {1:1,3:2,5:3}/5 represents a 5-dimensional vector where:
+// - Position 1 has value 1
+// - Position 3 has value 2
+// - Position 5 has value 3
+// - Positions 2 and 4 are implicitly 0
 ```
+
+for (const vectorColumn of vectorColumns) {
+await client.columns.create('users', vectorColumn);
+}
+
+````
 
 ### Interceptors
 
@@ -463,7 +495,7 @@ const responseId = client.addResponseInterceptor((response) => {
 // Remove interceptors
 client.removeInterceptor('request', requestId);
 client.removeInterceptor('response', responseId);
-```
+````
 
 ### Configuration Management
 
@@ -603,13 +635,4 @@ npm run build
 - **`client.record.findOne(tableName, options)`**: Get a specific record
 - **`client.record.update(tableName, options)`**: Update records by filters
 - **`client.record.updateById(tableName, options)`**: Update record by ID
-- **`client.record.delete(tableName, options)`**: Delete records by filters
-- **`client.record.deleteByIds(tableName, options)`**: Delete records by IDs
-
-## Support
-
-For support, email support@boltic.io or create an issue on [GitHub](https://github.com/bolticio/boltic-sdk).
-
-## License
-
-MIT
+- \*\*`client.record.delete(tableName, options)`

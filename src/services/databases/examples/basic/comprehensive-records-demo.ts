@@ -16,129 +16,136 @@
  * - Ensure you have a test table with appropriate schema
  */
 
-import dotenv from 'dotenv';
-import { BolticClient } from '../../src/client';
-import { RecordData } from '../../src/types/api/record';
-dotenv.config();
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+import { BolticClient, isErrorResponse } from '../../src';
 
-// Configuration
+// Load environment variables
+const envPath = path.resolve(__dirname, '../.env');
+dotenv.config({ path: envPath });
+
+const apiKey = process.env.BOLTIC_API_KEY;
+const debug = process.env.DEBUG === 'true';
+
+// Demo configuration
 const DEMO_CONFIG = {
-  environment: 'sit' as const, // Change to 'prod' for production
-  debug: true,
-  timeout: 30000,
-  tableName: 'demo_users', // Change this to your actual table name
+  tableName: 'comprehensive-records-demo',
+  sampleSize: 10,
+  maxRetries: 3,
+  retryDelay: 1000,
 };
 
-// Sample data for demonstrations
-const SAMPLE_USERS: RecordData[] = [
+// Demo record data
+const DEMO_RECORDS = [
   {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    age: 30,
-    status: ['active'],
-    department: 'Engineering',
-    salary: 75000,
-    join_date: '2023-01-15',
-    skills: ['JavaScript', 'TypeScript', 'Node.js'],
-    is_manager: false,
-  },
-  {
-    name: 'Jane Smith',
-    email: 'jane.smith@example.com',
+    name: 'Alice Johnson',
+    email: 'alice.johnson@example.com',
     age: 28,
     status: ['active'],
-    department: 'Design',
+    department: 'Engineering',
     salary: 65000,
-    join_date: '2023-03-20',
-    skills: ['UI/UX', 'Figma', 'Prototyping'],
-    is_manager: true,
-  },
-  {
-    name: 'Bob Johnson',
-    email: 'bob.johnson@example.com',
-    age: 35,
-    status: ['inactive'],
-    department: 'Marketing',
-    salary: 70000,
-    join_date: '2022-11-10',
-    skills: ['Digital Marketing', 'SEO', 'Analytics'],
+    join_date: '2023-01-15',
+    skills: ['JavaScript', 'React', 'Node.js'],
     is_manager: false,
   },
   {
-    name: 'Alice Brown',
-    email: 'alice.brown@example.com',
-    age: 32,
+    name: 'Bob Smith',
+    email: 'bob.smith@example.com',
+    age: 35,
     status: ['active'],
-    department: 'Engineering',
-    salary: 80000,
-    join_date: '2022-08-05',
-    skills: ['Python', 'Machine Learning', 'Data Science'],
+    department: 'Sales',
+    salary: 72000,
+    join_date: '2022-03-10',
+    skills: ['Communication', 'CRM', 'Negotiation'],
     is_manager: true,
   },
   {
-    name: 'Charlie Wilson',
-    email: 'charlie.wilson@example.com',
-    age: 29,
+    name: 'Carol Davis',
+    email: 'carol.davis@example.com',
+    age: 31,
+    status: ['inactive'],
+    department: 'Marketing',
+    salary: 58000,
+    join_date: '2023-06-20',
+    skills: ['Content Creation', 'SEO', 'Analytics'],
+    is_manager: false,
+  },
+  {
+    name: 'David Wilson',
+    email: 'david.wilson@example.com',
+    age: 42,
     status: ['active'],
-    department: 'Sales',
-    salary: 60000,
-    join_date: '2023-06-12',
-    skills: ['Sales', 'CRM', 'Negotiation'],
+    department: 'Engineering',
+    salary: 85000,
+    join_date: '2021-11-05',
+    skills: ['Python', 'Django', 'PostgreSQL', 'Leadership'],
+    is_manager: true,
+  },
+  {
+    name: 'Eve Brown',
+    email: 'eve.brown@example.com',
+    age: 26,
+    status: ['active'],
+    department: 'HR',
+    salary: 52000,
+    join_date: '2023-09-12',
+    skills: ['Recruitment', 'Employee Relations', 'Training'],
     is_manager: false,
   },
 ];
 
-class RecordsSDKDemo {
+/**
+ * Comprehensive Records Demo Class
+ * Demonstrates all record operations with detailed logging and error handling
+ */
+class ComprehensiveRecordsDemo {
   private client: BolticClient;
   private createdRecordIds: string[] = [];
 
   constructor() {
-    const apiKey = process.env.BOLTIC_API_KEY;
     if (!apiKey) {
-      throw new Error('BOLTIC_API_KEY environment variable is required');
+      throw new Error(
+        '❌ BOLTIC_API_KEY is required. Please set it in your .env file.'
+      );
     }
 
-    this.client = new BolticClient(apiKey, {
-      environment: DEMO_CONFIG.environment,
-      debug: DEMO_CONFIG.debug,
-      timeout: DEMO_CONFIG.timeout,
-    });
+    this.client = new BolticClient(apiKey, { debug, environment: 'sit' });
   }
 
-  /**
-   * Run the complete demo
-   */
-  async runDemo(): Promise<void> {
-    console.log('🚀 Starting Boltic Records SDK E2E Demo\n');
+  async run(): Promise<void> {
+    console.log('🚀 Starting Comprehensive Records Demo');
+    console.log('=====================================');
+    console.log(`📋 Table: ${DEMO_CONFIG.tableName}`);
+    console.log(`🔧 Environment: ${this.client.getEnvironment()}`);
+    console.log(`🌍 Region: ${this.client.getRegion()}`);
+    console.log(`🐛 Debug: ${this.client.isDebugEnabled()}`);
+    console.log('');
 
     try {
-      // Validate API key and connection
-      await this.validateConnection();
-
-      // Demo 1: Direct Record Operations
+      // Run all demos in sequence
       await this.demoDirectOperations();
+      await this.demoFluentAPI();
+      await this.demoBulkOperations();
+      await this.demoFilteringAndSorting();
+      await this.demoErrorHandling();
 
-      // Cleanup
-      await this.cleanup();
-
-      console.log('\n✅ Demo completed successfully!');
+      console.log('🎉 All record demos completed successfully!');
     } catch (error) {
-      console.error('\n❌ Demo failed:', error);
+      console.error('❌ Demo failed:', error);
       throw error;
+    } finally {
+      // Always cleanup
+      await this.cleanup();
     }
   }
 
-  /**
-   * Demo 1: Direct Record Operations
-   * Shows the basic CRUD operations using direct method calls
-   */
   private async demoDirectOperations(): Promise<void> {
     console.log('📋 Demo 1: Direct Record Operations');
     console.log('=====================================\n');
 
-    // // 1. Insert a single record
+    // 1. Insert a single record
     console.log('1️⃣ Inserting a single record...');
-    const insertResult = await this.client.record.insert(
+    const insertResult = await this.client.records.insert(
       DEMO_CONFIG.tableName,
       {
         name: 'Demo User',
@@ -153,8 +160,8 @@ class RecordsSDKDemo {
       }
     );
 
-    if (insertResult.error) {
-      throw new Error(`Insert failed: ${insertResult.error}`);
+    if (isErrorResponse(insertResult)) {
+      throw new Error(`Insert failed: ${insertResult.error.message}`);
     }
 
     if (!insertResult.data) {
@@ -169,40 +176,39 @@ class RecordsSDKDemo {
       `   Name: ${insertedRecord.name}, Email: ${insertedRecord.email}\n`
     );
 
-    // 2. Find the inserted record
-    console.log('2️⃣ Finding the inserted record...');
-    const findResult = await this.client.record.findOne(DEMO_CONFIG.tableName, {
-      filters: [{ field: 'id', operator: '=', values: [insertedRecord.id] }],
-    });
+    // 2. Get the inserted record by ID
+    console.log('2️⃣ Getting the inserted record by ID...');
+    const getResult = await this.client.records.get(
+      DEMO_CONFIG.tableName,
+      insertedRecord.id
+    );
 
-    if (findResult.error) {
-      throw new Error(`Find failed: ${findResult.error}`);
+    if (isErrorResponse(getResult)) {
+      throw new Error(`Get failed: ${getResult.error.message}`);
     }
 
-    if (findResult.data) {
+    if (getResult.data) {
       console.log(
-        `✅ Record found: ${findResult.data.name} (${findResult.data.email})\n`
+        `✅ Record found: ${getResult.data.name} (${getResult.data.email})\n`
       );
     } else {
       console.log('⚠️  Record not found after insertion\n');
     }
 
-    // // 3. Update the record
+    // 3. Update the record
     console.log('3️⃣ Updating the record...');
-    const updateResult = await this.client.record.updateById(
+    const updateResult = await this.client.records.updateById(
       DEMO_CONFIG.tableName,
+      insertedRecord.id,
       {
-        id: insertedRecord.id,
-        set: {
-          age: 26,
-          salary: 52000,
-          skills: ['Demo', 'Testing', 'Updated'],
-        },
+        age: 26,
+        salary: 52000,
+        skills: ['Demo', 'Testing', 'Updated'],
       }
     );
 
-    if (updateResult.error) {
-      throw new Error(`Update failed: ${updateResult.error}`);
+    if (isErrorResponse(updateResult)) {
+      throw new Error(`Update failed: ${updateResult.error.message}`);
     }
 
     if (!updateResult.data) {
@@ -213,39 +219,166 @@ class RecordsSDKDemo {
       `✅ Record updated: Age: ${updateResult.data.age}, Salary: ${updateResult.data.salary}\n`
     );
 
-    // 4. Find all records with pagination
-    console.log('4️⃣ Finding all records with pagination...');
-    const findAllResult = await this.client.record.findAll(
-      DEMO_CONFIG.tableName,
-      {
-        page: { page_no: 1, page_size: 10 },
-        filters: [],
-        sort: [{ field: 'name', direction: 'asc' }],
-      }
-    );
+    // 4. List all records with pagination
+    console.log('4️⃣ Listing all records with pagination...');
+    const listResult = await this.client.records.list(DEMO_CONFIG.tableName, {
+      page: { page_no: 1, page_size: 5 },
+    });
 
-    if (findAllResult.error) {
-      throw new Error(`Find all failed: ${findAllResult.error}`);
+    if (isErrorResponse(listResult)) {
+      throw new Error(`List failed: ${listResult.error.message}`);
     }
 
-    if (!findAllResult.data) {
-      throw new Error('Find all succeeded but no data returned');
-    }
-
-    console.log(`✅ Found ${findAllResult.data.length} active records`);
-
-    if (findAllResult.pagination) {
-      console.log(
-        `   Pagination: Page ${findAllResult.pagination.current_page} of ${findAllResult.pagination.total_pages}`
-      );
-      console.log(`   Total records: ${findAllResult.pagination.total_count}`);
-    }
-    console.log('');
+    console.log(`✅ Found ${listResult.data.length} records\n`);
   }
 
-  /**
-   * Cleanup created records
-   */
+  private async demoFluentAPI(): Promise<void> {
+    console.log('🔧 Demo 2: Fluent API Operations');
+    console.log('=================================\n');
+
+    // 1. Query with fluent API
+    console.log('1️⃣ Querying with fluent API...');
+    const queryResult = await this.client
+      .record(DEMO_CONFIG.tableName)
+      .where({ department: 'Demo' })
+      .limit(3)
+      .list();
+
+    if (isErrorResponse(queryResult)) {
+      console.log(`Query failed: ${queryResult.error.message}`);
+    } else {
+      console.log(
+        `✅ Found ${queryResult.data.length} records with fluent API\n`
+      );
+    }
+
+    // 2. Update with fluent API using RecordBuilder
+    console.log('2️⃣ Update with fluent API...');
+    if (this.createdRecordIds.length > 0) {
+      const updateResult = await this.client
+        .record(DEMO_CONFIG.tableName)
+        .set({ department: 'Updated Demo' })
+        .updateById(this.createdRecordIds[0]);
+
+      if (isErrorResponse(updateResult)) {
+        console.log(`Fluent update failed: ${updateResult.error.message}`);
+      } else {
+        console.log('✅ Record updated with fluent API\n');
+      }
+    }
+  }
+
+  private async demoBulkOperations(): Promise<void> {
+    console.log('📦 Demo 3: Bulk Operations');
+    console.log('===========================\n');
+
+    // 1. Insert multiple records
+    console.log('1️⃣ Inserting multiple records...');
+    for (const record of DEMO_RECORDS.slice(0, 3)) {
+      const insertResult = await this.client.records.insert(
+        DEMO_CONFIG.tableName,
+        record
+      );
+
+      if (isErrorResponse(insertResult)) {
+        console.log(
+          `Failed to insert ${record.name}: ${insertResult.error.message}`
+        );
+      } else {
+        this.createdRecordIds.push(insertResult.data.id);
+        console.log(`   ✅ Inserted: ${record.name}`);
+      }
+    }
+    console.log('');
+
+    // 2. List all records to see the bulk insert results
+    console.log('2️⃣ Listing all records...');
+    const listResult = await this.client.records.list(DEMO_CONFIG.tableName);
+
+    if (isErrorResponse(listResult)) {
+      console.log(`List failed: ${listResult.error.message}`);
+    } else {
+      console.log(`✅ Total records in table: ${listResult.data.length}\n`);
+    }
+  }
+
+  private async demoFilteringAndSorting(): Promise<void> {
+    console.log('🔍 Demo 4: Filtering and Sorting');
+    console.log('=================================\n');
+
+    // 1. Filter by department
+    console.log('1️⃣ Filtering by department...');
+    const filterResult = await this.client.records.list(DEMO_CONFIG.tableName, {
+      filters: [
+        { field: 'department', operator: 'equals', value: 'Engineering' },
+      ],
+    });
+
+    if (isErrorResponse(filterResult)) {
+      console.log(`Filter failed: ${filterResult.error.message}`);
+    } else {
+      console.log(`✅ Found ${filterResult.data.length} engineering records\n`);
+    }
+
+    // 2. Sort by age
+    console.log('2️⃣ Sorting by age...');
+    const sortResult = await this.client.records.list(DEMO_CONFIG.tableName, {
+      sort: [{ field: 'age', order: 'desc' }],
+      page: { page_no: 1, page_size: 5 },
+    });
+
+    if (isErrorResponse(sortResult)) {
+      console.log(`Sort failed: ${sortResult.error.message}`);
+    } else {
+      console.log(`✅ Found ${sortResult.data.length} records sorted by age\n`);
+    }
+  }
+
+  private async demoErrorHandling(): Promise<void> {
+    console.log('⚠️ Demo 5: Error Handling');
+    console.log('==========================\n');
+
+    // 1. Try to get non-existent record
+    console.log('1️⃣ Getting non-existent record...');
+    const getResult = await this.client.records.get(
+      DEMO_CONFIG.tableName,
+      'non-existent-id'
+    );
+
+    if (isErrorResponse(getResult)) {
+      console.log(`✅ Expected error: ${getResult.error.message}\n`);
+    } else {
+      console.log('❓ Unexpected success for non-existent record\n');
+    }
+
+    // 2. Try to update non-existent record
+    console.log('2️⃣ Updating non-existent record...');
+    const updateResult = await this.client.records.updateById(
+      DEMO_CONFIG.tableName,
+      'non-existent-id',
+      { name: 'Updated' }
+    );
+
+    if (isErrorResponse(updateResult)) {
+      console.log(`✅ Expected error: ${updateResult.error.message}\n`);
+    } else {
+      console.log('❓ Unexpected success for non-existent record\n');
+    }
+
+    // 3. Try to insert invalid data
+    console.log('3️⃣ Inserting invalid record...');
+    const insertResult = await this.client.records.insert(
+      'non-existent-table',
+      { invalid: 'data' }
+    );
+
+    if (isErrorResponse(insertResult)) {
+      console.log(`✅ Expected error: ${insertResult.error.message}\n`);
+    } else {
+      console.log('❓ Unexpected success for invalid insert\n');
+    }
+  }
+
   private async cleanup(): Promise<void> {
     console.log('🧹 Cleanup: Removing demo records...');
 
@@ -255,15 +388,17 @@ class RecordsSDKDemo {
     }
 
     try {
-      const cleanupResult = await this.client.record.deleteByIds(
+      const cleanupResult = await this.client.records.deleteByIds(
         DEMO_CONFIG.tableName,
         {
           record_ids: this.createdRecordIds,
         }
       );
 
-      if (cleanupResult.error) {
-        console.log(`   Warning: Cleanup failed: ${cleanupResult.error}`);
+      if (isErrorResponse(cleanupResult)) {
+        console.log(
+          `   Warning: Cleanup failed: ${cleanupResult.error.message}`
+        );
       } else if (cleanupResult.data) {
         console.log(`   ✅ Cleanup successful: ${cleanupResult.data.message}`);
         console.log(`   Removed ${this.createdRecordIds.length} demo records`);
@@ -277,41 +412,36 @@ class RecordsSDKDemo {
     }
     console.log('');
   }
-
-  /**
-   * Validate connection and API key
-   */
-  private async validateConnection(): Promise<void> {
-    console.log('🔐 Validating connection and API key...');
-
-    const isValid = await this.client.validateApiKey();
-    if (!isValid) {
-      throw new Error('Invalid API key or connection failed');
-    }
-
-    console.log('✅ API key validated successfully');
-    console.log(`   Environment: ${this.client.getConfig().environment}`);
-    console.log(`   Region: ${this.client.getConfig().region}`);
-    console.log('');
-  }
 }
 
-/**
- * Main execution function
- */
-async function main(): Promise<void> {
+// Main execution
+async function main() {
   try {
-    const demo = new RecordsSDKDemo();
-    await demo.runDemo();
+    const demo = new ComprehensiveRecordsDemo();
+    await demo.run();
   } catch (error) {
     console.error('❌ Demo execution failed:', error);
     process.exit(1);
   }
 }
 
-// Run the demo if this file is executed directly
+// Error handling
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+// Run the demo
 if (require.main === module) {
-  main().catch(console.error);
+  main().catch((error) => {
+    console.error('❌ Fatal error:', error);
+    process.exit(1);
+  });
 }
 
-export { RecordsSDKDemo };
+export { ComprehensiveRecordsDemo, main };

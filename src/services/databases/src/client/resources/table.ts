@@ -1,29 +1,29 @@
-import { ApiError, TablesApiClient } from '../../api/clients/tables-api-client';
+import { TablesApiClient } from '../../api/clients/tables-api-client';
+import { ApiError, ValidationError } from '../../errors';
 import {
-  TableAccessRequest,
   TableCreateRequest,
-  TableDeleteOptions,
+  TableCreateResponse,
   TableQueryOptions,
   TableRecord,
   TableUpdateRequest,
 } from '../../types/api/table';
-import { ApiResponse } from '../../types/common/responses';
+import {
+  ApiResponse,
+  BolticSuccessResponse,
+  isErrorResponse,
+  isListResponse,
+} from '../../types/common/responses';
 import { BaseClient } from '../core/base-client';
 import { BaseResource } from '../core/base-resource';
-import { createTableBuilder, TableBuilder } from './table-builder';
-
-export interface GenerateSchemaOptions {
-  prompt: string;
-  isTemplate?: boolean;
-}
 
 export class TableResource extends BaseResource {
   private tablesApiClient: TablesApiClient;
 
   constructor(client: BaseClient) {
     super(client, '/v1/tables');
-    const config = client.getConfig();
 
+    // Initialize the API client
+    const config = client.getConfig();
     this.tablesApiClient = new TablesApiClient(config.apiKey, {
       environment: config.environment,
       timeout: config.timeout,
@@ -37,23 +37,25 @@ export class TableResource extends BaseResource {
   /**
    * Create a new table
    */
-  async create(data: TableCreateRequest): Promise<ApiResponse<TableRecord>> {
+  async create(
+    data: TableCreateRequest
+  ): Promise<BolticSuccessResponse<TableCreateResponse>> {
     try {
       const result = await this.tablesApiClient.createTable(data);
 
-      if (result.error) {
-        return {
-          error: this.formatApiError(result.error),
-        };
+      if (isErrorResponse(result)) {
+        throw new ApiError(
+          result.error.message || 'Create table failed',
+          400,
+          result.error
+        );
       }
 
-      return {
-        data: result.data as unknown as TableRecord,
-      };
+      return result as BolticSuccessResponse<TableCreateResponse>;
     } catch (error) {
-      return {
-        error: this.formatError(error),
-      };
+      throw error instanceof ApiError
+        ? error
+        : new ApiError(this.formatError(error), 500);
     }
   }
 
@@ -66,19 +68,19 @@ export class TableResource extends BaseResource {
     try {
       const result = await this.tablesApiClient.listTables(options);
 
-      if (result.error) {
-        return {
-          error: this.formatApiError(result.error),
-        };
+      if (isErrorResponse(result)) {
+        throw new ApiError(
+          result.error.message || 'List tables failed',
+          400,
+          result.error
+        );
       }
 
-      return {
-        data: result.data,
-      };
+      return result;
     } catch (error) {
-      return {
-        error: this.formatError(error),
-      };
+      throw error instanceof ApiError
+        ? error
+        : new ApiError(this.formatError(error), 500);
     }
   }
 
@@ -87,182 +89,182 @@ export class TableResource extends BaseResource {
    */
   async findOne(
     options: TableQueryOptions
-  ): Promise<ApiResponse<TableRecord | null>> {
+  ): Promise<BolticSuccessResponse<TableRecord | null>> {
     try {
       if (!options.where?.id && !options.where?.name) {
-        throw new Error('Either id or name must be provided in where clause');
+        throw new ValidationError(
+          'Either id or name must be provided in where clause'
+        );
       }
 
-      const tables = await this.findAll(options);
+      if (options.where?.id) {
+        // Find by ID
+        const result = await this.tablesApiClient.getTable(
+          options.where.id as string
+        );
 
-      if (tables.error) {
-        return {
-          error: tables.error,
-        };
-      }
-
-      return {
-        data: tables.data?.[0] || null,
-      };
-    } catch (error) {
-      return {
-        error: this.formatError(error),
-      };
-    }
-  }
-
-  /**
-   * Update a table by ID or name
-   */
-  async update(
-    identifier: string,
-    data: TableUpdateRequest
-  ): Promise<ApiResponse<TableRecord>> {
-    try {
-      // First, find the table to get its ID
-      const table = await this.findOne({
-        where: { name: identifier },
-      });
-
-      if (table.error || !table.data) {
-        return {
-          error: table.error || 'Table not found',
-        };
-      }
-
-      const result = await this.tablesApiClient.updateTable(
-        table.data.id,
-        data
-      );
-
-      if (result.error) {
-        return {
-          error: this.formatApiError(result.error),
-        };
-      }
-
-      return {
-        data: result.data,
-      };
-    } catch (error) {
-      return {
-        error: this.formatError(error),
-      };
-    }
-  }
-
-  /**
-   * Rename a table
-   */
-  async rename(
-    oldName: string,
-    newName: string
-  ): Promise<ApiResponse<TableRecord>> {
-    return this.update(oldName, { name: newName });
-  }
-
-  /**
-   * Set table access permissions
-   */
-  async setAccess(data: TableAccessRequest): Promise<ApiResponse<TableRecord>> {
-    try {
-      const table = await this.findOne({
-        where: { name: data.table_name },
-      });
-
-      if (table.error || !table.data) {
-        return {
-          error: table.error || 'Table not found',
-        };
-      }
-
-      const result = await this.tablesApiClient.updateTable(table.data.id, {
-        is_shared: data.is_shared,
-      });
-
-      if (result.error) {
-        return {
-          error: this.formatApiError(result.error),
-        };
-      }
-
-      return {
-        data: result.data,
-      };
-    } catch (error) {
-      return {
-        error: this.formatError(error),
-      };
-    }
-  }
-
-  /**
-   * Delete a table by ID or name
-   */
-  async delete(
-    options: TableDeleteOptions | string
-  ): Promise<ApiResponse<boolean>> {
-    try {
-      let tableId: string;
-
-      if (typeof options === 'string') {
-        // If options is a string, treat it as table name
-        const table = await this.findOne({
-          where: { name: options },
-        });
-
-        if (table.error || !table.data) {
-          return {
-            error: table.error || 'Table not found',
-          };
+        if (isErrorResponse(result)) {
+          if (result.error.code === 'TABLE_NOT_FOUND') {
+            return {
+              data: null,
+              message: 'Table not found',
+            };
+          }
+          throw new ApiError(
+            result.error.message || 'Get table failed',
+            400,
+            result.error
+          );
         }
 
-        tableId = table.data.id;
+        return result as BolticSuccessResponse<TableRecord>;
       } else {
-        // If options is an object, find the table
-        const table = await this.findOne({
-          where: options.where,
+        // Find by name
+        const listResult = await this.tablesApiClient.listTables({
+          where: { name: options.where!.name },
+          limit: 1,
         });
 
-        if (table.error || !table.data) {
-          return {
-            error: table.error || 'Table not found',
-          };
+        if (isErrorResponse(listResult)) {
+          throw new ApiError(
+            listResult.error.message || 'Find table by name failed',
+            400,
+            listResult.error
+          );
         }
 
-        tableId = table.data.id;
-      }
-
-      const result = await this.tablesApiClient.deleteTable(tableId);
-
-      if (result.error) {
+        const table = isListResponse(listResult) ? listResult.data[0] : null;
         return {
-          error: this.formatApiError(result.error),
+          data: table || null,
+          message: table ? 'Table found' : 'Table not found',
         };
       }
-
-      return {
-        data: result.success,
-      };
     } catch (error) {
-      return {
-        error: this.formatError(error),
-      };
+      throw error instanceof ApiError || error instanceof ValidationError
+        ? error
+        : new ApiError(this.formatError(error), 500);
     }
   }
 
   /**
-   * Get table metadata by name
+   * Find a single table by name
    */
-  async getMetadata(name: string): Promise<ApiResponse<TableRecord | null>> {
+  async findByName(
+    name: string
+  ): Promise<BolticSuccessResponse<TableRecord | null>> {
     return this.findOne({ where: { name } });
   }
 
   /**
-   * Generate table schema using AI
+   * Find a single table by ID
+   */
+  async findById(
+    id: string
+  ): Promise<BolticSuccessResponse<TableRecord | null>> {
+    return this.findOne({ where: { id } });
+  }
+
+  /**
+   * Update a table by ID
+   */
+  async update(
+    id: string,
+    data: TableUpdateRequest
+  ): Promise<BolticSuccessResponse<TableRecord>> {
+    try {
+      const result = await this.tablesApiClient.updateTable(id, data);
+
+      if (isErrorResponse(result)) {
+        throw new ApiError(
+          result.error.message || 'Update table failed',
+          400,
+          result.error
+        );
+      }
+
+      return result as BolticSuccessResponse<TableRecord>;
+    } catch (error) {
+      throw error instanceof ApiError
+        ? error
+        : new ApiError(this.formatError(error), 500);
+    }
+  }
+
+  /**
+   * Update a table by name
+   */
+  async updateByName(
+    name: string,
+    data: TableUpdateRequest
+  ): Promise<BolticSuccessResponse<TableRecord>> {
+    try {
+      // First find the table to get its ID
+      const tableResult = await this.findByName(name);
+
+      if (!tableResult.data) {
+        throw new ApiError(`Table '${name}' not found`, 404);
+      }
+
+      return await this.update(tableResult.data.id, data);
+    } catch (error) {
+      throw error instanceof ApiError
+        ? error
+        : new ApiError(this.formatError(error), 500);
+    }
+  }
+
+  /**
+   * Delete a table by ID
+   */
+  async delete(
+    id: string
+  ): Promise<BolticSuccessResponse<{ message: string }>> {
+    try {
+      const result = await this.tablesApiClient.deleteTable(id);
+
+      if (isErrorResponse(result)) {
+        throw new ApiError(
+          result.error.message || 'Delete table failed',
+          400,
+          result.error
+        );
+      }
+
+      return result as BolticSuccessResponse<{ message: string }>;
+    } catch (error) {
+      throw error instanceof ApiError
+        ? error
+        : new ApiError(this.formatError(error), 500);
+    }
+  }
+
+  /**
+   * Delete a table by name
+   */
+  async deleteByName(
+    name: string
+  ): Promise<BolticSuccessResponse<{ message: string }>> {
+    try {
+      // First find the table to get its ID
+      const tableResult = await this.findByName(name);
+
+      if (!tableResult.data) {
+        throw new ApiError(`Table '${name}' not found`, 404);
+      }
+
+      return await this.delete(tableResult.data.id);
+    } catch (error) {
+      throw error instanceof ApiError
+        ? error
+        : new ApiError(this.formatError(error), 500);
+    }
+  }
+
+  /**
+   * Generate AI-powered table schema
    */
   async generateSchema(prompt: string): Promise<
-    ApiResponse<{
+    BolticSuccessResponse<{
       fields: Array<{
         name: string;
         type: string;
@@ -275,29 +277,27 @@ export class TableResource extends BaseResource {
     try {
       const result = await this.tablesApiClient.generateSchema(prompt);
 
-      if (result.error) {
-        return {
-          error: this.formatApiError(result.error),
-        };
+      if (isErrorResponse(result)) {
+        throw new ApiError(
+          result.error.message || 'Generate schema failed',
+          400,
+          result.error
+        );
       }
 
-      return {
-        data:
-          result.data ||
-          ({} as {
-            fields: Array<{
-              name: string;
-              type: string;
-              description?: string;
-            }>;
-            name?: string;
-            description?: string;
-          }),
-      };
+      return result as BolticSuccessResponse<{
+        fields: Array<{
+          name: string;
+          type: string;
+          description?: string;
+        }>;
+        name?: string;
+        description?: string;
+      }>;
     } catch (error) {
-      return {
-        error: this.formatError(error),
-      };
+      throw error instanceof ApiError
+        ? error
+        : new ApiError(this.formatError(error), 500);
     }
   }
 
@@ -305,7 +305,7 @@ export class TableResource extends BaseResource {
    * Get available currencies
    */
   async getCurrencies(): Promise<
-    ApiResponse<
+    BolticSuccessResponse<
       Array<{
         code: string;
         name: string;
@@ -316,84 +316,36 @@ export class TableResource extends BaseResource {
     try {
       const result = await this.tablesApiClient.getCurrencies();
 
-      if (result.error) {
-        return {
-          error: this.formatApiError(result.error),
-        };
+      if (isErrorResponse(result)) {
+        throw new ApiError(
+          result.error.message || 'Get currencies failed',
+          400,
+          result.error
+        );
       }
 
-      return {
-        data: result.data || [],
-      };
+      return result as BolticSuccessResponse<
+        Array<{
+          code: string;
+          name: string;
+          symbol: string;
+        }>
+      >;
     } catch (error) {
-      return {
-        error: this.formatError(error),
-      };
+      throw error instanceof ApiError
+        ? error
+        : new ApiError(this.formatError(error), 500);
     }
   }
 
-  /**
-   * Get table ID by name using the tables API
-   */
-  static async getTableId(
-    tablesApiClient: TablesApiClient,
-    tableName: string
-  ): Promise<string | null> {
-    try {
-      // List tables to find the one with matching name
-      const result = await tablesApiClient.listTables({
-        where: { name: tableName },
-        limit: 1,
-      });
-
-      if (result.error) {
-        console.error('Failed to fetch tables:', result.error);
-        return null;
-      }
-
-      if (!result.data || result.data.length === 0) {
-        return null;
-      }
-
-      // Return the first matching table's ID
-      const tableId = result.data[0].id;
-      return tableId;
-    } catch (error) {
-      console.error('Error getting table ID:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Get table ID by name using the tables API (instance method)
-   */
-  async getTableId(tableName: string): Promise<string | null> {
-    return TableResource.getTableId(this.tablesApiClient, tableName);
-  }
-
-  /**
-   * Create a table builder for fluent API
-   */
-  builder(options: {
-    name: string;
-    description?: string;
-    isPublic?: boolean;
-  }): TableBuilder {
-    return createTableBuilder(options, this.tablesApiClient);
-  }
-
-  // Private helper methods
-
+  // Helper method to format generic errors
   private formatError(error: unknown): string {
     if (error instanceof Error) {
       return error.message;
     }
-
+    if (typeof error === 'string') {
+      return error;
+    }
     return 'An unexpected error occurred';
-  }
-
-  private formatApiError(apiError: ApiError): string {
-    // Pass through the API error message, or stringify the object if needed
-    return apiError.message || JSON.stringify(apiError);
   }
 }

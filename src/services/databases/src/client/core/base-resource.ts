@@ -58,10 +58,14 @@ export abstract class BaseResource {
 
       return response.data;
     } catch (error) {
-      // Return error response in consistent format
+      // Return error response in Boltic format
       return {
-        error: formatError(error),
-        details: error,
+        data: {},
+        error: {
+          code: 'CLIENT_ERROR',
+          message: formatError(error),
+          meta: ['Request failed'],
+        },
       };
     }
   }

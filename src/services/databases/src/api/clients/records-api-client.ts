@@ -2,7 +2,6 @@ import {
   RecordData,
   RecordDeleteByIdsOptions,
   RecordDeleteOptions,
-  RecordListResponse,
   RecordQueryOptions,
   RecordUpdateByIdOptions,
   RecordUpdateOptions,
@@ -16,23 +15,6 @@ import {
   buildRecordEndpointPath,
 } from '../endpoints/records';
 
-// Response interfaces to avoid any types
-interface RecordInsertResponse {
-  data: RecordWithId;
-}
-
-interface RecordGetResponse {
-  data: RecordWithId;
-}
-
-interface RecordUpdateResponse {
-  data: RecordWithId[];
-}
-
-interface RecordUpdateByIdResponse {
-  data: RecordWithId;
-}
-
 export interface RecordsApiClientConfig {
   apiKey: string;
   environment?: Environment;
@@ -43,11 +25,31 @@ export interface RecordsApiClientConfig {
   headers?: Record<string, string>;
 }
 
-export interface ApiError {
-  code: string;
-  message: string;
-  details?: unknown;
-  statusCode?: number;
+// Boltic API Response Structure interfaces
+interface BolticSuccessResponse<T = unknown> {
+  data: T;
+  message?: string;
+}
+
+interface BolticListResponse<T = unknown> {
+  data: T[];
+  pagination?: {
+    total_count: number;
+    total_pages: number;
+    current_page: number;
+    per_page: number;
+    type: string;
+  };
+  message?: string;
+}
+
+interface BolticErrorResponse {
+  data: {};
+  error: {
+    code?: string;
+    message?: string;
+    meta?: string[];
+  };
 }
 
 /**
@@ -85,12 +87,14 @@ export class RecordsApiClient {
    */
   async insertRecord(
     request: RecordData & { table_id?: string }
-  ): Promise<{ data: RecordWithId; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
       const { table_id, ...recordData } = request;
 
       if (!table_id) {
-        throw new Error('table_id is required for insert operation');
+        return this.formatErrorResponse(
+          new Error('table_id is required for insert operation')
+        );
       }
 
       const endpoint = RECORD_ENDPOINTS.insert;
@@ -104,18 +108,10 @@ export class RecordsApiClient {
         timeout: this.config.timeout,
       });
 
-      if (response.data) {
-        return {
-          data: (response.data as RecordInsertResponse).data,
-        };
-      }
-
-      throw new Error('Invalid response from API');
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<RecordWithId>;
     } catch (error) {
-      return {
-        data: {} as RecordWithId,
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -125,10 +121,12 @@ export class RecordsApiClient {
   async getRecord(
     recordId: string,
     tableId: string
-  ): Promise<{ data: RecordWithId; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
       if (!tableId) {
-        throw new Error('table_id is required for get operation');
+        return this.formatErrorResponse(
+          new Error('table_id is required for get operation')
+        );
       }
 
       const endpoint = RECORD_ENDPOINTS.get;
@@ -144,18 +142,10 @@ export class RecordsApiClient {
         timeout: this.config.timeout,
       });
 
-      if (response.data) {
-        return {
-          data: (response.data as RecordGetResponse).data,
-        };
-      }
-
-      throw new Error('Invalid response from API');
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<RecordWithId>;
     } catch (error) {
-      return {
-        data: {} as RecordWithId,
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -164,22 +154,14 @@ export class RecordsApiClient {
    */
   async listRecords(
     options: RecordQueryOptions & { table_id?: string } = {}
-  ): Promise<{
-    data: RecordWithId[];
-    pagination?: {
-      total_count: number;
-      total_pages: number;
-      current_page: number;
-      per_page: number;
-      type: string;
-    };
-    error?: ApiError;
-  }> {
+  ): Promise<BolticListResponse<RecordWithId> | BolticErrorResponse> {
     try {
       const { table_id, ...queryOptions } = options;
 
       if (!table_id) {
-        throw new Error('table_id is required for list operation');
+        return this.formatErrorResponse(
+          new Error('table_id is required for list operation')
+        );
       }
 
       const endpoint = RECORD_ENDPOINTS.list;
@@ -193,19 +175,10 @@ export class RecordsApiClient {
         timeout: this.config.timeout,
       });
 
-      if (response.data) {
-        return {
-          data: (response.data as RecordListResponse).data,
-          pagination: (response.data as RecordListResponse).pagination,
-        };
-      }
-
-      throw new Error('Invalid response from API');
+      // Return raw response without transformation
+      return response.data as BolticListResponse<RecordWithId>;
     } catch (error) {
-      return {
-        data: [],
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -214,12 +187,14 @@ export class RecordsApiClient {
    */
   async updateRecords(
     request: RecordUpdateOptions & { table_id?: string }
-  ): Promise<{ data: RecordWithId[]; error?: ApiError }> {
+  ): Promise<BolticListResponse<RecordWithId> | BolticErrorResponse> {
     try {
       const { table_id, ...updateOptions } = request;
 
       if (!table_id) {
-        throw new Error('table_id is required for update operation');
+        return this.formatErrorResponse(
+          new Error('table_id is required for update operation')
+        );
       }
 
       const endpoint = RECORD_ENDPOINTS.update;
@@ -233,18 +208,10 @@ export class RecordsApiClient {
         timeout: this.config.timeout,
       });
 
-      if (response.data) {
-        return {
-          data: (response.data as RecordUpdateResponse).data,
-        };
-      }
-
-      throw new Error('Invalid response from API');
+      // Return raw response without transformation
+      return response.data as BolticListResponse<RecordWithId>;
     } catch (error) {
-      return {
-        data: [],
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -254,30 +221,15 @@ export class RecordsApiClient {
   async updateRecordById(
     recordId: string,
     request: RecordUpdateByIdOptions & { table_id?: string }
-  ): Promise<{ data: RecordWithId; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
       const { table_id, ...updateOptions } = request;
 
       if (!table_id) {
-        throw new Error('table_id is required for updateById operation');
+        return this.formatErrorResponse(
+          new Error('table_id is required for updateById operation')
+        );
       }
-
-      // First, get the existing record data
-      const getRecordResult = await this.getRecord(recordId, table_id);
-
-      if (getRecordResult.error) {
-        return {
-          data: {} as RecordWithId,
-          error: getRecordResult.error,
-        };
-      }
-
-      // Merge the existing record data with the update request
-      const existingRecord = getRecordResult.data;
-      const mergedData = this.mergeRecordData(
-        existingRecord,
-        updateOptions.set
-      );
 
       const endpoint = RECORD_ENDPOINTS.updateById;
       const url = `${this.baseURL}${buildRecordEndpointPath(endpoint, {
@@ -289,22 +241,14 @@ export class RecordsApiClient {
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: mergedData,
+        data: updateOptions.set,
         timeout: this.config.timeout,
       });
 
-      if (response.data) {
-        return {
-          data: (response.data as RecordUpdateByIdResponse).data,
-        };
-      }
-
-      throw new Error('Invalid response from API');
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<RecordWithId>;
     } catch (error) {
-      return {
-        data: {} as RecordWithId,
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -313,12 +257,14 @@ export class RecordsApiClient {
    */
   async deleteRecords(
     request: RecordDeleteOptions & { table_id?: string }
-  ): Promise<{ data: { message: string }; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
       const { table_id, ...deleteOptions } = request;
 
       if (!table_id) {
-        throw new Error('table_id is required for delete operation');
+        return this.formatErrorResponse(
+          new Error('table_id is required for delete operation')
+        );
       }
 
       const endpoint = RECORD_ENDPOINTS.delete;
@@ -332,16 +278,10 @@ export class RecordsApiClient {
         timeout: this.config.timeout,
       });
 
-      if (response.data) {
-        return { data: { message: 'Records deleted successfully' } };
-      }
-
-      throw new Error('Invalid response from API');
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<{ message: string }>;
     } catch (error) {
-      return {
-        data: { message: 'Failed to delete records' },
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -350,12 +290,14 @@ export class RecordsApiClient {
    */
   async deleteRecordsByIds(
     request: RecordDeleteByIdsOptions & { table_id?: string }
-  ): Promise<{ data: { message: string }; error?: ApiError }> {
+  ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
       const { table_id, ...deleteOptions } = request;
 
       if (!table_id) {
-        throw new Error('table_id is required for deleteByIds operation');
+        return this.formatErrorResponse(
+          new Error('table_id is required for deleteByIds operation')
+        );
       }
 
       const endpoint = RECORD_ENDPOINTS.deleteByIds;
@@ -369,16 +311,10 @@ export class RecordsApiClient {
         timeout: this.config.timeout,
       });
 
-      if (response.data) {
-        return { data: { message: 'Records deleted successfully' } };
-      }
-
-      throw new Error('Invalid response from API');
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<{ message: string }>;
     } catch (error) {
-      return {
-        data: { message: 'Failed to delete records' },
-        error: this.formatError(error),
-      };
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -391,50 +327,54 @@ export class RecordsApiClient {
     };
   }
 
-  private formatError(error: unknown): ApiError {
-    if (error instanceof Error) {
+  private formatErrorResponse(error: unknown): BolticErrorResponse {
+    if (this.config.debug) {
+      console.error('Records API Error:', error);
+    }
+
+    // Handle different error types following Boltic format
+    if (error && typeof error === 'object' && 'response' in error) {
+      const apiError = error as {
+        response?: {
+          data?: BolticErrorResponse;
+          status?: number;
+        };
+      };
+
+      // If API already returned Boltic format, use it
+      if (apiError.response?.data?.error) {
+        return apiError.response.data;
+      }
+
+      // Otherwise format it to Boltic structure
       return {
-        code: 'UNKNOWN_ERROR',
-        message: error.message,
-        details: error,
+        data: {},
+        error: {
+          code: 'API_ERROR',
+          message: (error as unknown as Error).message || 'Unknown API error',
+          meta: [`Status: ${apiError.response?.status || 'unknown'}`],
+        },
       };
     }
 
-    if (typeof error === 'object' && error !== null) {
-      const errorObj = error as Record<string, unknown>;
+    if (error && typeof error === 'object' && 'message' in error) {
       return {
-        code: (errorObj.code as string) || 'UNKNOWN_ERROR',
-        message: (errorObj.message as string) || 'An unknown error occurred',
-        details: error,
-        statusCode: (errorObj.statusCode as number) || undefined,
+        data: {},
+        error: {
+          code: 'CLIENT_ERROR',
+          message: (error as Error).message,
+          meta: ['Client-side error occurred'],
+        },
       };
     }
 
     return {
-      code: 'UNKNOWN_ERROR',
-      message: 'An unknown error occurred',
-      details: error,
+      data: {},
+      error: {
+        code: 'UNKNOWN_ERROR',
+        message: 'An unexpected error occurred',
+        meta: ['Unknown error type'],
+      },
     };
-  }
-
-  /**
-   * Helper method to merge existing record data with update request
-   * Excludes system fields: id, created_at, updated_at
-   */
-  private mergeRecordData(
-    existingRecord: RecordWithId,
-    updates: RecordData
-  ): RecordData {
-    const mergedData: RecordData = { ...existingRecord };
-
-    // Apply user updates
-    Object.assign(mergedData, updates);
-
-    // Remove system fields that should not be updated
-    delete mergedData.id;
-    delete mergedData.created_at;
-    delete mergedData.updated_at;
-
-    return mergedData;
   }
 }
