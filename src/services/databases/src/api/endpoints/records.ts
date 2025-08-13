@@ -15,7 +15,6 @@ export interface RecordEndpoints {
   get: RecordApiEndpoint;
   update: RecordApiEndpoint;
   updateById: RecordApiEndpoint;
-  delete: RecordApiEndpoint;
   deleteByIds: RecordApiEndpoint;
 }
 
@@ -52,14 +51,9 @@ export const RECORD_ENDPOINTS: RecordEndpoints = {
     authenticated: true,
     cached: false,
   },
-  delete: {
-    path: '/tables/{table_id}/records',
-    method: 'DELETE',
-    authenticated: true,
-    cached: false,
-  },
+
   deleteByIds: {
-    path: '/tables/{table_id}/records',
+    path: '/tables/{table_id}/records/list',
     method: 'DELETE',
     authenticated: true,
     cached: false,

@@ -50,10 +50,6 @@ export interface RecordUpdateByIdOptions {
   set: RecordData;
 }
 
-export interface RecordDeleteOptions {
-  filters: Record<string, unknown>[];
-}
-
 export interface RecordDeleteByIdsOptions {
   record_ids: string[];
 }

@@ -18,7 +18,6 @@ export * from './resources/table';
 export {
   createTableBuilder,
   TableBuilder,
-  type GenerateSchemaOptions,
   type TableBuilderOptions,
 } from './resources/table-builder';
 export { BolticClient };

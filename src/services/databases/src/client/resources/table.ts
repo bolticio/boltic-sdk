@@ -1,6 +1,7 @@
 import { TablesApiClient } from '../../api/clients/tables-api-client';
 import { ApiError, ValidationError } from '../../errors';
 import {
+  FieldDefinition,
   TableCreateRequest,
   TableCreateResponse,
   TableQueryOptions,
@@ -41,7 +42,13 @@ export class TableResource extends BaseResource {
     data: TableCreateRequest
   ): Promise<BolticSuccessResponse<TableCreateResponse>> {
     try {
-      const result = await this.tablesApiClient.createTable(data);
+      // Process fields with defaults if any are provided
+      const processedData = { ...data };
+      if (data.fields && data.fields.length > 0) {
+        processedData.fields = await this.processFieldsDefaults(data.fields);
+      }
+
+      const result = await this.tablesApiClient.createTable(processedData);
 
       if (isErrorResponse(result)) {
         throw new ApiError(
@@ -60,13 +67,112 @@ export class TableResource extends BaseResource {
   }
 
   /**
+   * Process fields with defaults for table creation
+   */
+  private async processFieldsDefaults(
+    fields: FieldDefinition[]
+  ): Promise<FieldDefinition[]> {
+    const processedFields: FieldDefinition[] = [];
+
+    for (let i = 0; i < fields.length; i++) {
+      const field = fields[i];
+      const processedField: FieldDefinition = { ...field };
+
+      // Set default values for optional fields if not provided
+      if (processedField.is_primary_key === undefined) {
+        processedField.is_primary_key = false;
+      }
+      if (processedField.is_unique === undefined) {
+        processedField.is_unique = false;
+      }
+      if (processedField.is_nullable === undefined) {
+        processedField.is_nullable = true;
+      }
+      if (processedField.is_indexed === undefined) {
+        processedField.is_indexed = false;
+      }
+
+      // Auto-generate field_order if not provided (sequential for table creation)
+      if (processedField.field_order === undefined) {
+        processedField.field_order = i + 1;
+      }
+
+      // Validate field_order is within acceptable range
+      if (
+        processedField.field_order <= 0 ||
+        processedField.field_order >= 2147483647
+      ) {
+        throw new Error(
+          'Field order must be a number greater than 0 and less than 2147483647'
+        );
+      }
+
+      processedFields.push(processedField);
+    }
+
+    return processedFields;
+  }
+
+  /**
+   * Transform SDK TableQueryOptions to API request format
+   */
+  private transformTableQueryToApiRequest(options: TableQueryOptions): unknown {
+    const apiRequest: {
+      page: { page_no: number; page_size: number };
+      filters: Array<{ field: string; operator: string; values: unknown[] }>;
+      sort: Array<{ field: string; direction: string }>;
+    } = {
+      page: {
+        page_no: 1,
+        page_size: options.limit || 100,
+      },
+      filters: [],
+      sort: [],
+    };
+
+    // Handle pagination
+    if (options.offset && options.limit) {
+      const pageNo = Math.floor(options.offset / options.limit) + 1;
+      apiRequest.page.page_no = pageNo;
+    }
+
+    // Transform where clause to filters
+    if (options.where) {
+      Object.entries(options.where).forEach(([field, value]) => {
+        if (value !== undefined && value !== null) {
+          apiRequest.filters.push({
+            field,
+            operator: '=',
+            values: [value],
+          });
+        }
+      });
+    }
+
+    // Transform sort
+    if (options.sort) {
+      apiRequest.sort = options.sort.map((s) => ({
+        field: s.field,
+        direction: s.order,
+      }));
+    }
+
+    return apiRequest;
+  }
+
+  /**
    * Find all tables with optional filtering
    */
   async findAll(
     options: TableQueryOptions = {}
   ): Promise<ApiResponse<TableRecord[]>> {
     try {
-      const result = await this.tablesApiClient.listTables(options);
+      // Transform SDK format to API format
+      const apiRequest = this.transformTableQueryToApiRequest(options);
+
+      const result = await this.tablesApiClient.listTables(
+        apiRequest as unknown as TableQueryOptions
+      );
 
       if (isErrorResponse(result)) {
         throw new ApiError(
@@ -119,11 +225,22 @@ export class TableResource extends BaseResource {
 
         return result as BolticSuccessResponse<TableRecord>;
       } else {
-        // Find by name
-        const listResult = await this.tablesApiClient.listTables({
-          where: { name: options.where!.name },
-          limit: 1,
-        });
+        // Find by name - transform to API format
+        const apiRequest = {
+          page: { page_no: 1, page_size: 1 },
+          filters: [
+            {
+              field: 'name',
+              operator: '=',
+              values: [options.where!.name],
+            },
+          ],
+          sort: [],
+        };
+
+        const listResult = await this.tablesApiClient.listTables(
+          apiRequest as unknown as TableQueryOptions
+        );
 
         if (isErrorResponse(listResult)) {
           throw new ApiError(
@@ -133,7 +250,9 @@ export class TableResource extends BaseResource {
           );
         }
 
-        const table = isListResponse(listResult) ? listResult.data[0] : null;
+        const table = isListResponse(listResult)
+          ? (listResult.data[0] as TableRecord)
+          : null;
         return {
           data: table || null,
           message: table ? 'Table found' : 'Table not found',
@@ -165,14 +284,24 @@ export class TableResource extends BaseResource {
   }
 
   /**
-   * Update a table by ID
+   * Update a table by name
    */
   async update(
-    id: string,
+    name: string,
     data: TableUpdateRequest
   ): Promise<BolticSuccessResponse<TableRecord>> {
     try {
-      const result = await this.tablesApiClient.updateTable(id, data);
+      // First find the table to get its ID
+      const tableResult = await this.findByName(name);
+
+      if (!tableResult.data) {
+        throw new ApiError(`Table '${name}' not found`, 404);
+      }
+
+      const result = await this.tablesApiClient.updateTable(
+        tableResult.data.id,
+        data
+      );
 
       if (isErrorResponse(result)) {
         throw new ApiError(
@@ -191,12 +320,11 @@ export class TableResource extends BaseResource {
   }
 
   /**
-   * Update a table by name
+   * Delete a table by name
    */
-  async updateByName(
-    name: string,
-    data: TableUpdateRequest
-  ): Promise<BolticSuccessResponse<TableRecord>> {
+  async delete(
+    name: string
+  ): Promise<BolticSuccessResponse<{ message: string }>> {
     try {
       // First find the table to get its ID
       const tableResult = await this.findByName(name);
@@ -205,22 +333,9 @@ export class TableResource extends BaseResource {
         throw new ApiError(`Table '${name}' not found`, 404);
       }
 
-      return await this.update(tableResult.data.id, data);
-    } catch (error) {
-      throw error instanceof ApiError
-        ? error
-        : new ApiError(this.formatError(error), 500);
-    }
-  }
-
-  /**
-   * Delete a table by ID
-   */
-  async delete(
-    id: string
-  ): Promise<BolticSuccessResponse<{ message: string }>> {
-    try {
-      const result = await this.tablesApiClient.deleteTable(id);
+      const result = await this.tablesApiClient.deleteTable(
+        tableResult.data.id
+      );
 
       if (isErrorResponse(result)) {
         throw new ApiError(
@@ -239,20 +354,16 @@ export class TableResource extends BaseResource {
   }
 
   /**
-   * Delete a table by name
+   * Rename a table
    */
-  async deleteByName(
-    name: string
-  ): Promise<BolticSuccessResponse<{ message: string }>> {
+  async rename(
+    oldName: string,
+    newName: string
+  ): Promise<BolticSuccessResponse<TableRecord>> {
     try {
-      // First find the table to get its ID
-      const tableResult = await this.findByName(name);
-
-      if (!tableResult.data) {
-        throw new ApiError(`Table '${name}' not found`, 404);
-      }
-
-      return await this.delete(tableResult.data.id);
+      return await this.update(oldName, {
+        name: newName,
+      });
     } catch (error) {
       throw error instanceof ApiError
         ? error
@@ -261,76 +372,17 @@ export class TableResource extends BaseResource {
   }
 
   /**
-   * Generate AI-powered table schema
+   * Set table access permissions
    */
-  async generateSchema(prompt: string): Promise<
-    BolticSuccessResponse<{
-      fields: Array<{
-        name: string;
-        type: string;
-        description?: string;
-      }>;
-      name?: string;
-      description?: string;
-    }>
-  > {
+  async setAccess(request: {
+    table_name: string;
+    is_shared: boolean;
+  }): Promise<BolticSuccessResponse<TableRecord>> {
     try {
-      const result = await this.tablesApiClient.generateSchema(prompt);
-
-      if (isErrorResponse(result)) {
-        throw new ApiError(
-          result.error.message || 'Generate schema failed',
-          400,
-          result.error
-        );
-      }
-
-      return result as BolticSuccessResponse<{
-        fields: Array<{
-          name: string;
-          type: string;
-          description?: string;
-        }>;
-        name?: string;
-        description?: string;
-      }>;
-    } catch (error) {
-      throw error instanceof ApiError
-        ? error
-        : new ApiError(this.formatError(error), 500);
-    }
-  }
-
-  /**
-   * Get available currencies
-   */
-  async getCurrencies(): Promise<
-    BolticSuccessResponse<
-      Array<{
-        code: string;
-        name: string;
-        symbol: string;
-      }>
-    >
-  > {
-    try {
-      const result = await this.tablesApiClient.getCurrencies();
-
-      if (isErrorResponse(result)) {
-        throw new ApiError(
-          result.error.message || 'Get currencies failed',
-          400,
-          result.error
-        );
-      }
-
-      return result as BolticSuccessResponse<
-        Array<{
-          code: string;
-          name: string;
-          symbol: string;
-        }>
-      >;
+      // Update the table with the new access settings
+      return await this.update(request.table_name, {
+        is_shared: request.is_shared,
+      });
     } catch (error) {
       throw error instanceof ApiError
         ? error

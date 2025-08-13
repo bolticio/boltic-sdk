@@ -65,7 +65,13 @@ export class ColumnResource extends BaseResource {
         };
       }
 
-      const result = await this.columnsApiClient.createColumn(tableId, column);
+      // Apply defaults and auto-generate field_order
+      const processedColumn = await this.processColumnDefaults(tableId, column);
+
+      const result = await this.columnsApiClient.createColumn(
+        tableId,
+        processedColumn
+      );
 
       if (isErrorResponse(result)) {
         return result;
@@ -82,6 +88,125 @@ export class ColumnResource extends BaseResource {
         },
       };
     }
+  }
+
+  /**
+   * Process column defaults and auto-generate field_order
+   */
+  private async processColumnDefaults(
+    tableId: string,
+    column: FieldDefinition
+  ): Promise<FieldDefinition> {
+    const processedColumn: FieldDefinition = { ...column };
+
+    // Set default values for optional fields if not provided
+    if (processedColumn.is_primary_key === undefined) {
+      processedColumn.is_primary_key = false;
+    }
+    if (processedColumn.is_unique === undefined) {
+      processedColumn.is_unique = false;
+    }
+    if (processedColumn.is_nullable === undefined) {
+      processedColumn.is_nullable = true;
+    }
+    if (processedColumn.is_indexed === undefined) {
+      processedColumn.is_indexed = false;
+    }
+
+    // Auto-generate field_order if not provided
+    if (processedColumn.field_order === undefined) {
+      processedColumn.field_order = await this.generateFieldOrder(tableId);
+    }
+
+    // Validate field_order is within acceptable range
+    if (
+      processedColumn.field_order <= 0 ||
+      processedColumn.field_order >= 2147483647
+    ) {
+      throw new Error(
+        'Field order must be a number greater than 0 and less than 2147483647'
+      );
+    }
+
+    return processedColumn;
+  }
+
+  /**
+   * Generate the next available field_order for a table
+   */
+  private async generateFieldOrder(tableId: string): Promise<number> {
+    try {
+      // Get existing columns to find the highest field_order
+      const existingColumns = await this.columnsApiClient.listColumns(tableId);
+
+      let maxOrder = 0;
+      if (
+        !isErrorResponse(existingColumns) &&
+        existingColumns.data &&
+        Array.isArray(existingColumns.data)
+      ) {
+        for (const col of existingColumns.data) {
+          if (col.field_order && col.field_order > maxOrder) {
+            maxOrder = col.field_order;
+          }
+        }
+      }
+
+      // Return next available number (starting from 1 if no columns exist)
+      return maxOrder + 1;
+    } catch (error) {
+      // Fallback to timestamp-based order if there's an error
+      return Math.floor(Date.now() / 1000) % 2147483647;
+    }
+  }
+
+  /**
+   * Transform SDK ColumnQueryOptions to API request format
+   */
+  private transformColumnQueryToApiRequest(
+    options: ColumnQueryOptions
+  ): unknown {
+    const apiRequest: {
+      page: { page_no: number; page_size: number };
+      filters: Array<{ field: string; operator: string; values: unknown[] }>;
+      sort: Array<{ field: string; direction: string }>;
+    } = {
+      page: {
+        page_no: 1,
+        page_size: options.limit || 100,
+      },
+      filters: [],
+      sort: [],
+    };
+
+    // Handle pagination
+    if (options.offset && options.limit) {
+      const pageNo = Math.floor(options.offset / options.limit) + 1;
+      apiRequest.page.page_no = pageNo;
+    }
+
+    // Transform where clause to filters
+    if (options.where) {
+      Object.entries(options.where).forEach(([field, value]) => {
+        if (value !== undefined && value !== null) {
+          apiRequest.filters.push({
+            field,
+            operator: '=',
+            values: [value],
+          });
+        }
+      });
+    }
+
+    // Transform sort
+    if (options.sort) {
+      apiRequest.sort = options.sort.map((s) => ({
+        field: s.field,
+        direction: s.order,
+      }));
+    }
+
+    return apiRequest;
   }
 
   /**
@@ -104,8 +229,18 @@ export class ColumnResource extends BaseResource {
         };
       }
 
+      // Process all columns with defaults and auto-generate field_order
+      const processedColumns: FieldDefinition[] = [];
+      for (const column of columns) {
+        const processedColumn = await this.processColumnDefaults(
+          tableId,
+          column
+        );
+        processedColumns.push(processedColumn);
+      }
+
       const result = await this.columnsApiClient.createColumns(tableId, {
-        columns,
+        columns: processedColumns,
       });
 
       if (isErrorResponse(result)) {
@@ -145,7 +280,13 @@ export class ColumnResource extends BaseResource {
         };
       }
 
-      const result = await this.columnsApiClient.listColumns(tableId, options);
+      // Transform SDK format to API format
+      const apiRequest = this.transformColumnQueryToApiRequest(options);
+
+      const result = await this.columnsApiClient.listColumns(
+        tableId,
+        apiRequest as unknown as ColumnQueryOptions
+      );
 
       if (isErrorResponse(result)) {
         return result;
@@ -204,7 +345,7 @@ export class ColumnResource extends BaseResource {
       }
 
       return {
-        data: result.data,
+        data: result.data as ColumnDetails,
         message: 'Column found successfully',
       };
     } catch (error) {

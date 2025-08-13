@@ -70,7 +70,7 @@ async function cleanup() {
     // Delete table
     try {
       console.log(`🗑️  Deleting table: ${DEMO_TABLE_NAME}`);
-      const result = await client.tables.deleteByName(DEMO_TABLE_NAME);
+      const result = await client.tables.delete(DEMO_TABLE_NAME);
       if (isErrorResponse(result)) {
         console.error(
           `❌ Failed to delete table ${DEMO_TABLE_NAME}:`,
@@ -92,29 +92,6 @@ async function demoTableOperations() {
   console.log('\n🏗️  Starting table operations demo...\n');
 
   try {
-    // 1. Schema generation
-    console.log('📝 1. Generating table schema with AI...');
-    const schemaResult = await client.tables.generateSchema(
-      'Create a comprehensive table for managing user data with text, email, number, currency, checkbox, and dropdown fields'
-    );
-
-    if (isErrorResponse(schemaResult)) {
-      console.error('❌ Schema generation failed:', schemaResult.error);
-    } else {
-      console.log('✅ Schema generated successfully');
-      console.log('   Schema fields:', schemaResult.data.fields?.length || 0);
-    }
-
-    // 2. Currency list
-    console.log('\n💰 2. Getting supported currencies...');
-    const currenciesResult = await client.tables.getCurrencies();
-    if (isErrorResponse(currenciesResult)) {
-      console.error('❌ Failed to get currencies:', currenciesResult.error);
-    } else {
-      console.log('✅ Currencies loaded successfully');
-      console.log('   Total currencies:', currenciesResult.data.length);
-    }
-
     // 3. Create table
     console.log('\n🏗️  3. Creating demo table...');
     const createTableResult = await client.tables.create({
@@ -156,12 +133,9 @@ async function demoTableOperations() {
 
     // 6. Update table (removed setAccess as it doesn't exist)
     console.log('\n✏️  6. Updating table...');
-    const testUpdateTableResult = await client.tables.updateByName(
-      DEMO_TABLE_NAME,
-      {
-        description: 'Updated comprehensive demo table description',
-      }
-    );
+    const testUpdateTableResult = await client.tables.update(DEMO_TABLE_NAME, {
+      description: 'Updated comprehensive demo table description',
+    });
 
     if (isErrorResponse(testUpdateTableResult)) {
       console.error('❌ Failed to update table:', testUpdateTableResult.error);
@@ -378,7 +352,7 @@ async function demoFluentAPI() {
     }
 
     // Cleanup fluent demo table
-    await client.tables.deleteByName('fluent-demo-table');
+    await client.tables.delete('fluent-demo-table');
   } catch (error) {
     console.error('❌ Fluent API demo failed:', error);
   }
