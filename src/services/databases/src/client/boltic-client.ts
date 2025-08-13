@@ -2,7 +2,6 @@ import { ColumnQueryOptions, ColumnUpdateRequest } from '../types/api/column';
 import {
   RecordData,
   RecordDeleteByIdsOptions,
-  RecordDeleteOptions,
   RecordQueryOptions,
   RecordUpdateOptions,
 } from '../types/api/record';
@@ -96,15 +95,13 @@ export class BolticClient {
       findByName: (name: string) => this.tableResource.findByName(name),
       findOne: (options: TableQueryOptions) =>
         this.tableResource.findOne(options),
-      update: (id: string, data: TableUpdateRequest) =>
-        this.tableResource.update(id, data),
-      updateByName: (name: string, data: TableUpdateRequest) =>
-        this.tableResource.updateByName(name, data),
-      delete: (id: string) => this.tableResource.delete(id),
-      deleteByName: (name: string) => this.tableResource.deleteByName(name),
-      generateSchema: (prompt: string) =>
-        this.tableResource.generateSchema(prompt),
-      getCurrencies: () => this.tableResource.getCurrencies(),
+      update: (name: string, data: TableUpdateRequest) =>
+        this.tableResource.update(name, data),
+      delete: (name: string) => this.tableResource.delete(name),
+      rename: (oldName: string, newName: string) =>
+        this.tableResource.rename(oldName, newName),
+      setAccess: (request: { table_name: string; is_shared: boolean }) =>
+        this.tableResource.setAccess(request),
     };
   }
 
@@ -115,6 +112,10 @@ export class BolticClient {
         this.columnResource.create(tableName, column),
       createMany: (tableName: string, columns: FieldDefinition[]) =>
         this.columnResource.createMany(tableName, columns),
+      findAll: (tableName: string, options?: ColumnQueryOptions) =>
+        this.columnResource.list(tableName, options),
+      findOne: (tableName: string, columnName: string) =>
+        this.columnResource.get(tableName, columnName),
       list: (tableName: string, options?: ColumnQueryOptions) =>
         this.columnResource.list(tableName, options),
       get: (tableName: string, columnName: string) =>
@@ -163,8 +164,9 @@ export class BolticClient {
           this.recordResource.update(tableName, options),
         updateById: (recordId: string, data: RecordData) =>
           this.recordResource.updateById(tableName, recordId, data),
-        delete: (options: RecordDeleteOptions) =>
-          this.recordResource.delete(tableName, options),
+
+        deleteById: (recordId: string) =>
+          this.recordResource.deleteById(tableName, recordId),
         deleteByIds: (options: RecordDeleteByIdsOptions) =>
           this.recordResource.deleteByIds(tableName, options),
       }),
@@ -183,6 +185,10 @@ export class BolticClient {
     return {
       insert: (tableName: string, data: RecordData) =>
         this.recordResource.insert(tableName, data),
+      findAll: (tableName: string, options?: RecordQueryOptions) =>
+        this.recordResource.list(tableName, options),
+      findOne: (tableName: string, recordId: string) =>
+        this.recordResource.get(tableName, recordId),
       list: (tableName: string, options?: RecordQueryOptions) =>
         this.recordResource.list(tableName, options),
       get: (tableName: string, recordId: string) =>
@@ -191,8 +197,9 @@ export class BolticClient {
         this.recordResource.update(tableName, options),
       updateById: (tableName: string, recordId: string, data: RecordData) =>
         this.recordResource.updateById(tableName, recordId, data),
-      delete: (tableName: string, options: RecordDeleteOptions) =>
-        this.recordResource.delete(tableName, options),
+
+      deleteById: (tableName: string, recordId: string) =>
+        this.recordResource.deleteById(tableName, recordId),
       deleteByIds: (tableName: string, options: RecordDeleteByIdsOptions) =>
         this.recordResource.deleteByIds(tableName, options),
     };

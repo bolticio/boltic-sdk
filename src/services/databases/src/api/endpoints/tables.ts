@@ -15,8 +15,6 @@ export interface TableEndpoints {
   get: ApiEndpoint;
   update: ApiEndpoint;
   delete: ApiEndpoint;
-  generateSchema: ApiEndpoint;
-  getCurrencies: ApiEndpoint;
 }
 
 export const TABLE_ENDPOINTS: TableEndpoints = {
@@ -51,19 +49,6 @@ export const TABLE_ENDPOINTS: TableEndpoints = {
     method: 'DELETE',
     authenticated: true,
     cached: false,
-  },
-  generateSchema: {
-    path: '/tables/generate-schema',
-    method: 'POST',
-    authenticated: true,
-    cached: false,
-  },
-  getCurrencies: {
-    path: '/tables/currencies',
-    method: 'GET',
-    authenticated: true,
-    cached: true,
-    rateLimit: { requests: 100, window: 300000 }, // 5 minute cache
   },
 };
 

@@ -4,6 +4,11 @@ import { PaginationInfo } from './operations';
 export interface BolticSuccessResponse<T> {
   data: T;
   message?: string;
+  error?: {
+    code?: string;
+    message?: string;
+    meta?: string[];
+  };
 }
 
 export interface BolticListResponse<T> {
@@ -16,10 +21,16 @@ export interface BolticListResponse<T> {
     type: string;
   };
   message?: string;
+  error?: {
+    code?: string;
+    message?: string;
+    meta?: string[];
+  };
 }
 
 export interface BolticErrorResponse {
-  data: {};
+  data?: {};
+  message?: string;
   error: {
     code?: string;
     message?: string;
@@ -37,7 +48,7 @@ export type ApiResponse<T> =
 export function isErrorResponse<T>(
   response: ApiResponse<T>
 ): response is BolticErrorResponse {
-  return 'error' in response;
+  return 'error' in response && response.error !== undefined;
 }
 
 // Helper type to check if response is a list response

@@ -1,7 +1,6 @@
 import {
   RecordData,
   RecordDeleteByIdsOptions,
-  RecordDeleteOptions,
   RecordQueryOptions,
   RecordUpdateByIdOptions,
   RecordUpdateOptions,
@@ -253,39 +252,6 @@ export class RecordsApiClient {
   }
 
   /**
-   * Delete records by filters
-   */
-  async deleteRecords(
-    request: RecordDeleteOptions & { table_id?: string }
-  ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
-    try {
-      const { table_id, ...deleteOptions } = request;
-
-      if (!table_id) {
-        return this.formatErrorResponse(
-          new Error('table_id is required for delete operation')
-        );
-      }
-
-      const endpoint = RECORD_ENDPOINTS.delete;
-      const url = `${this.baseURL}${buildRecordEndpointPath(endpoint, { table_id })}`;
-
-      const response = await this.httpAdapter.request({
-        url,
-        method: endpoint.method,
-        headers: this.buildHeaders(),
-        data: deleteOptions,
-        timeout: this.config.timeout,
-      });
-
-      // Return raw response without transformation
-      return response.data as BolticSuccessResponse<{ message: string }>;
-    } catch (error) {
-      return this.formatErrorResponse(error);
-    }
-  }
-
-  /**
    * Delete records by IDs
    */
   async deleteRecordsByIds(
@@ -316,6 +282,20 @@ export class RecordsApiClient {
     } catch (error) {
       return this.formatErrorResponse(error);
     }
+  }
+
+  /**
+   * Delete a single record by ID
+   */
+  async deleteRecordById(
+    recordId: string,
+    request: { table_id?: string }
+  ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
+    // Use deleteRecordsByIds with a single ID
+    return this.deleteRecordsByIds({
+      record_ids: [recordId],
+      table_id: request.table_id,
+    });
   }
 
   private buildHeaders(): Record<string, string> {

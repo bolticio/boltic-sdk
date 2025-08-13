@@ -2,25 +2,18 @@ import { TablesApiClient } from '../../api/clients/tables-api-client';
 import { ValidationError } from '../../errors/utils';
 import {
   FieldDefinition,
-  FieldType,
   TableCreateRequest,
   TableCreateResponse,
 } from '../../types/api/table';
 import {
   BolticErrorResponse,
   BolticSuccessResponse,
-  isErrorResponse,
 } from '../../types/common/responses';
 
 export interface TableBuilderOptions {
   name: string;
   description?: string;
   is_ai_generated_schema?: boolean;
-}
-
-export interface GenerateSchemaOptions {
-  prompt: string;
-  isTemplate?: boolean;
 }
 
 /**
@@ -389,73 +382,6 @@ export class TableBuilder {
       field_order: this.fields.length + 1,
     });
     return this;
-  }
-
-  /**
-   * Generate schema using AI
-   */
-  async generateFromAI(options: GenerateSchemaOptions): Promise<TableBuilder> {
-    if (!this.tablesApiClient) {
-      throw new Error('TablesApiClient is required for AI schema generation');
-    }
-
-    try {
-      const result = await this.tablesApiClient.generateSchema(options.prompt);
-
-      if (isErrorResponse(result)) {
-        throw new Error(
-          `Schema generation failed: ${result.error.message || 'Unknown error'}`
-        );
-      }
-
-      // Type-safe access to success response data
-      const schemaData = result.data;
-      if (
-        schemaData &&
-        typeof schemaData === 'object' &&
-        'fields' in schemaData
-      ) {
-        const typedData = schemaData as {
-          fields: Array<{ name: string; type: string; description?: string }>;
-          name?: string;
-          description?: string;
-        };
-
-        if (typedData.fields && Array.isArray(typedData.fields)) {
-          this.fields = []; // Clear existing fields
-          typedData.fields.forEach(
-            (
-              field: { name: string; type: string; description?: string },
-              index: number
-            ) => {
-              const fieldDefinition: FieldDefinition = {
-                name: field.name,
-                type: field.type as FieldType,
-                is_nullable: true,
-                is_primary_key: false,
-                is_unique: false,
-                is_indexed: false,
-                field_order: index + 1,
-                description: field.description,
-              };
-              this.fields.push(fieldDefinition);
-            }
-          );
-
-          if (typedData.name) this.tableName = typedData.name;
-          if (typedData.description) this.description = typedData.description;
-        }
-      }
-
-      return this;
-    } catch (error) {
-      throw new ValidationError('Schema generation failed', [
-        {
-          field: 'prompt',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-      ]);
-    }
   }
 
   /**

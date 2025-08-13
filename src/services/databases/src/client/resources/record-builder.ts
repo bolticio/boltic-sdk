@@ -126,6 +126,15 @@ export class RecordBuilder {
   }
 
   /**
+   * Execute findAll operation (alias for list)
+   */
+  async findAll(): Promise<
+    BolticListResponse<RecordWithId> | BolticErrorResponse
+  > {
+    return this.recordResource.list(this.tableName, this.queryOptions);
+  }
+
+  /**
    * Execute findOne operation by getting first result from list
    */
   async findOne(): Promise<
@@ -136,7 +145,7 @@ export class RecordBuilder {
     const result = await this.recordResource.list(this.tableName, queryOptions);
 
     if ('error' in result) {
-      return result;
+      return result as BolticErrorResponse;
     }
 
     // Return the first record or null in success format
@@ -173,18 +182,12 @@ export class RecordBuilder {
   }
 
   /**
-   * Execute delete operation
+   * Execute delete by single ID operation
    */
-  async delete(): Promise<
-    BolticSuccessResponse<{ message: string }> | BolticErrorResponse
-  > {
-    if (!this.queryOptions.filters || this.queryOptions.filters.length === 0) {
-      throw new Error('Delete operation requires filter conditions');
-    }
-
-    return this.recordResource.delete(this.tableName, {
-      filters: this.queryOptions.filters,
-    });
+  async deleteById(
+    id: string
+  ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
+    return this.recordResource.deleteById(this.tableName, id);
   }
 
   /**
@@ -208,6 +211,15 @@ export class RecordBuilder {
    */
   getUpdateData(): RecordData {
     return { ...this.updateData };
+  }
+
+  /**
+   * Execute insert operation
+   */
+  async insert(
+    data: RecordData
+  ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
+    return this.recordResource.insert(this.tableName, data);
   }
 }
 

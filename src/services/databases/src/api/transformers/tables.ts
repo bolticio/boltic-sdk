@@ -34,10 +34,6 @@ export interface TableUpdateApiRequest {
   snapshot?: string;
 }
 
-export interface GenerateSchemaApiRequest {
-  prompt: string;
-}
-
 export interface TableApiResponse {
   data: {
     id: string;
@@ -244,13 +240,4 @@ export function transformTableListResponse(response: TableListApiResponse): {
       type: response.pagination?.type,
     },
   };
-}
-
-/**
- * Transform generate schema request
- */
-export function transformGenerateSchemaRequest(
-  prompt: string
-): GenerateSchemaApiRequest {
-  return { prompt };
 }

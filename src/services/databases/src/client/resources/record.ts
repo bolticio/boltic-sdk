@@ -3,7 +3,6 @@ import { TablesApiClient } from '../../api/clients/tables-api-client';
 import {
   RecordData,
   RecordDeleteByIdsOptions,
-  RecordDeleteOptions,
   RecordQueryOptions,
   RecordUpdateByIdOptions,
   RecordUpdateOptions,
@@ -253,47 +252,6 @@ export class RecordResource {
   }
 
   /**
-   * Delete records by filters
-   */
-  async delete(
-    tableName: string,
-    options: RecordDeleteOptions
-  ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
-    try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
-        return {
-          data: {},
-          error: {
-            code: 'TABLE_NOT_FOUND',
-            message: `Table '${tableName}' not found`,
-          },
-        };
-      }
-
-      // Include table_id in the request payload
-      const requestOptions = { ...options, table_id: tableId };
-      const result = await this.apiClient.deleteRecords(requestOptions);
-
-      if (isErrorResponse(result)) {
-        return result;
-      }
-
-      return result as BolticSuccessResponse<{ message: string }>;
-    } catch (error) {
-      return {
-        data: {},
-        error: {
-          code: 'DELETE_ERROR',
-          message:
-            error instanceof Error ? error.message : 'Unknown error occurred',
-        },
-      };
-    }
-  }
-
-  /**
    * Delete records by IDs
    */
   async deleteByIds(
@@ -327,6 +285,47 @@ export class RecordResource {
         data: {},
         error: {
           code: 'DELETE_BY_IDS_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
+      };
+    }
+  }
+
+  /**
+   * Delete a single record by ID
+   */
+  async deleteById(
+    tableName: string,
+    recordId: string
+  ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
+    try {
+      // Get table ID first
+      const tableId = await this.getTableId(tableName);
+      if (!tableId) {
+        return {
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
+        };
+      }
+
+      const result = await this.apiClient.deleteRecordById(recordId, {
+        table_id: tableId,
+      });
+
+      if (isErrorResponse(result)) {
+        return result;
+      }
+
+      return result as BolticSuccessResponse<{ message: string }>;
+    } catch (error) {
+      return {
+        data: {},
+        error: {
+          code: 'DELETE_BY_ID_ERROR',
           message:
             error instanceof Error ? error.message : 'Unknown error occurred',
         },

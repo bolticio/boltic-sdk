@@ -1,7 +1,6 @@
 import {
   RecordData,
   RecordDeleteByIdsOptions,
-  RecordDeleteOptions,
   RecordDeleteResponse,
   RecordQueryOptions,
   RecordUpdateByIdOptions,
@@ -98,14 +97,6 @@ export function transformUpdateByIdRequest(
 ): RecordUpdateByIdApiRequest {
   return {
     data: sdkRequest.set,
-  };
-}
-
-export function transformDeleteRequest(
-  sdkRequest: RecordDeleteOptions
-): RecordDeleteApiRequest {
-  return {
-    filters: sdkRequest.filters,
   };
 }
 

@@ -181,6 +181,23 @@ export class TablesApiClient {
     }
   ): Promise<BolticSuccessResponse<TableRecord> | BolticErrorResponse> {
     try {
+      // First get the existing table data
+      const existingTable = await this.getTable(tableId);
+
+      if ('error' in existingTable) {
+        return existingTable;
+      }
+
+      if (!existingTable.data) {
+        return {
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table with ID '${tableId}' not found`,
+          },
+        };
+      }
+
       const endpoint = TABLE_ENDPOINTS.update;
       const url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
 
@@ -218,91 +235,6 @@ export class TablesApiClient {
 
       // Return raw response without transformation
       return response.data as BolticSuccessResponse<{ message: string }>;
-    } catch (error) {
-      return this.formatErrorResponse(error);
-    }
-  }
-
-  /**
-   * Generate table schema using AI
-   */
-  async generateSchema(prompt: string): Promise<
-    | BolticSuccessResponse<{
-        fields: Array<{
-          name: string;
-          type: string;
-          description?: string;
-        }>;
-        name?: string;
-        description?: string;
-      }>
-    | BolticErrorResponse
-  > {
-    try {
-      if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
-        return this.formatErrorResponse(
-          new Error('Prompt is required for schema generation')
-        );
-      }
-
-      const endpoint = TABLE_ENDPOINTS.generateSchema;
-      const url = `${this.baseURL}${endpoint.path}`;
-
-      const response = await this.httpAdapter.request({
-        url,
-        method: endpoint.method,
-        headers: this.buildHeaders(),
-        data: { prompt: prompt.trim() },
-        timeout: this.config.timeout || 30000, // Longer timeout for AI operations
-      });
-
-      // Return raw response without transformation
-      return response.data as BolticSuccessResponse<{
-        fields: Array<{
-          name: string;
-          type: string;
-          description?: string;
-        }>;
-        name?: string;
-        description?: string;
-      }>;
-    } catch (error) {
-      return this.formatErrorResponse(error);
-    }
-  }
-
-  /**
-   * Get available currencies from the API
-   */
-  async getCurrencies(): Promise<
-    | BolticSuccessResponse<
-        Array<{
-          code: string;
-          name: string;
-          symbol: string;
-        }>
-      >
-    | BolticErrorResponse
-  > {
-    try {
-      const endpoint = TABLE_ENDPOINTS.getCurrencies;
-      const url = `${this.baseURL}${endpoint.path}`;
-
-      const response = await this.httpAdapter.request({
-        url,
-        method: endpoint.method,
-        headers: this.buildHeaders(),
-        timeout: this.config.timeout,
-      });
-
-      // Return raw response without transformation
-      return response.data as BolticSuccessResponse<
-        Array<{
-          code: string;
-          name: string;
-          symbol: string;
-        }>
-      >;
     } catch (error) {
       return this.formatErrorResponse(error);
     }

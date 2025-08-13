@@ -26,6 +26,27 @@ export interface ColumnListOptions extends ColumnQueryOptions {
   pageSize?: number;
 }
 
+// API request format interfaces
+export interface ApiFilter {
+  field: string;
+  operator: string;
+  values: unknown[];
+}
+
+export interface ApiSort {
+  field: string;
+  direction: 'asc' | 'desc';
+}
+
+export interface ColumnApiListRequest {
+  page: {
+    page_no: number;
+    page_size: number;
+  };
+  filters: ApiFilter[];
+  sort: ApiSort[];
+}
+
 // Boltic API Response Structure interfaces
 interface BolticSuccessResponse<T = unknown> {
   data: T;
@@ -182,10 +203,23 @@ export class ColumnsApiClient {
   ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
       // Use listColumns with filter on ID since get endpoint is not available
-      const listResult = await this.listColumns(tableId, {
-        where: { id: columnId },
-        limit: 1,
-      });
+      // Transform to API format
+      const apiRequest = {
+        page: { page_no: 1, page_size: 1 },
+        filters: [
+          {
+            field: 'id',
+            operator: '=',
+            values: [columnId],
+          },
+        ],
+        sort: [],
+      };
+
+      const listResult = await this.listColumns(
+        tableId,
+        apiRequest as unknown as ColumnListOptions
+      );
 
       if ('error' in listResult) {
         return listResult;
@@ -222,6 +256,29 @@ export class ColumnsApiClient {
     updates: ColumnUpdateRequest
   ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
+      // First get the existing column data
+      const existingColumn = await this.getColumn(tableId, columnId);
+
+      if ('error' in existingColumn) {
+        return existingColumn;
+      }
+
+      if (!existingColumn.data) {
+        return {
+          data: {},
+          error: {
+            code: 'COLUMN_NOT_FOUND',
+            message: `Column with ID '${columnId}' not found`,
+          },
+        };
+      }
+
+      // Merge existing data with updates (updates override existing values)
+      const mergedData = {
+        ...existingColumn.data,
+        ...updates,
+      };
+
       const endpoint = COLUMN_ENDPOINTS.update;
       const url = `${this.baseURL}${buildEndpointPath(endpoint, {
         table_id: tableId,
@@ -232,7 +289,7 @@ export class ColumnsApiClient {
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: updates,
+        data: mergedData,
         timeout: this.config.timeout,
       });
 
@@ -281,11 +338,23 @@ export class ColumnsApiClient {
     BolticSuccessResponse<ColumnDetails | null> | BolticErrorResponse
   > {
     try {
-      const listResult = await this.listColumns(tableId, {
-        where: { name: columnName },
-        limit: 1,
-      });
+      // Transform to API format
+      const apiRequest = {
+        page: { page_no: 1, page_size: 1 },
+        filters: [
+          {
+            field: 'name',
+            operator: '=',
+            values: [columnName],
+          },
+        ],
+        sort: [],
+      };
 
+      const listResult = await this.listColumns(
+        tableId,
+        apiRequest as unknown as ColumnListOptions
+      );
       if ('error' in listResult) {
         return listResult;
       }
