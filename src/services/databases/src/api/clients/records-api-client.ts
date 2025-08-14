@@ -6,17 +6,19 @@ import {
   RecordUpdateOptions,
   RecordWithId,
 } from '../../types/api/record';
-import type { Environment } from '../../types/config/environment';
+import type { Environment, Region } from '../../types/config/environment';
+import { REGION_CONFIGS } from '../../types/config/environment';
 import { createHttpAdapter } from '../../utils/http';
 import { HttpAdapter } from '../../utils/http/adapter';
 import {
-  RECORD_ENDPOINTS,
   buildRecordEndpointPath,
+  RECORD_ENDPOINTS,
 } from '../endpoints/records';
 
 export interface RecordsApiClientConfig {
   apiKey: string;
   environment?: Environment;
+  region?: Region;
   timeout?: number;
   debug?: boolean;
   retryAttempts?: number;
@@ -66,19 +68,26 @@ export class RecordsApiClient {
     this.config = { apiKey, ...config };
     this.httpAdapter = createHttpAdapter();
 
-    // Set baseURL based on environment
-    const environment = config.environment || 'sit';
-    this.baseURL = this.getBaseURL(environment);
+    // Set baseURL based on environment and region
+    const environment = config.environment || 'prod';
+    const region = config.region || 'asia-south1'; // Default to asia-south1 for legacy support
+    this.baseURL = this.getBaseURL(environment, region);
   }
 
-  private getBaseURL(environment: Environment): string {
-    const envConfigs = {
-      local: 'http://localhost:8000',
-      sit: 'https://asia-south1.api.fcz0.de/service/panel/boltic-tables/v1',
-      uat: 'https://asia-south1.api.uat.fcz0.de/service/panel/boltic-tables/v1',
-      prod: 'https://asia-south1.api.boltic.io/service/panel/boltic-tables/v1',
-    };
-    return envConfigs[environment];
+  private getBaseURL(environment: Environment, region: Region): string {
+    const regionConfig = REGION_CONFIGS[region];
+    if (!regionConfig) {
+      throw new Error(`Unsupported region: ${region}`);
+    }
+
+    const envConfig = regionConfig[environment];
+    if (!envConfig) {
+      throw new Error(
+        `Unsupported environment: ${environment} for region: ${region}`
+      );
+    }
+
+    return `${envConfig.baseURL}/v1`;
   }
 
   /**
