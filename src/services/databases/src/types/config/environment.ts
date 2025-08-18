@@ -19,16 +19,15 @@ export const REGION_CONFIGS: Record<
       debug: true,
     },
     sit: {
-      baseURL: 'https://asia-south1.api.fcz0.de/service/panel/boltic-tables',
+      baseURL: 'https://asia-south1.api.fcz0.de/service/sdk/boltic-tables',
       timeout: 15000,
     },
     uat: {
-      baseURL:
-        'https://asia-south1.api.uat.fcz0.de/service/panel/boltic-tables',
+      baseURL: 'https://asia-south1.api.uat.fcz0.de/service/sdk/boltic-tables',
       timeout: 15000,
     },
     prod: {
-      baseURL: 'https://asia-south1.api.boltic.io/service/panel/boltic-tables',
+      baseURL: 'https://asia-south1.api.boltic.io/service/sdk/boltic-tables',
       timeout: 10000,
     },
   },
@@ -39,16 +38,15 @@ export const REGION_CONFIGS: Record<
       debug: true,
     },
     sit: {
-      baseURL: 'https://us-central1.api.fcz0.de/service/panel/boltic-tables',
+      baseURL: 'https://us-central1.api.fcz0.de/service/sdk/boltic-tables',
       timeout: 15000,
     },
     uat: {
-      baseURL:
-        'https://us-central1.api.uat.fcz0.de/service/panel/boltic-tables',
+      baseURL: 'https://us-central1.api.uat.fcz0.de/service/sdk/boltic-tables',
       timeout: 15000,
     },
     prod: {
-      baseURL: 'https://us-central1.api.boltic.io/service/panel/boltic-tables',
+      baseURL: 'https://us-central1.api.boltic.io/service/sdk/boltic-tables',
       timeout: 10000,
     },
   },
