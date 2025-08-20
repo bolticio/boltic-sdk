@@ -55,7 +55,7 @@ export class ColumnHelpers {
       is_visible: true,
       is_readonly: false,
       field_order: 1,
-      alignment: 'center',
+      alignment: 'left',
       multiple_selections: false,
       ...column,
     };

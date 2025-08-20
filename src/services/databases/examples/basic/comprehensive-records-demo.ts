@@ -388,7 +388,7 @@ class ComprehensiveRecordsDemo {
     }
 
     try {
-      const cleanupResult = await this.client.records.deleteByIds(
+      const cleanupResult = await this.client.records.delete(
         DEMO_CONFIG.tableName,
         {
           record_ids: this.createdRecordIds,

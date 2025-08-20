@@ -1,3 +1,5 @@
+import { ApiFilter } from '../../utils/filters/filter-mapper';
+
 export interface RecordData {
   [fieldName: string]: unknown;
 }
@@ -35,14 +37,14 @@ export interface RecordQueryOptions {
     page_no: number;
     page_size: number;
   };
-  filters?: Record<string, unknown>[];
+  filters?: ApiFilter[] | Record<string, unknown>[];
   sort?: Record<string, unknown>[];
   fields?: string[];
 }
 
 export interface RecordUpdateOptions {
   set: RecordData;
-  filters: Record<string, unknown>[];
+  filters: ApiFilter[] | Record<string, unknown>[];
 }
 
 export interface RecordUpdateByIdOptions {
@@ -50,8 +52,11 @@ export interface RecordUpdateByIdOptions {
   set: RecordData;
 }
 
-export interface RecordDeleteByIdsOptions {
-  record_ids: string[];
+// Unified delete options interface that supports both record_ids and filters
+export interface RecordDeleteOptions {
+  // Either record_ids or filters must be provided, but not both
+  record_ids?: string[];
+  filters?: ApiFilter[] | Record<string, unknown>;
 }
 
 export interface RecordWithId extends RecordData {

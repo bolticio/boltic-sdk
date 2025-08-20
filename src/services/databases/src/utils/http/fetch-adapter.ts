@@ -25,7 +25,10 @@ export class FetchAdapter implements HttpAdapter {
       signal: config.signal,
     };
 
-    if (config.data && ['POST', 'PUT', 'PATCH'].includes(config.method)) {
+    if (
+      config.data &&
+      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(config.method)
+    ) {
       init.body = JSON.stringify(config.data);
     }
 

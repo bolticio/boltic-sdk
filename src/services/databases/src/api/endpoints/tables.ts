@@ -2,7 +2,6 @@ export interface ApiEndpoint {
   path: string;
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   authenticated: boolean;
-  cached?: boolean;
   rateLimit?: {
     requests: number;
     window: number; // in milliseconds
@@ -22,33 +21,28 @@ export const TABLE_ENDPOINTS: TableEndpoints = {
     path: '/tables/list',
     method: 'POST',
     authenticated: true,
-    cached: true,
     rateLimit: { requests: 200, window: 60000 },
   },
   create: {
     path: '/tables',
     method: 'POST',
     authenticated: true,
-    cached: false,
   },
   get: {
     path: '/tables/{table_id}',
     method: 'GET',
     authenticated: true,
-    cached: true,
     rateLimit: { requests: 300, window: 60000 },
   },
   update: {
     path: '/tables/{table_id}',
     method: 'PATCH',
     authenticated: true,
-    cached: false,
   },
   delete: {
     path: '/tables/{table_id}',
     method: 'DELETE',
     authenticated: true,
-    cached: false,
   },
 };
 

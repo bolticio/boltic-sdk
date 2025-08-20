@@ -157,7 +157,7 @@ async function demoColumnOperations() {
   try {
     // 1. List existing columns
     console.log('📋 1. Listing existing columns...');
-    const listResult = await client.columns.list(DEMO_TABLE_NAME);
+    const listResult = await client.columns.findAll(DEMO_TABLE_NAME);
     if (isErrorResponse(listResult)) {
       console.error('❌ Failed to list columns:', listResult.error);
     } else {
@@ -167,7 +167,10 @@ async function demoColumnOperations() {
 
     // 2. Get specific column
     console.log('\n🔍 2. Getting specific column...');
-    const getResult = await client.columns.get(DEMO_TABLE_NAME, 'text_column');
+    const getResult = await client.columns.findOne(
+      DEMO_TABLE_NAME,
+      'text_column'
+    );
     if (isErrorResponse(getResult)) {
       console.error('❌ Failed to get column:', getResult.error);
     } else {
@@ -282,7 +285,7 @@ async function demoRecordOperations() {
 
     // 5. Delete record
     console.log('\n🗑️  5. Deleting record...');
-    const deleteResult = await client.records.deleteByIds(DEMO_TABLE_NAME, {
+    const deleteResult = await client.records.delete(DEMO_TABLE_NAME, {
       record_ids: [recordId],
     });
     if (isErrorResponse(deleteResult)) {

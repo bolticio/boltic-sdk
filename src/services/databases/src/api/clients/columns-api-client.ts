@@ -11,6 +11,7 @@ import { REGION_CONFIGS } from '../../types/config/environment';
 import { createHttpAdapter } from '../../utils/http';
 import { HttpAdapter } from '../../utils/http/adapter';
 import { buildEndpointPath, COLUMN_ENDPOINTS } from '../endpoints/columns';
+import { transformColumnUpdateRequest } from '../transformers/columns';
 
 export interface ColumnsApiClientConfig {
   apiKey: string;
@@ -211,46 +212,27 @@ export class ColumnsApiClient {
     columnId: string
   ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
-      // Use listColumns with filter on ID since get endpoint is not available
-      // Transform to API format
-      const apiRequest = {
-        page: { page_no: 1, page_size: 1 },
-        filters: [
-          {
-            field: 'id',
-            operator: '=',
-            values: [columnId],
-          },
-        ],
-        sort: [],
-      };
+      const endpoint = COLUMN_ENDPOINTS.get;
+      const url = `${this.baseURL}${buildEndpointPath(endpoint, {
+        table_id: tableId,
+        field_id: columnId,
+      })}`;
 
-      const listResult = await this.listColumns(
-        tableId,
-        apiRequest as unknown as ColumnListOptions
-      );
+      const response = await this.httpAdapter.request({
+        url,
+        method: endpoint.method,
+        headers: this.buildHeaders(),
+        timeout: this.config.timeout,
+      });
 
-      if ('error' in listResult) {
-        return listResult;
+      if (this.config.debug) {
+        console.log(
+          'Column API Response:',
+          JSON.stringify(response.data, null, 2)
+        );
       }
-
-      const column = listResult.data[0] || null;
-
-      if (!column) {
-        return {
-          data: {},
-          error: {
-            code: 'COLUMN_NOT_FOUND',
-            message: `Column with ID '${columnId}' not found in table`,
-            meta: ['Column not found'],
-          },
-        };
-      }
-
-      return {
-        data: column,
-        message: 'Column retrieved successfully',
-      };
+      // Return raw response without transformation
+      return response.data as BolticSuccessResponse<ColumnDetails>;
     } catch (error) {
       return this.formatErrorResponse(error);
     }
@@ -265,40 +247,20 @@ export class ColumnsApiClient {
     updates: ColumnUpdateRequest
   ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
-      // First get the existing column data
-      const existingColumn = await this.getColumn(tableId, columnId);
-
-      if ('error' in existingColumn) {
-        return existingColumn;
-      }
-
-      if (!existingColumn.data) {
-        return {
-          data: {},
-          error: {
-            code: 'COLUMN_NOT_FOUND',
-            message: `Column with ID '${columnId}' not found`,
-          },
-        };
-      }
-
-      // Merge existing data with updates (updates override existing values)
-      const mergedData = {
-        ...existingColumn.data,
-        ...updates,
-      };
-
       const endpoint = COLUMN_ENDPOINTS.update;
       const url = `${this.baseURL}${buildEndpointPath(endpoint, {
         table_id: tableId,
         field_id: columnId,
       })}`;
 
+      // Transform the updates to API format
+      const transformedUpdates = transformColumnUpdateRequest(updates);
+
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: mergedData,
+        data: transformedUpdates,
         timeout: this.config.timeout,
       });
 
@@ -367,7 +329,6 @@ export class ColumnsApiClient {
       if ('error' in listResult) {
         return listResult;
       }
-
       const column = listResult.data[0] || null;
       return {
         data: column,
@@ -379,6 +340,38 @@ export class ColumnsApiClient {
   }
 
   /**
+   * Helper function to convert ColumnDetails to ColumnUpdateRequest format
+   */
+  private convertColumnDetailsToUpdateRequest(
+    columnDetails: ColumnDetails
+  ): Record<string, unknown> {
+    return {
+      name: columnDetails.name,
+      type: columnDetails.type,
+      description: columnDetails.description,
+      is_nullable: columnDetails.is_nullable,
+      is_unique: columnDetails.is_unique,
+      is_indexed: columnDetails.is_indexed,
+      is_visible: columnDetails.is_visible,
+      is_primary_key: columnDetails.is_primary_key,
+      is_readonly: columnDetails.is_readonly,
+      default_value: columnDetails.default_value,
+      field_order: columnDetails.field_order,
+      alignment: columnDetails.alignment,
+      decimals: columnDetails.decimals,
+      currency_format: columnDetails.currency_format,
+      selection_source: columnDetails.selection_source,
+      selectable_items: columnDetails.selectable_items,
+      multiple_selections: columnDetails.multiple_selections,
+      phone_format: columnDetails.phone_format,
+      date_format: columnDetails.date_format,
+      time_format: columnDetails.time_format,
+      timezone: columnDetails.timezone,
+      vector_dimension: columnDetails.vector_dimension,
+    };
+  }
+
+  /**
    * Update a column by name
    */
   async updateColumnByName(
@@ -387,7 +380,7 @@ export class ColumnsApiClient {
     updates: ColumnUpdateRequest
   ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
-      // First find the column to get its ID
+      // First find the column to get its current data
       const findResult = await this.findColumnByName(tableId, columnName);
 
       if ('error' in findResult) {
@@ -405,8 +398,23 @@ export class ColumnsApiClient {
         };
       }
 
-      // Update using the column ID
-      return await this.updateColumn(tableId, findResult.data.id, updates);
+      // Convert existing column details to update request format
+      const existingColumnAsUpdate = this.convertColumnDetailsToUpdateRequest(
+        findResult.data
+      );
+
+      // Merge existing data with updates (updates override existing values)
+      const mergedUpdates: ColumnUpdateRequest = {
+        ...existingColumnAsUpdate,
+        ...updates,
+      } as ColumnUpdateRequest;
+
+      // Update using the column ID with merged data
+      return await this.updateColumn(
+        tableId,
+        findResult.data.id,
+        mergedUpdates
+      );
     } catch (error) {
       return this.formatErrorResponse(error);
     }
@@ -450,7 +458,6 @@ export class ColumnsApiClient {
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'x-boltic-token': this.config.apiKey,
-      'User-Agent': '@boltic/database-js/1.0.0',
     };
   }
 
