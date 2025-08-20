@@ -1,6 +1,6 @@
 import {
   RecordData,
-  RecordDeleteByIdsOptions,
+  RecordDeleteOptions,
   RecordQueryOptions,
   RecordUpdateByIdOptions,
   RecordUpdateOptions,
@@ -14,6 +14,7 @@ import {
   buildRecordEndpointPath,
   RECORD_ENDPOINTS,
 } from '../endpoints/records';
+import { transformDeleteRequest } from '../transformers/records';
 
 export interface RecordsApiClientConfig {
   apiKey: string;
@@ -261,28 +262,31 @@ export class RecordsApiClient {
   }
 
   /**
-   * Delete records by IDs
+   * Unified delete records method that supports both record_ids and filters
    */
-  async deleteRecordsByIds(
-    request: RecordDeleteByIdsOptions & { table_id?: string }
+  async deleteRecords(
+    request: RecordDeleteOptions & { table_id?: string }
   ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
-      const { table_id, ...deleteOptions } = request;
+      const { table_id } = request;
 
       if (!table_id) {
         return this.formatErrorResponse(
-          new Error('table_id is required for deleteByIds operation')
+          new Error('table_id is required for delete operation')
         );
       }
 
-      const endpoint = RECORD_ENDPOINTS.deleteByIds;
+      // Transform the request to API format
+      const transformedRequest = transformDeleteRequest(request);
+
+      const endpoint = RECORD_ENDPOINTS.delete;
       const url = `${this.baseURL}${buildRecordEndpointPath(endpoint, { table_id })}`;
 
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: deleteOptions,
+        data: transformedRequest,
         timeout: this.config.timeout,
       });
 
@@ -300,8 +304,8 @@ export class RecordsApiClient {
     recordId: string,
     request: { table_id?: string }
   ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
-    // Use deleteRecordsByIds with a single ID
-    return this.deleteRecordsByIds({
+    // Use deleteRecords with a single ID
+    return this.deleteRecords({
       record_ids: [recordId],
       table_id: request.table_id,
     });
@@ -312,7 +316,6 @@ export class RecordsApiClient {
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'x-boltic-token': this.config.apiKey,
-      'User-Agent': '@boltic/database-js/1.0.0',
     };
   }
 

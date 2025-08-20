@@ -82,6 +82,7 @@ export interface TableRecord {
   updated_at: string;
   updated_by: string;
   snapshot_url?: string;
+  account_status: 'active' | 'inactive' | 'deleted';
   source?: 'boltic' | 'copilot';
 }
 

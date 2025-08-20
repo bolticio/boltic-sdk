@@ -84,12 +84,12 @@ export class ColumnBuilder {
   }
 
   /**
-   * Execute list operation (was findAll)
+   * Execute findAll operation
    */
-  async list(): Promise<
+  async findAll(): Promise<
     BolticListResponse<ColumnDetails> | BolticErrorResponse
   > {
-    return this.columnResource.list(this.tableName, this.queryOptions);
+    return this.columnResource.findAll(this.tableName, this.queryOptions);
   }
 
   /**

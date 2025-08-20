@@ -1,7 +1,7 @@
 import { ColumnQueryOptions, ColumnUpdateRequest } from '../types/api/column';
 import {
   RecordData,
-  RecordDeleteByIdsOptions,
+  RecordDeleteOptions,
   RecordQueryOptions,
   RecordUpdateOptions,
 } from '../types/api/record';
@@ -113,13 +113,11 @@ export class BolticClient {
       createMany: (tableName: string, columns: FieldDefinition[]) =>
         this.columnResource.createMany(tableName, columns),
       findAll: (tableName: string, options?: ColumnQueryOptions) =>
-        this.columnResource.list(tableName, options),
+        this.columnResource.findAll(tableName, options),
       findOne: (tableName: string, columnName: string) =>
         this.columnResource.get(tableName, columnName),
-      list: (tableName: string, options?: ColumnQueryOptions) =>
-        this.columnResource.list(tableName, options),
-      get: (tableName: string, columnName: string) =>
-        this.columnResource.get(tableName, columnName),
+      findById: (tableName: string, columnId: string) =>
+        this.columnResource.findById(tableName, columnId),
       update: (
         tableName: string,
         columnName: string,
@@ -143,8 +141,8 @@ export class BolticClient {
       columns: () => ({
         create: (column: FieldDefinition) =>
           this.columnResource.create(tableName, column),
-        list: (options?: ColumnQueryOptions) =>
-          this.columnResource.list(tableName, options),
+        findAll: (options?: ColumnQueryOptions) =>
+          this.columnResource.findAll(tableName, options),
         get: (columnName: string) =>
           this.columnResource.get(tableName, columnName),
         update: (columnName: string, updates: ColumnUpdateRequest) =>
@@ -165,10 +163,13 @@ export class BolticClient {
         updateById: (recordId: string, data: RecordData) =>
           this.recordResource.updateById(tableName, recordId, data),
 
+        // Unified delete method
+        delete: (options: RecordDeleteOptions) =>
+          this.recordResource.delete(tableName, options),
+
+        // Single record delete method
         deleteById: (recordId: string) =>
           this.recordResource.deleteById(tableName, recordId),
-        deleteByIds: (options: RecordDeleteByIdsOptions) =>
-          this.recordResource.deleteByIds(tableName, options),
       }),
 
       // Fluent record builder for this table
@@ -198,10 +199,13 @@ export class BolticClient {
       updateById: (tableName: string, recordId: string, data: RecordData) =>
         this.recordResource.updateById(tableName, recordId, data),
 
+      // Unified delete method
+      delete: (tableName: string, options: RecordDeleteOptions) =>
+        this.recordResource.delete(tableName, options),
+
+      // Single record delete method
       deleteById: (tableName: string, recordId: string) =>
         this.recordResource.deleteById(tableName, recordId),
-      deleteByIds: (tableName: string, options: RecordDeleteByIdsOptions) =>
-        this.recordResource.deleteByIds(tableName, options),
     };
   }
 

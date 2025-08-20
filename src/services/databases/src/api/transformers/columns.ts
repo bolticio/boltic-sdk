@@ -128,7 +128,7 @@ function transformFieldDefinition(field: FieldDefinition): FieldDefinition {
     is_readonly: field.is_readonly ?? false,
     is_indexed: field.is_indexed ?? false,
     field_order: field.field_order ?? 1,
-    alignment: field.alignment ?? 'center',
+    alignment: field.alignment ?? 'left',
     timezone: field.timezone ?? undefined,
     date_format: field.date_format
       ? transformDateFormat(field.date_format as keyof typeof DateFormatEnum)

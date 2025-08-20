@@ -2,7 +2,7 @@ import { RecordsApiClient } from '../../api/clients/records-api-client';
 import { TablesApiClient } from '../../api/clients/tables-api-client';
 import {
   RecordData,
-  RecordDeleteByIdsOptions,
+  RecordDeleteOptions,
   RecordQueryOptions,
   RecordUpdateByIdOptions,
   RecordUpdateOptions,
@@ -252,11 +252,11 @@ export class RecordResource {
   }
 
   /**
-   * Delete records by IDs
+   * Unified delete method that supports both record IDs and filters
    */
-  async deleteByIds(
+  async delete(
     tableName: string,
-    options: RecordDeleteByIdsOptions
+    options: RecordDeleteOptions
   ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
       // Get table ID first
@@ -273,7 +273,7 @@ export class RecordResource {
 
       // Include table_id in the request payload
       const requestOptions = { ...options, table_id: tableId };
-      const result = await this.apiClient.deleteRecordsByIds(requestOptions);
+      const result = await this.apiClient.deleteRecords(requestOptions);
 
       if (isErrorResponse(result)) {
         return result;
@@ -284,7 +284,7 @@ export class RecordResource {
       return {
         data: {},
         error: {
-          code: 'DELETE_BY_IDS_ERROR',
+          code: 'DELETE_ERROR',
           message:
             error instanceof Error ? error.message : 'Unknown error occurred',
         },

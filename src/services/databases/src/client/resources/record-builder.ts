@@ -1,6 +1,7 @@
 import {
   RecordData,
   RecordQueryOptions,
+  RecordUpdateOptions,
   RecordWithId,
 } from '../../types/api/record';
 import {
@@ -42,7 +43,7 @@ export class RecordBuilder {
       this.queryOptions.filters!.push({
         field,
         operator: 'equals',
-        value,
+        values: [value],
       });
     });
 
@@ -157,19 +158,62 @@ export class RecordBuilder {
   }
 
   /**
-   * Execute update operation
+   * Build where conditions from filters for API consumption
+   */
+  private buildWhereConditions(): Record<string, unknown> {
+    const where: Record<string, unknown> = {};
+
+    if (this.queryOptions.filters) {
+      this.queryOptions.filters.forEach((filter) => {
+        // Handle both ApiFilter and legacy Record<string, unknown> formats
+        if ('field' in filter && 'values' in filter) {
+          // ApiFilter format
+          const apiFilter = filter as {
+            field: string;
+            operator: string;
+            values: unknown[];
+          };
+          const fieldName = String(apiFilter.field);
+          if (apiFilter.operator === 'equals') {
+            where[fieldName] = apiFilter.values[0];
+          } else if (apiFilter.operator === 'contains') {
+            where[fieldName] = { $like: `%${String(apiFilter.values[0])}%` };
+          } else {
+            // For other operators, convert them appropriately
+            where[fieldName] = apiFilter.values[0];
+          }
+        } else {
+          // Legacy Record<string, unknown> format
+          Object.assign(where, filter);
+        }
+      });
+    }
+
+    return where;
+  }
+
+  /**
+   * Execute update operation - requires filters or record IDs
    */
   async update(): Promise<
     BolticListResponse<RecordWithId> | BolticErrorResponse
   > {
-    if (!this.queryOptions.filters || this.queryOptions.filters.length === 0) {
-      throw new Error('Update operation requires filter conditions');
+    if (!this.updateData) {
+      return {
+        data: [],
+        error: {
+          code: 'MISSING_UPDATE_DATA',
+          message: 'Update data is required for update operation',
+        },
+      };
     }
 
-    return this.recordResource.update(this.tableName, {
+    const updateOptions: RecordUpdateOptions = {
       set: this.updateData,
-      filters: this.queryOptions.filters,
-    });
+      filters: this.queryOptions.filters || [],
+    };
+
+    return this.recordResource.update(this.tableName, updateOptions);
   }
 
   /**
@@ -196,7 +240,31 @@ export class RecordBuilder {
   async deleteByIds(
     ids: string[]
   ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
-    return this.recordResource.deleteByIds(this.tableName, { record_ids: ids });
+    return this.recordResource.delete(this.tableName, { record_ids: ids });
+  }
+
+  /**
+   * Execute delete operation using filters
+   */
+  async delete(): Promise<
+    BolticSuccessResponse<{ message: string }> | BolticErrorResponse
+  > {
+    if (!this.queryOptions.filters || this.queryOptions.filters.length === 0) {
+      return {
+        data: {},
+        error: {
+          code: 'MISSING_DELETE_CONDITIONS',
+          message:
+            'Filter conditions are required for delete operation. Use where() to specify conditions.',
+        },
+      };
+    }
+
+    const deleteOptions = {
+      filters: this.buildWhereConditions(),
+    };
+
+    return this.recordResource.delete(this.tableName, deleteOptions);
   }
 
   /**

@@ -2,7 +2,6 @@ export interface RecordApiEndpoint {
   path: string;
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   authenticated: boolean;
-  cached?: boolean;
   rateLimit?: {
     requests: number;
     window: number; // in milliseconds
@@ -15,7 +14,7 @@ export interface RecordEndpoints {
   get: RecordApiEndpoint;
   update: RecordApiEndpoint;
   updateById: RecordApiEndpoint;
-  deleteByIds: RecordApiEndpoint;
+  delete: RecordApiEndpoint;
 }
 
 export const RECORD_ENDPOINTS: RecordEndpoints = {
@@ -23,40 +22,34 @@ export const RECORD_ENDPOINTS: RecordEndpoints = {
     path: '/tables/{table_id}/records',
     method: 'POST',
     authenticated: true,
-    cached: false,
   },
   list: {
     path: '/tables/{table_id}/records/list',
     method: 'POST',
     authenticated: true,
-    cached: true,
     rateLimit: { requests: 200, window: 60000 },
   },
   get: {
     path: '/tables/{table_id}/records/{record_id}',
     method: 'GET',
     authenticated: true,
-    cached: true,
     rateLimit: { requests: 200, window: 60000 },
   },
   update: {
     path: '/tables/{table_id}/records',
     method: 'PATCH',
     authenticated: true,
-    cached: false,
   },
   updateById: {
     path: '/tables/{table_id}/records/{record_id}',
     method: 'PATCH',
     authenticated: true,
-    cached: false,
   },
 
-  deleteByIds: {
+  delete: {
     path: '/tables/{table_id}/records/list',
     method: 'DELETE',
     authenticated: true,
-    cached: false,
   },
 };
 

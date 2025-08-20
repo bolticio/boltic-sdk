@@ -190,23 +190,6 @@ export class TablesApiClient {
     }
   ): Promise<BolticSuccessResponse<TableRecord> | BolticErrorResponse> {
     try {
-      // First get the existing table data
-      const existingTable = await this.getTable(tableId);
-
-      if ('error' in existingTable) {
-        return existingTable;
-      }
-
-      if (!existingTable.data) {
-        return {
-          data: {},
-          error: {
-            code: 'TABLE_NOT_FOUND',
-            message: `Table with ID '${tableId}' not found`,
-          },
-        };
-      }
-
       const endpoint = TABLE_ENDPOINTS.update;
       const url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
 
@@ -256,7 +239,6 @@ export class TablesApiClient {
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'x-boltic-token': this.config.apiKey,
-      'User-Agent': '@boltic/database-js/1.0.0',
     };
   }
 

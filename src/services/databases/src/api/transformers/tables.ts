@@ -34,22 +34,6 @@ export interface TableUpdateApiRequest {
   snapshot?: string;
 }
 
-export interface TableApiResponse {
-  data: {
-    id: string;
-    name: string;
-    description: string;
-    internal_table_name: string;
-    is_public: boolean;
-    snapshot_url?: string;
-    created_by: string;
-    updated_by: string;
-    created_at: string;
-    updated_at: string;
-    fields: FieldDefinition[];
-  };
-}
-
 export interface TableListApiResponse {
   data: TableRecord[];
   pagination: {
@@ -94,7 +78,7 @@ function transformFieldDefinition(field: FieldDefinition): FieldDefinition {
     is_visible: field.is_visible ?? true,
     is_readonly: field.is_readonly ?? false,
     field_order: field.field_order ?? 1,
-    alignment: field.alignment ?? undefined,
+    alignment: field.alignment ?? 'left',
     timezone: field.timezone ?? undefined,
     date_format: field.date_format ?? undefined,
     time_format: field.time_format ?? undefined,
@@ -148,7 +132,8 @@ export function transformTableListRequest(
 
   // Add filters
   if (options.where) {
-    request.filters = buildApiFilters(options.where);
+    const { filters } = buildApiFilters(options.where);
+    request.filters = filters;
   }
 
   // Add shared filter
@@ -187,34 +172,6 @@ export function transformTableUpdateRequest(updates: {
   }
 
   return request;
-}
-
-/**
- * Transform API table response to SDK format
- */
-export function transformTableResponse(
-  response: TableApiResponse
-): TableRecord {
-  return {
-    id: response.data.id || '',
-    name: response.data.name || '',
-    account_id: '', // Not provided by API
-    internal_table_name: response.data.internal_table_name || '',
-    internal_db_name: '', // Not provided by API
-    db_id: '', // Not provided by API
-    resource_id: '', // Not provided by API
-    description: response.data.description || '',
-    type: '', // Not provided by API
-    parent_table_id: '', // Not provided by API
-    is_deleted: false, // Not provided by API
-    is_public: response.data.is_public || false,
-    created_by: response.data.created_by || '',
-    created_at: response.data.created_at || '',
-    updated_at: response.data.updated_at || '',
-    updated_by: response.data.updated_by || '',
-    snapshot_url: response.data.snapshot_url || '',
-    source: 'boltic', // Default value
-  };
 }
 
 /**

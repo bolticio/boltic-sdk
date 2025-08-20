@@ -5,7 +5,9 @@
  * - Table operations (create, read, update, delete, rename, access control)
  * - Column operations (create, read, update, delete with all supported types)
  * - Record operations (insert, read, update, delete with pagination)
- * - Advanced filtering and querying
+ * - Advanced filtering and querying with comprehensive filter system
+ * - Unified delete operations supporting both record IDs and filters
+ * - Enhanced filter capabilities (ApiFilter format, FilterBuilder, where clauses)
  * - Error handling and cleanup
  * - Real API integration
  *
@@ -16,6 +18,7 @@
 
 import * as dotenv from 'dotenv';
 import { BolticClient, FieldDefinition, isErrorResponse } from '../../src';
+import { createFilter } from '../../src/utils/filters/filter-mapper';
 
 // Load environment variables
 dotenv.config({ path: '../.env' });
@@ -100,7 +103,7 @@ const ALL_COLUMN_TYPES = [
     selection_source: 'provide-static-list',
     selectable_items: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
     multiple_selections: false,
-    default_value: 'Option 1',
+    default_value: ['Option 1'],
   },
   {
     name: 'phone_field',
@@ -184,14 +187,11 @@ const SAMPLE_RECORDS = [
     number_field: 30,
     currency_field: 75000.0,
     checkbox_field: true,
-    dropdown_field: 'Option 1',
+    dropdown_field: ['Option 1'],
     phone_field: '+91 987 654 3210',
     link_field: 'https://johndoe.com',
-    json_field: { skills: ['JavaScript', 'TypeScript'], experience: 5 },
     date_time_field: '2024-01-15T10:30:00Z',
-    vector_field: [0.1, 0.2, 0.3, 0.4, 0.5],
     half_vector_field: [0.1, 0.2, 0.3, 0.4, 0.5],
-    sparse_vector_field: '{1:1,3:2,5:3}/5',
   },
   {
     text_field: 'Jane Smith',
@@ -204,11 +204,8 @@ const SAMPLE_RECORDS = [
     dropdown_field: 'Option 2',
     phone_field: '+91 876 543 2109',
     link_field: 'https://janesmith.dev',
-    json_field: { skills: ['Python', 'Machine Learning'], experience: 3 },
     date_time_field: '2024-02-20T14:45:00Z',
-    vector_field: [0.2, 0.3, 0.4, 0.5, 0.6],
     half_vector_field: [0.2, 0.3, 0.4, 0.5, 0.6],
-    sparse_vector_field: '{1:0,3:1,5:4}/5',
   },
   {
     text_field: 'Bob Johnson',
@@ -221,15 +218,10 @@ const SAMPLE_RECORDS = [
     dropdown_field: 'Option 3',
     phone_field: '+91 765 432 1098',
     link_field: 'https://bobjohnson.org',
-    json_field: { skills: ['Leadership', 'Strategy'], experience: 8 },
     date_time_field: '2024-03-10T09:15:00Z',
-    vector_field: [0.3, 0.4, 0.5, 0.6, 0.7],
     half_vector_field: [0.3, 0.4, 0.5, 0.6, 0.7],
-    sparse_vector_field: '{1:0,3:1,5:4}/5',
   },
 ];
-
-let insertRecordIds: string[] = [];
 
 class ComprehensiveDatabaseOperationsDemo {
   private client: BolticClient;
@@ -271,55 +263,58 @@ class ComprehensiveDatabaseOperationsDemo {
       // 3. Update the table
       await this.demoTableUpdate();
 
-      // // // 4. List all tables
+      // 4. List all tables
       await this.demoListTables();
 
-      // // // 5. Get table by name
+      // 5. Get table by name
       await this.demoGetTableByName();
 
-      // // // 6. Change table access to public
+      // 6. Change table access to public
       await this.demoChangeTableAccess();
 
-      // // // 7. Rename table
+      // 7. Rename table
       await this.demoRenameTable();
 
-      // // // 8. Add all types of columns with all properties
+      // 8. Add all types of columns with all properties
       await this.demoAddAllColumnTypes();
 
-      // // // 9. Update each type of column
+      // 9. Update each type of column
       await this.demoUpdateColumns();
 
-      // // // 10. List columns
+      // 10. List columns
       await this.demoListColumns();
 
-      // // // 11. Get column by name
+      // 11. Get column by name
       await this.demoGetColumnByName();
 
-      // // // 12. Update column by name (add/remove constraints)
+      // 11.5. Get column by ID using direct GET endpoint
+      await this.demoGetColumnById();
+
+      //  12. Update column by name (add/remove constraints)
       await this.demoUpdateColumnConstraints();
 
-      // // // 13. Delete columns
+      // 13. Delete columns
       await this.demoDeleteColumns();
 
-      // // // 14. Add rows in table (with/without null)
+      // 14. Add rows in table (with/without null)
       await this.demoAddRecords();
 
-      // // // 15. Get row
+      // 15. Get row
       await this.demoGetRecord();
 
-      // // // 16. List rows (with pagination)
+      // 16. List rows (with pagination)
       await this.demoListRecordsWithPagination();
 
-      // // // 17. Update values in rows for each data type
+      // 17. Update values in rows for each data type
       await this.demoUpdateRecords();
 
-      // // // 18. Delete rows
+      // 18. Delete rows
       await this.demoDeleteRecords();
 
-      // // // 19. Bonus: Show working of all types of filters
+      // 19. Bonus: Show working of all types of filters
       await this.demoAllFilterTypes();
 
-      // // 20. Delete table
+      //  20. Delete table
       await this.demoDeleteTable();
 
       console.log('\n🎉 Comprehensive demo completed successfully!');
@@ -661,6 +656,86 @@ class ComprehensiveDatabaseOperationsDemo {
   }
 
   /**
+   * 11.5. Get column by ID using direct GET endpoint
+   */
+  private async demoGetColumnById(): Promise<void> {
+    console.log('\n1️⃣1️⃣.5️⃣  Getting Column by ID (Direct GET API)');
+    console.log('-'.repeat(40));
+
+    // First, get the list of columns to extract an ID
+    console.log('📝 Input: First get column list to extract a column ID');
+    const listColumnsResult = await this.client.columns.findAll(
+      this.createdTableName,
+      {
+        limit: 1, // Just get the first column
+      }
+    );
+
+    if (listColumnsResult.error) {
+      console.error(
+        '❌ Failed to list columns for ID extraction:',
+        listColumnsResult.error
+      );
+      return;
+    }
+
+    const columns = Array.isArray(listColumnsResult.data)
+      ? listColumnsResult.data
+      : [];
+
+    if (columns.length === 0) {
+      console.log('⚠️  No columns available to test GET by ID');
+      return;
+    }
+
+    const targetColumn = columns[0] as any;
+    const columnId = targetColumn.id;
+    const columnName = targetColumn.name;
+
+    console.log(
+      `📝 Input: Get column by ID "${columnId}" (name: "${columnName}")`
+    );
+    console.log(
+      `   Using direct GET /tables/{table_id}/fields/{field_id} endpoint`
+    );
+
+    // Now test the direct GET method
+    const getColumnByIdResult = await this.client.columns.findById(
+      this.createdTableName,
+      columnId
+    );
+
+    if (getColumnByIdResult.error) {
+      console.error(
+        '❌ Failed to get column by ID:',
+        getColumnByIdResult.error
+      );
+    } else {
+      console.log('📤 Output (Direct GET by ID):', getColumnByIdResult.data);
+
+      // Verify the data matches what we expect
+      if (getColumnByIdResult.data && 'id' in getColumnByIdResult.data) {
+        const retrievedColumn = getColumnByIdResult.data as any;
+        console.log('✅ Verification:');
+        console.log(`   Retrieved ID: ${retrievedColumn.id}`);
+        console.log(`   Retrieved Name: ${retrievedColumn.name}`);
+        console.log(`   Retrieved Type: ${retrievedColumn.type}`);
+        console.log(
+          `   Retrieved Description: ${retrievedColumn.description || 'N/A'}`
+        );
+        console.log(
+          `   ID Match: ${retrievedColumn.id === columnId ? '✅' : '❌'}`
+        );
+        console.log(
+          `   Name Match: ${retrievedColumn.name === columnName ? '✅' : '❌'}`
+        );
+      }
+    }
+
+    console.log('✅ Step 11.5 completed - Direct GET endpoint tested');
+  }
+
+  /**
    * 12. Update column by name (add/remove constraints)
    */
   private async demoUpdateColumnConstraints(): Promise<void> {
@@ -788,7 +863,7 @@ class ComprehensiveDatabaseOperationsDemo {
       }
     }
 
-    // // Insert a record with some null values
+    //  Insert a record with some null values
     // const recordWithNulls = {
     //   text_field: 'Null Test User',
     //   email_field: 'nulltest@example.com',
@@ -974,48 +1049,127 @@ class ComprehensiveDatabaseOperationsDemo {
       return;
     }
 
-    // Delete by filters
-    console.log(
-      '📝 Input: Delete records with specific filter (text_field contains "Test")'
-    );
-    const deleteByFilterResult = await this.client.records.deleteByIds(
+    // 1. Delete by record IDs using the unified delete method
+    console.log('📝 Input: Delete records by IDs using unified delete method');
+    const deleteByIdsResult = await this.client.records.delete(
       this.createdTableName,
       {
-        record_ids: this.createdRecordIds,
+        record_ids: this.createdRecordIds.slice(0, 1), // Delete only the first record
       }
     );
 
-    if (deleteByFilterResult.error) {
+    if (deleteByIdsResult.error) {
       console.error(
-        '❌ Failed to delete records by filter:',
-        deleteByFilterResult.error
+        '❌ Failed to delete records by IDs:',
+        deleteByIdsResult.error
       );
     } else {
-      console.log('📤 Output (deleted by filter):', deleteByFilterResult.data);
+      console.log('📤 Output (deleted by IDs):', deleteByIdsResult.data);
+      this.createdRecordIds = this.createdRecordIds.slice(1); // Remove the deleted record ID
     }
 
-    // Delete by IDs
-    if (this.createdRecordIds.length > 0) {
-      console.log('📝 Input: Delete records by IDs');
-      const deleteByIdsResult = await this.client.records.deleteByIds(
-        this.createdTableName,
-        {
-          record_ids: this.createdRecordIds,
-        }
-      );
-
-      if (isErrorResponse(deleteByIdsResult)) {
-        console.error(
-          '❌ Failed to delete records by IDs:',
-          deleteByIdsResult.error
-        );
-      } else {
-        console.log('📤 Output (deleted by IDs):', deleteByIdsResult.data);
-        this.createdRecordIds = []; // Clear the array
+    // 2. Delete by filters using where clause format
+    console.log('\n📝 Input: Delete records by filters (where clause format)');
+    const deleteByFiltersResult = await this.client.records.delete(
+      this.createdTableName,
+      {
+        filters: {
+          text_field: { $eq: 'Jane Smith' },
+        },
       }
+    );
+
+    if (deleteByFiltersResult.error) {
+      console.error(
+        '❌ Failed to delete records by filters:',
+        deleteByFiltersResult.error
+      );
+    } else {
+      console.log(
+        '📤 Output (deleted by filters):',
+        deleteByFiltersResult.data
+      );
     }
 
-    console.log('✅ Step 18 completed');
+    // 3. Delete by filters using direct ApiFilter format
+    console.log('\n📝 Input: Delete records by filters (ApiFilter format)');
+    const deleteByApiFiltersResult = await this.client.records.delete(
+      this.createdTableName,
+      {
+        filters: [
+          {
+            field: 'text_field',
+            operator: '=',
+            values: ['Bob Johnson'],
+          },
+        ],
+      }
+    );
+
+    if (deleteByApiFiltersResult.error) {
+      console.error(
+        '❌ Failed to delete records by ApiFilter:',
+        deleteByApiFiltersResult.error
+      );
+    } else {
+      console.log(
+        '📤 Output (deleted by ApiFilter):',
+        deleteByApiFiltersResult.data
+      );
+    }
+
+    // 4. Delete by complex filters using FilterBuilder
+    console.log('\n📝 Input: Delete records using FilterBuilder');
+    const complexFilters = createFilter()
+      .greaterThan('number_field', 32)
+      .equals('checkbox_field', true)
+      .build();
+
+    const deleteByComplexFiltersResult = await this.client.records.delete(
+      this.createdTableName,
+      {
+        filters: complexFilters,
+      }
+    );
+
+    if (deleteByComplexFiltersResult.error) {
+      console.error(
+        '❌ Failed to delete records by complex filters:',
+        deleteByComplexFiltersResult.error
+      );
+    } else {
+      console.log(
+        '📤 Output (deleted by complex filters):',
+        deleteByComplexFiltersResult.data
+      );
+    }
+
+    // 5. Delete using table-scoped method
+    console.log('\n📝 Input: Delete using table-scoped method');
+    const tableScopedDeleteResult = await this.client
+      .from(this.createdTableName)
+      .records()
+      .delete({
+        filters: {
+          currency_field: { $lt: 60000 },
+        },
+      });
+
+    if (tableScopedDeleteResult.error) {
+      console.error(
+        '❌ Failed to delete records (table-scoped):',
+        tableScopedDeleteResult.error
+      );
+    } else {
+      console.log(
+        '📤 Output (table-scoped delete):',
+        tableScopedDeleteResult.data
+      );
+    }
+
+    console.log(
+      '✅ Step 18 completed - Demonstrated unified delete with multiple filter formats'
+    );
   }
 
   /**
@@ -1029,31 +1183,39 @@ class ComprehensiveDatabaseOperationsDemo {
     const testRecords = [
       {
         text_field: 'Alice',
+        email_field: 'alice@example.com',
         number_field: 25,
         currency_field: 50000,
         checkbox_field: true,
-        dropdown_field: 'Option 1',
+        dropdown_field: ['Option 1'],
+        date_time_field: '2024-01-10T10:00:00Z',
       },
       {
         text_field: 'Bob',
+        email_field: 'bob@test.com',
         number_field: 30,
         currency_field: 60000,
         checkbox_field: false,
-        dropdown_field: 'Option 2',
+        dropdown_field: ['Option 2'],
+        date_time_field: '2024-02-15T14:30:00Z',
       },
       {
         text_field: 'Charlie',
+        email_field: 'charlie@demo.org',
         number_field: 35,
         currency_field: 70000,
         checkbox_field: true,
-        dropdown_field: 'Option 3',
+        dropdown_field: ['Option 3'],
+        date_time_field: '2024-03-20T09:15:00Z',
       },
       {
         text_field: 'David',
+        email_field: 'david@sample.net',
         number_field: 40,
         currency_field: 80000,
         checkbox_field: false,
-        dropdown_field: 'Option 1',
+        dropdown_field: ['Option 1'],
+        date_time_field: '2024-04-25T16:45:00Z',
       },
     ];
 
@@ -1073,94 +1235,76 @@ class ComprehensiveDatabaseOperationsDemo {
       }
     }
 
-    // Demonstrate different filter types
+    // Demonstrate different filter types using the new comprehensive filter system
     const filterExamples = [
       {
-        name: 'Equality Filter',
-        filters: [{ text_field: { $eq: 'Alice' } }],
+        name: 'Equality Filter (ApiFilter)',
+        filters: [{ field: 'text_field', operator: '=', values: ['Alice'] }],
         description: 'Find records where text_field equals "Alice"',
       },
       {
-        name: 'Inequality Filter',
-        filters: [{ number_field: { $ne: 30 } }],
-        description: 'Find records where number_field is not 30',
-      },
-      {
         name: 'Greater Than Filter',
-        filters: [{ number_field: { $gt: 30 } }],
-        description: 'Find records where number_field is greater than 30',
+        filters: [{ field: 'number_field', operator: '>', values: [30] }],
+        description: 'Find records where number_field > 30',
       },
       {
-        name: 'Greater Than or Equal Filter',
-        filters: [{ number_field: { $gte: 30 } }],
+        name: 'Between Filter',
+        filters: [
+          { field: 'number_field', operator: 'BETWEEN', values: [25, 35] },
+        ],
+        description: 'Find records where number_field is between 25 and 35',
+      },
+      {
+        name: 'Like Filter (Case Sensitive)',
+        filters: [
+          { field: 'email_field', operator: 'LIKE', values: ['%@test.%'] },
+        ],
+        description: 'Find records where email contains "@test."',
+      },
+      {
+        name: 'Case Insensitive Like Filter',
+        filters: [
+          { field: 'email_field', operator: 'ILIKE', values: ['%EXAMPLE%'] },
+        ],
         description:
-          'Find records where number_field is greater than or equal to 30',
+          'Find records where email contains "EXAMPLE" (case insensitive)',
       },
       {
-        name: 'Less Than Filter',
-        filters: [{ number_field: { $lt: 35 } }],
-        description: 'Find records where number_field is less than 35',
-      },
-      {
-        name: 'Less Than or Equal Filter',
-        filters: [{ number_field: { $lte: 35 } }],
-        description:
-          'Find records where number_field is less than or equal to 35',
+        name: 'Starts With Filter',
+        filters: [
+          { field: 'text_field', operator: 'STARTS WITH', values: ['A'] },
+        ],
+        description: 'Find records where text_field starts with "A"',
       },
       {
         name: 'In Filter',
-        filters: [{ dropdown_field: { $in: ['Option 1', 'Option 2'] } }],
+        filters: [
+          {
+            field: 'dropdown_field',
+            operator: 'IN',
+            values: [['Option 1', 'Option 2']],
+          },
+        ],
         description:
           'Find records where dropdown_field is in ["Option 1", "Option 2"]',
       },
       {
-        name: 'Not In Filter',
-        filters: [{ dropdown_field: { $nin: ['Option 3'] } }],
-        description: 'Find records where dropdown_field is not in ["Option 3"]',
-      },
-      {
-        name: 'Like Filter',
-        filters: [{ text_field: { $like: '%a%' } }],
-        description: 'Find records where text_field contains "a"',
-      },
-      {
-        name: 'Case Insensitive Like Filter',
-        filters: [{ text_field: { $ilike: '%A%' } }],
+        name: 'Complex Filter using FilterBuilder',
+        filters: createFilter()
+          .greaterThan('number_field', 25)
+          .equals('checkbox_field', true)
+          .in('dropdown_field', [['Option 1', 'Option 3']])
+          .build(),
         description:
-          'Find records where text_field contains "A" (case insensitive)',
+          'Complex filter: number > 25 AND checkbox = true AND dropdown in [Option 1, Option 3]',
       },
       {
-        name: 'Between Filter',
-        filters: [{ number_field: { $between: [25, 35] } }],
-        description: 'Find records where number_field is between 25 and 35',
-      },
-      {
-        name: 'Null Filter',
-        filters: [{ long_text_field: { $null: true } }],
-        description: 'Find records where long_text_field is null',
-      },
-      {
-        name: 'Exists Filter',
-        filters: [{ text_field: { $exists: true } }],
-        description: 'Find records where text_field exists',
-      },
-      {
-        name: 'Multiple Filters (AND)',
+        name: 'Multiple Conditions (AND)',
         filters: [
-          { number_field: { $gte: 30 } },
-          { checkbox_field: { $eq: true } },
+          { field: 'number_field', operator: '>=', values: [30] },
+          { field: 'checkbox_field', operator: '=', values: [false] },
         ],
-        description:
-          'Find records where number_field >= 30 AND checkbox_field = true',
-      },
-      {
-        name: 'Complex Filter Combination',
-        filters: [
-          { text_field: { $like: '%a%' } },
-          { number_field: { $between: [25, 40] } },
-          { dropdown_field: { $in: ['Option 1', 'Option 2'] } },
-        ],
-        description: 'Complex filter combining multiple conditions',
+        description: 'Find records where number >= 30 AND checkbox = false',
       },
     ];
 
@@ -1171,8 +1315,8 @@ class ComprehensiveDatabaseOperationsDemo {
       const filterResult = await this.client.records.findAll(
         this.createdTableName,
         {
-          filters: filterExample.filters,
           page: { page_no: 1, page_size: 10 },
+          filters: filterExample.filters,
         }
       );
 
@@ -1196,7 +1340,9 @@ class ComprehensiveDatabaseOperationsDemo {
       }
     }
 
-    console.log('✅ Step 19 completed');
+    console.log(
+      '✅ Step 19 completed - Demonstrated comprehensive filter system'
+    );
   }
 
   /**
@@ -1250,7 +1396,7 @@ class ComprehensiveDatabaseOperationsDemo {
           console.log(
             `🗑️  Deleting ${this.createdRecordIds.length} remaining records...`
           );
-          const cleanupResult = await this.client.records.deleteByIds(
+          const cleanupResult = await this.client.records.delete(
             this.createdTableName,
             {
               record_ids: this.createdRecordIds,

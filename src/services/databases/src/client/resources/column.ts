@@ -261,9 +261,9 @@ export class ColumnResource extends BaseResource {
   }
 
   /**
-   * List all columns in a table
+   * Find all columns in a table (replaces list functionality)
    */
-  async list(
+  async findAll(
     tableName: string,
     options: ColumnQueryOptions = {}
   ): Promise<BolticListResponse<ColumnDetails> | BolticErrorResponse> {
@@ -353,6 +353,43 @@ export class ColumnResource extends BaseResource {
         data: {},
         error: {
           code: 'GET_COLUMN_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
+      };
+    }
+  }
+
+  async findById(
+    tableName: string,
+    columnId: string
+  ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
+    try {
+      // Get table ID first
+      const tableId = await this.getTableId(tableName);
+      if (!tableId) {
+        return {
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
+        };
+      }
+
+      // Use the direct getColumn API method
+      const result = await this.columnsApiClient.getColumn(tableId, columnId);
+
+      if (isErrorResponse(result)) {
+        return result;
+      }
+
+      return result as BolticSuccessResponse<ColumnDetails>;
+    } catch (error) {
+      return {
+        data: {},
+        error: {
+          code: 'FIND_COLUMN_BY_ID_ERROR',
           message:
             error instanceof Error ? error.message : 'Unknown error occurred',
         },
