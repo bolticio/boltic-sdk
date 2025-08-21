@@ -5,6 +5,7 @@
  * - Table operations (create, read, update, delete, rename, access control)
  * - Column operations (create, read, update, delete with all supported types)
  * - Record operations (insert, read, update, delete with pagination)
+ * - Partial record insertion (missing fields automatically set to null)
  * - Advanced filtering and querying with comprehensive filter system
  * - Unified delete operations supporting both record IDs and filters
  * - Enhanced filter capabilities (ApiFilter format, FilterBuilder, where clauses)
@@ -187,7 +188,7 @@ const SAMPLE_RECORDS = [
     number_field: 30,
     currency_field: 75000.0,
     checkbox_field: true,
-    dropdown_field: ['Option 1'],
+    dropdown_field: ['Option 1'], // Consistent array format
     phone_field: '+91 987 654 3210',
     link_field: 'https://johndoe.com',
     date_time_field: '2024-01-15T10:30:00Z',
@@ -201,7 +202,7 @@ const SAMPLE_RECORDS = [
     number_field: 28,
     currency_field: 65000.0,
     checkbox_field: false,
-    dropdown_field: 'Option 2',
+    dropdown_field: ['Option 2'], // Fixed: changed from string to array
     phone_field: '+91 876 543 2109',
     link_field: 'https://janesmith.dev',
     date_time_field: '2024-02-20T14:45:00Z',
@@ -215,7 +216,7 @@ const SAMPLE_RECORDS = [
     number_field: 35,
     currency_field: 80000.0,
     checkbox_field: true,
-    dropdown_field: 'Option 3',
+    dropdown_field: ['Option 3'], // Fixed: changed from string to array
     phone_field: '+91 765 432 1098',
     link_field: 'https://bobjohnson.org',
     date_time_field: '2024-03-10T09:15:00Z',
@@ -863,38 +864,42 @@ class ComprehensiveDatabaseOperationsDemo {
       }
     }
 
-    //  Insert a record with some null values
-    // const recordWithNulls = {
-    //   text_field: 'Null Test User',
-    //   email_field: 'nulltest@example.com',
-    //   long_text_field: null,
-    //   number_field: null,
-    //   currency_field: null,
-    //   checkbox_field: null,
-    //   dropdown_field: null,
-    //   phone_field: null,
-    //   link_field: null,
-    //   date_time_field: null,
-    //   half_vector_field: null,
-    // };
+    // Demonstrate partial record insertion (new feature)
+    console.log(
+      '\n📝 Input: Inserting partial record (missing fields will be auto-set to null)'
+    );
+    const partialRecord = {
+      text_field: 'Partial User',
+      email_field: 'partial@example.com',
+      number_field: 100,
+      currency_field: 100000,
+      // Note: Missing fields like long_text_field, etc. will be automatically set to null
+    };
 
-    // console.log('📝 Input: Inserting record with null values');
-    // const nullInsertResult = await this.client.records.insert(
-    //   this.createdTableName,
-    //   recordWithNulls
-    // );
+    const partialInsertResult = await this.client.records.insert(
+      this.createdTableName,
+      partialRecord
+    );
 
-    // if (nullInsertResult.error) {
-    //   console.error(
-    //     '❌ Failed to insert record with nulls:',
-    //     nullInsertResult.error
-    //   );
-    // } else {
-    //   console.log('📤 Output (record with nulls):', nullInsertResult.data);
-    //   if (nullInsertResult.data?.id) {
-    //     this.createdRecordIds.push(nullInsertResult.data.id);
-    //   }
-    // }
+    if (partialInsertResult.error) {
+      console.error(
+        '❌ Failed to insert partial record:',
+        partialInsertResult.error
+      );
+    } else {
+      console.log('📤 Output (partial record):', partialInsertResult.data);
+      console.log(
+        '✅ Partial insertion successful - missing fields automatically set to null'
+      );
+      if (
+        !isErrorResponse(partialInsertResult) &&
+        partialInsertResult.data &&
+        'id' in partialInsertResult.data &&
+        partialInsertResult.data.id
+      ) {
+        this.createdRecordIds.push(partialInsertResult.data.id);
+      }
+    }
 
     console.log('✅ Step 14 completed');
   }
@@ -1180,58 +1185,130 @@ class ComprehensiveDatabaseOperationsDemo {
     console.log('-'.repeat(40));
 
     // First, let's add some test records for filtering
+    // Note: Including all fields that exist in the table at this point
+    // (after some columns were deleted in step 13)
     const testRecords = [
       {
         text_field: 'Alice',
         email_field: 'alice@example.com',
+        long_text_field:
+          'Alice is a dedicated professional with extensive experience in project management and team leadership.',
         number_field: 25,
         currency_field: 50000,
         checkbox_field: true,
         dropdown_field: ['Option 1'],
+        phone_field: '+91 987 654 3210',
+        link_field: 'https://alice.example.com',
         date_time_field: '2024-01-10T10:00:00Z',
+        half_vector_field: [0.1, 0.2, 0.3, 0.4, 0.5],
       },
       {
         text_field: 'Bob',
         email_field: 'bob@test.com',
+        long_text_field:
+          'Bob brings innovative solutions and technical expertise to complex software development challenges.',
         number_field: 30,
         currency_field: 60000,
         checkbox_field: false,
         dropdown_field: ['Option 2'],
+        phone_field: '+91 876 543 2109',
+        link_field: 'https://bob.test.com',
         date_time_field: '2024-02-15T14:30:00Z',
+        half_vector_field: [0.2, 0.3, 0.4, 0.5, 0.6],
       },
       {
         text_field: 'Charlie',
         email_field: 'charlie@demo.org',
+        long_text_field:
+          'Charlie specializes in data analysis and has a proven track record of delivering actionable insights.',
         number_field: 35,
         currency_field: 70000,
         checkbox_field: true,
         dropdown_field: ['Option 3'],
+        phone_field: '+91 765 432 1098',
+        link_field: 'https://charlie.demo.org',
         date_time_field: '2024-03-20T09:15:00Z',
+        half_vector_field: [0.3, 0.4, 0.5, 0.6, 0.7],
       },
       {
         text_field: 'David',
         email_field: 'david@sample.net',
+        long_text_field:
+          'David has exceptional communication skills and excels at translating business requirements into technical solutions.',
         number_field: 40,
         currency_field: 80000,
         checkbox_field: false,
         dropdown_field: ['Option 1'],
+        phone_field: '+91 654 321 0987',
+        link_field: 'https://david.sample.net',
         date_time_field: '2024-04-25T16:45:00Z',
+        half_vector_field: [0.4, 0.5, 0.6, 0.7, 0.8],
       },
     ];
 
     console.log('📝 Input: Adding test records for filter demonstration');
-    for (const record of testRecords) {
+    let successfulInserts = 0;
+    for (let i = 0; i < testRecords.length; i++) {
+      const record = testRecords[i];
+      console.log(
+        `   Inserting record ${i + 1}/${testRecords.length}: ${record.text_field}`
+      );
+
       const insertResult = await this.client.records.insert(
         this.createdTableName,
         record
       );
-      if (
-        !isErrorResponse(insertResult) &&
+
+      if (isErrorResponse(insertResult)) {
+        console.error(
+          `   ❌ Failed to insert record ${i + 1}:`,
+          insertResult.error
+        );
+      } else if (
         insertResult.data &&
         'id' in insertResult.data &&
         insertResult.data.id
       ) {
+        console.log(
+          `   ✅ Successfully inserted record ${i + 1} with ID: ${insertResult.data.id}`
+        );
         this.createdRecordIds.push(insertResult.data.id);
+        successfulInserts++;
+      } else {
+        console.error(`   ❌ Insert result for record ${i + 1} missing ID`);
+      }
+    }
+
+    console.log(
+      `📤 Output: Successfully inserted ${successfulInserts}/${testRecords.length} test records`
+    );
+
+    // Wait a moment for records to be committed
+    console.log('\n⏳ Waiting for records to be committed...');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // Verify records exist before testing filters
+    console.log('\n🔍 Verifying inserted records before testing filters...');
+    const verifyResult = await this.client.records.findAll(
+      this.createdTableName,
+      {
+        page: { page_no: 1, page_size: 10 },
+      }
+    );
+
+    if (isErrorResponse(verifyResult)) {
+      console.error('❌ Failed to verify records:', verifyResult.error);
+      return;
+    } else {
+      const totalRecords = Array.isArray(verifyResult.data)
+        ? verifyResult.data.length
+        : 0;
+      console.log(
+        `✅ Verification: Found ${totalRecords} total records in table`
+      );
+      if (totalRecords === 0) {
+        console.log('⚠️  No records found in table. Cannot test filters.');
+        return;
       }
     }
 
@@ -1277,26 +1354,50 @@ class ComprehensiveDatabaseOperationsDemo {
         description: 'Find records where text_field starts with "A"',
       },
       {
-        name: 'In Filter',
+        name: 'Array Contains Filter (Dropdown)',
         filters: [
           {
             field: 'dropdown_field',
-            operator: 'IN',
-            values: [['Option 1', 'Option 2']],
+            operator: '@>',
+            values: [['Option 1']], // Array contains this exact array
           },
         ],
         description:
-          'Find records where dropdown_field is in ["Option 1", "Option 2"]',
+          'Find records where dropdown_field array contains "Option 1"',
       },
       {
-        name: 'Complex Filter using FilterBuilder',
+        name: 'Array Any Filter (Dropdown)',
+        filters: [
+          {
+            field: 'dropdown_field',
+            operator: 'ANY',
+            values: ['Option 2'],
+          },
+        ],
+        description:
+          'Find records where any element in dropdown_field matches "Option 2"',
+      },
+      {
+        name: 'Array In Filter (Dropdown)',
+        filters: [
+          {
+            field: 'dropdown_field',
+            operator: 'IS ONE OF',
+            values: ['Option 1', 'Option 3'],
+          },
+        ],
+        description:
+          'Find records where dropdown_field is one of ["Option 1", "Option 3"]',
+      },
+      {
+        name: 'Complex Filter with Array Field',
         filters: createFilter()
           .greaterThan('number_field', 25)
           .equals('checkbox_field', true)
-          .in('dropdown_field', [['Option 1', 'Option 3']])
+          .arrayContains('dropdown_field', 'Option 1')
           .build(),
         description:
-          'Complex filter: number > 25 AND checkbox = true AND dropdown in [Option 1, Option 3]',
+          'Complex filter: number > 25 AND checkbox = true AND dropdown contains "Option 1"',
       },
       {
         name: 'Multiple Conditions (AND)',
@@ -1311,6 +1412,9 @@ class ComprehensiveDatabaseOperationsDemo {
     for (const filterExample of filterExamples) {
       console.log(`\n📝 Input: ${filterExample.name}`);
       console.log(`   Description: ${filterExample.description}`);
+      console.log(
+        `   Filter: ${JSON.stringify(filterExample.filters, null, 2)}`
+      );
 
       const filterResult = await this.client.records.findAll(
         this.createdTableName,
@@ -1326,16 +1430,23 @@ class ComprehensiveDatabaseOperationsDemo {
           filterResult.error
         );
       } else {
-        console.log(
-          `📤 Output: Found ${filterResult.data?.length || 0} records`
-        );
-        if (filterResult.data && filterResult.data.length > 0) {
-          console.log(
-            `   Sample records: ${filterResult.data
-              .slice(0, 2)
-              .map((r: any) => r.text_field)
-              .join(', ')}`
-          );
+        const records = Array.isArray(filterResult.data)
+          ? filterResult.data
+          : [];
+        console.log(`📤 Output: Found ${records.length} records`);
+
+        if (records.length > 0) {
+          console.log(`   Sample records:`);
+          records.slice(0, 2).forEach((record: any, index: number) => {
+            console.log(
+              `     ${index + 1}. ${record.text_field} (${record.email_field})`
+            );
+            console.log(
+              `        number: ${record.number_field}, dropdown: ${JSON.stringify(record.dropdown_field)}`
+            );
+          });
+        } else {
+          console.log(`   No records matched this filter`);
         }
       }
     }

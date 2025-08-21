@@ -9,6 +9,7 @@ import {
   RecordWithId,
 } from '../../types/api/record';
 import { BaseClient } from '../core/base-client';
+import { ColumnResource } from './column';
 import { TableResource } from './table';
 
 import {
@@ -60,8 +61,20 @@ export class RecordResource {
         };
       }
 
+      // Get table columns to determine which fields might be missing
+      const completeDataResult = await this.ensureCompleteRecordData(
+        tableName,
+        data
+      );
+      if ('error' in completeDataResult && completeDataResult.error) {
+        return completeDataResult as BolticErrorResponse;
+      }
+
       // Include table_id in the request payload
-      const requestData = { ...data, table_id: tableId };
+      const requestData = {
+        ...(completeDataResult as RecordData),
+        table_id: tableId,
+      };
       const result = await this.apiClient.insertRecord(requestData);
 
       if (isErrorResponse(result)) {
@@ -350,6 +363,60 @@ export class RecordResource {
     } catch (error) {
       console.error('Error getting table ID:', error);
       return null;
+    }
+  }
+
+  /**
+   * Helper method to ensure all required fields for a record are present,
+   * filling missing ones with null.
+   */
+  private async ensureCompleteRecordData(
+    tableName: string,
+    data: RecordData
+  ): Promise<RecordData | BolticErrorResponse> {
+    try {
+      const columnResource = new ColumnResource(this.client);
+      const columnsResult = await columnResource.findAll(tableName);
+
+      if (isErrorResponse(columnsResult)) {
+        return columnsResult;
+      }
+
+      // Get the actual columns array from the response
+      const columns = Array.isArray(columnsResult.data)
+        ? columnsResult.data
+        : [];
+
+      // Create complete data object with all table columns
+      const completeData: RecordData = { ...data };
+
+      // Set missing fields to null (only for columns that are not system-generated)
+      for (const column of columns) {
+        // Skip system columns that are auto-generated
+        if (
+          column.name === 'id' ||
+          column.name === 'created_at' ||
+          column.name === 'updated_at'
+        ) {
+          continue;
+        }
+
+        // If field is missing from provided data, set it to null
+        if (!(column.name in data)) {
+          completeData[column.name] = null;
+        }
+      }
+
+      return completeData;
+    } catch (error) {
+      return {
+        data: {},
+        error: {
+          code: 'COMPLETE_DATA_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
+      };
     }
   }
 }
