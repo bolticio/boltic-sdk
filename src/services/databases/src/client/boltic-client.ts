@@ -155,7 +155,8 @@ export class BolticClient {
       records: () => ({
         insert: (data: RecordData) =>
           this.recordResource.insert(tableName, data),
-        get: (recordId: string) => this.recordResource.get(tableName, recordId),
+        findOne: (recordId: string) =>
+          this.recordResource.get(tableName, recordId),
         update: (options: RecordUpdateOptions) =>
           this.recordResource.update(tableName, options),
         updateById: (recordId: string, data: RecordData) =>
@@ -188,18 +189,12 @@ export class BolticClient {
         this.recordResource.list(tableName, options),
       findOne: (tableName: string, recordId: string) =>
         this.recordResource.get(tableName, recordId),
-      get: (tableName: string, recordId: string) =>
-        this.recordResource.get(tableName, recordId),
       update: (tableName: string, options: RecordUpdateOptions) =>
         this.recordResource.update(tableName, options),
       updateById: (tableName: string, recordId: string, data: RecordData) =>
         this.recordResource.updateById(tableName, recordId, data),
-
-      // Unified delete method
       delete: (tableName: string, options: RecordDeleteOptions) =>
         this.recordResource.delete(tableName, options),
-
-      // Single record delete method
       deleteById: (tableName: string, recordId: string) =>
         this.recordResource.deleteById(tableName, recordId),
     };
