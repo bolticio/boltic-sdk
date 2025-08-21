@@ -155,8 +155,6 @@ export class BolticClient {
       records: () => ({
         insert: (data: RecordData) =>
           this.recordResource.insert(tableName, data),
-        list: (options?: RecordQueryOptions) =>
-          this.recordResource.list(tableName, options),
         get: (recordId: string) => this.recordResource.get(tableName, recordId),
         update: (options: RecordUpdateOptions) =>
           this.recordResource.update(tableName, options),
@@ -190,8 +188,6 @@ export class BolticClient {
         this.recordResource.list(tableName, options),
       findOne: (tableName: string, recordId: string) =>
         this.recordResource.get(tableName, recordId),
-      list: (tableName: string, options?: RecordQueryOptions) =>
-        this.recordResource.list(tableName, options),
       get: (tableName: string, recordId: string) =>
         this.recordResource.get(tableName, recordId),
       update: (tableName: string, options: RecordUpdateOptions) =>
