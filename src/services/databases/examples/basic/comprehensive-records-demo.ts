@@ -178,7 +178,7 @@ class ComprehensiveRecordsDemo {
 
     // 2. Get the inserted record by ID
     console.log('2️⃣ Getting the inserted record by ID...');
-    const getResult = await this.client.records.get(
+    const getResult = await this.client.records.findOne(
       DEMO_CONFIG.tableName,
       insertedRecord.id
     );
@@ -221,9 +221,12 @@ class ComprehensiveRecordsDemo {
 
     // 4. List all records with pagination
     console.log('4️⃣ Listing all records with pagination...');
-    const listResult = await this.client.records.list(DEMO_CONFIG.tableName, {
-      page: { page_no: 1, page_size: 5 },
-    });
+    const listResult = await this.client.records.findAll(
+      DEMO_CONFIG.tableName,
+      {
+        page: { page_no: 1, page_size: 5 },
+      }
+    );
 
     if (isErrorResponse(listResult)) {
       throw new Error(`List failed: ${listResult.error.message}`);
@@ -293,7 +296,7 @@ class ComprehensiveRecordsDemo {
 
     // 2. List all records to see the bulk insert results
     console.log('2️⃣ Listing all records...');
-    const listResult = await this.client.records.list(DEMO_CONFIG.tableName);
+    const listResult = await this.client.records.findAll(DEMO_CONFIG.tableName);
 
     if (isErrorResponse(listResult)) {
       console.log(`List failed: ${listResult.error.message}`);
@@ -308,11 +311,14 @@ class ComprehensiveRecordsDemo {
 
     // 1. Filter by department
     console.log('1️⃣ Filtering by department...');
-    const filterResult = await this.client.records.list(DEMO_CONFIG.tableName, {
-      filters: [
-        { field: 'department', operator: 'equals', value: 'Engineering' },
-      ],
-    });
+    const filterResult = await this.client.records.findAll(
+      DEMO_CONFIG.tableName,
+      {
+        filters: [
+          { field: 'department', operator: 'equals', value: 'Engineering' },
+        ],
+      }
+    );
 
     if (isErrorResponse(filterResult)) {
       console.log(`Filter failed: ${filterResult.error.message}`);
@@ -322,10 +328,13 @@ class ComprehensiveRecordsDemo {
 
     // 2. Sort by age
     console.log('2️⃣ Sorting by age...');
-    const sortResult = await this.client.records.list(DEMO_CONFIG.tableName, {
-      sort: [{ field: 'age', order: 'desc' }],
-      page: { page_no: 1, page_size: 5 },
-    });
+    const sortResult = await this.client.records.findAll(
+      DEMO_CONFIG.tableName,
+      {
+        sort: [{ field: 'age', order: 'desc' }],
+        page: { page_no: 1, page_size: 5 },
+      }
+    );
 
     if (isErrorResponse(sortResult)) {
       console.log(`Sort failed: ${sortResult.error.message}`);
@@ -340,7 +349,7 @@ class ComprehensiveRecordsDemo {
 
     // 1. Try to get non-existent record
     console.log('1️⃣ Getting non-existent record...');
-    const getResult = await this.client.records.get(
+    const getResult = await this.client.records.findOne(
       DEMO_CONFIG.tableName,
       'non-existent-id'
     );

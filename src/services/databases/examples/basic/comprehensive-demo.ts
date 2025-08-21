@@ -244,7 +244,7 @@ async function demoRecordOperations() {
 
     // 2. List records
     console.log('\n📋 2. Listing records...');
-    const listResult = await client.records.list(DEMO_TABLE_NAME, {
+    const listResult = await client.records.insert(DEMO_TABLE_NAME, {
       page: { page_no: 1, page_size: 10 },
     });
     if (isErrorResponse(listResult)) {
@@ -256,7 +256,7 @@ async function demoRecordOperations() {
 
     // 3. Get specific record
     console.log('\n🔍 3. Getting specific record...');
-    const getResult = await client.records.get(DEMO_TABLE_NAME, recordId);
+    const getResult = await client.records.findOne(DEMO_TABLE_NAME, recordId);
     if (isErrorResponse(getResult)) {
       console.error('❌ Failed to get record:', getResult.error);
     } else {
@@ -395,7 +395,7 @@ async function demoErrorHandling() {
 
     // 3. Test invalid record operations
     console.log('\n📝 3. Testing invalid record operations...');
-    const invalidRecordResult = await client.records.get(
+    const invalidRecordResult = await client.records.findOne(
       'non-existent-table',
       'invalid-id'
     );
