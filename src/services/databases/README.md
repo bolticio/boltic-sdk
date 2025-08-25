@@ -1,4 +1,4 @@
-# boltic-sdk
+# Boltic SDK - Database Operations
 
 A powerful TypeScript SDK for seamless integration with Boltic Tables infrastructure. Provides comprehensive database operations including table management, column operations, record handling, and authentication.
 
@@ -12,6 +12,10 @@ A powerful TypeScript SDK for seamless integration with Boltic Tables infrastruc
 - 🧪 **Testing Utilities**: Built-in testing helpers and mocks
 - 📦 **Zero Dependencies**: Lightweight with optional peer dependencies
 - 🌐 **Multi-Region Support**: Asia Pacific and US Central regions
+- 🔍 **Advanced Filtering**: FilterBuilder with comprehensive query operators
+- 🛠️ **Helper Classes**: Schema and column creation utilities
+- ⚡ **HTTP Adapters**: Support for both Axios and Fetch
+- 🎯 **Vector Support**: AI/ML vector fields with multiple precisions
 
 ## Prerequisites
 
@@ -70,7 +74,12 @@ interface ClientOptions {
   debug?: boolean;
 }
 
-const client = createClient('your-api-key');
+const client = createClient('your-api-key', {
+  region: 'asia-south1',
+  debug: true,
+  timeout: 30000,
+  maxRetries: 3,
+});
 ```
 
 ## Database Context
@@ -287,19 +296,19 @@ const textColumns = await client.columns.findAll('users', {
 const column = await client.columns.findOne('users', {
   where: { name: 'email' },
 });
+
+// Get column by ID
+const columnById = await client.columns.findById('users', 'column-id');
 ```
 
 ### Updating Columns
 
 ```typescript
 // Update column properties
-const updateResult = await client.columns.update('users', {
-  where: { name: 'description' },
-  set: {
-    description: 'Updated user description',
-    is_visible: true,
-    is_indexed: true,
-  },
+const updateResult = await client.columns.update('users', 'description', {
+  description: 'Updated user description',
+  is_visible: true,
+  is_indexed: true,
 });
 ```
 
@@ -307,9 +316,7 @@ const updateResult = await client.columns.update('users', {
 
 ```typescript
 // Delete a column
-const deleteResult = await client.columns.delete('users', {
-  where: { name: 'description' },
-});
+const deleteResult = await client.columns.delete('users', 'description');
 ```
 
 ## Record Operations
@@ -359,14 +366,51 @@ const sparseInsertResult = await client.record.insert(
   'users',
   sparseVectorRecord
 );
-if (sparseInsertResult.error) {
-  console.error(
-    'Sparse vector record insertion failed:',
-    sparseInsertResult.error
-  );
-} else {
-  console.log('Sparse vector record inserted:', sparseInsertResult.data);
-}
+```
+
+### Advanced Filtering with FilterBuilder
+
+```typescript
+import { createFilter, FilterBuilder } from 'boltic-sdk';
+
+// Create complex filters using FilterBuilder
+const complexFilters = createFilter()
+  .greaterThan('age', 25)
+  .equals('is_active', true)
+  .contains('name', 'John')
+  .between('salary', 50000, 100000)
+  .isOneOf('role', ['Admin', 'User'])
+  .build();
+
+// Use filters in queries
+const filteredRecords = await client.record.findAll('users', {
+  filters: complexFilters,
+  sort: [{ field: 'age', order: 'desc' }],
+  page: { page_no: 1, page_size: 10 },
+});
+
+// Available filter operators
+const advancedFilters = createFilter()
+  .equals('status', 'active')
+  .notEquals('type', 'guest')
+  .greaterThan('score', 80)
+  .greaterThanOrEqual('rating', 4.0)
+  .lessThan('attempts', 5)
+  .lessThanOrEqual('age', 65)
+  .between('created_at', '2024-01-01', '2024-12-31')
+  .contains('description', 'urgent')
+  .startsWith('name', 'A')
+  .endsWith('email', '@company.com')
+  .isNull('deleted_at')
+  .isNotNull('confirmed_at')
+  .isEmpty('notes')
+  .isNotEmpty('tags')
+  .isOneOf('category', ['tech', 'business'])
+  .isNotOneOf('status', ['banned', 'suspended'])
+  .arrayContains('skills', 'javascript')
+  .arrayContainsAny('languages', ['en', 'es'])
+  .arrayContainsAll('permissions', ['read', 'write'])
+  .build();
 ```
 
 ### Querying Records
@@ -386,10 +430,19 @@ const paginatedRecords = await client.record.findAll('users', {
 // Find records with filters
 const filteredRecords = await client.record.findAll('users', {
   filters: [
-    { age: { $gte: 25 } },
-    { is_active: true },
-    { role: { $in: ['Admin', 'User'] } },
+    { field: 'age', operator: '>=', values: [25] },
+    { field: 'is_active', operator: '=', values: [true] },
+    { field: 'role', operator: 'IS ONE OF', values: ['Admin', 'User'] },
   ],
+});
+
+// Method 3: FilterBuilder (recommended)
+const builderFilterRecords = await client.record.findAll('users', {
+  filters: createFilter()
+    .greaterThanOrEqual('age', 25)
+    .equals('is_active', true)
+    .isOneOf('role', ['Admin', 'User'])
+    .build(),
 });
 
 // Find records with sorting
@@ -401,7 +454,10 @@ const sortedRecords = await client.record.findAll('users', {
 });
 
 // Find a specific record
-const specificRecord = await client.record.findOne('users', {
+const specificRecord = await client.record.findOne('users', 'record-id');
+
+// Find one record with filters
+const filteredRecord = await client.record.findOne('users', {
   filters: [{ email: 'john.doe@example.com' }],
 });
 ```
@@ -431,8 +487,16 @@ const deleteResult = await client.record.delete('users', {
 });
 
 // Delete records by IDs
-const deleteByIdsResult = await client.record.deleteByIds('users', {
+const deleteByIdsResult = await client.record.delete('users', {
   record_ids: ['id1', 'id2', 'id3'],
+});
+
+// Delete with FilterBuilder
+const deleteWithFilters = await client.record.delete('users', {
+  filters: createFilter()
+    .lessThan('last_login', '2023-01-01')
+    .equals('is_active', false)
+    .build(),
 });
 ```
 
@@ -469,33 +533,11 @@ const vectorColumns = [
 // - Position 3 has value 2
 // - Position 5 has value 3
 // - Positions 2 and 4 are implicitly 0
-```
 
 for (const vectorColumn of vectorColumns) {
-await client.columns.create('users', vectorColumn);
+  await client.columns.create('users', vectorColumn);
 }
-
-````
-
-### Interceptors
-
-```typescript
-// Add request interceptor
-const requestId = client.addRequestInterceptor((config) => {
-  config.headers['X-Request-ID'] = crypto.randomUUID();
-  return config;
-});
-
-// Add response interceptor
-const responseId = client.addResponseInterceptor((response) => {
-  console.log('Response received:', response.status);
-  return response;
-});
-
-// Remove interceptors
-client.removeInterceptor('request', requestId);
-client.removeInterceptor('response', responseId);
-````
+```
 
 ### Configuration Management
 
@@ -529,15 +571,17 @@ try {
 
   if (result.error) {
     console.error('Operation failed:', result.error);
-    // Handle specific error cases
-    if (result.error.includes('already exists')) {
-      console.log('Table already exists, continuing...');
-    }
   } else {
     console.log('Success:', result.data);
   }
 } catch (error) {
-  console.error('Unexpected error:', error);
+  if (error instanceof ApiError) {
+    console.error('API Error:', error.message, error.statusCode);
+  } else if (error instanceof ValidationError) {
+    console.error('Validation Error:', error.failures);
+  } else {
+    console.error('Unexpected error:', error);
+  }
 }
 ```
 
@@ -618,21 +662,52 @@ npm run build
 - **`client.tables.rename(oldName, newName)`**: Rename a table
 - **`client.tables.setAccess(data)`**: Update table access settings
 - **`client.tables.delete(options)`**: Delete a table
-- **`client.tables.getMetadata(name)`**: Get table metadata
 
 ### Columns
 
 - **`client.columns.create(tableName, data)`**: Create a new column
 - **`client.columns.findAll(tableName, options?)`**: List columns with optional filtering
 - **`client.columns.findOne(tableName, options)`**: Get a specific column
-- **`client.columns.update(tableName, options)`**: Update column properties
-- **`client.columns.delete(tableName, options)`**: Delete a column
+- **`client.columns.findById(tableName, columnId)`**: Get column by ID
+- **`client.columns.update(tableName, columnName, data)`**: Update column properties
+- **`client.columns.delete(tableName, columnName)`**: Delete a column
 
 ### Records
 
 - **`client.record.insert(tableName, data)`**: Insert a new record
 - **`client.record.findAll(tableName, options?)`**: List records with optional filtering
-- **`client.record.findOne(tableName, options)`**: Get a specific record
+- **`client.record.findOne(tableName, idOrOptions)`**: Get a specific record
 - **`client.record.update(tableName, options)`**: Update records by filters
 - **`client.record.updateById(tableName, options)`**: Update record by ID
-- \*\*`client.record.delete(tableName, options)`
+- **`client.record.delete(tableName, options)`**: Delete records by filters or IDs
+
+### Utilities
+
+- **`createFilter()`**: Create a FilterBuilder instance
+- **`SchemaHelpers`**: Helper class for creating field definitions
+- **`ColumnHelpers`**: Utility functions for column operations
+- **`createTestClient(options)`**: Create a test client for testing
+- **`createMockResponse(data, pagination?)`**: Create mock responses for testing
+- **`createErrorResponse(message, code?)`**: Create error responses for testing
+- **`isErrorResponse(response)`**: Check if response is an error
+
+### Builder Functions
+
+- **`createTableBuilder(client)`**: Create a table builder instance
+- **`createColumnBuilder(client, tableName)`**: Create a column builder instance
+- **`createRecordBuilder(client, tableName)`**: Create a record builder instance
+
+## Examples and Demos
+
+Check out the comprehensive demo file for complete usage examples:
+
+- [`comprehensive-database-operations-demo.ts`](./examples/basic/comprehensive-database-operations-demo.ts) - Complete SDK functionality demo
+
+This demo covers:
+
+- All column types and their properties
+- Advanced filtering and querying
+- Error handling patterns
+- Testing utilities usage
+- Vector operations
+- Builder patterns
