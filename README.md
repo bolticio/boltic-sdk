@@ -1,6 +1,10 @@
-# boltic-sdk
+# Boltic SDK
 
 A powerful TypeScript SDK for seamless integration with the Boltic platform. Simplifies database operations, table management, column operations, record handling, and authentication for building modern applications.
+
+## Documentation
+
+- **[Boltic SDK Documentation](https://docs.boltic.io/docs/category/sdk/)** - Complete SDK documentation
 
 ## Features
 
@@ -12,6 +16,9 @@ A powerful TypeScript SDK for seamless integration with the Boltic platform. Sim
 - 🧪 **Testing Utilities**: Built-in testing helpers and mocks
 - 📦 **Zero Dependencies**: Lightweight with optional peer dependencies
 - 🌐 **Multi-Region Support**: Asia Pacific and US Central regions
+- 🔍 **Advanced Filtering**: FilterBuilder with comprehensive query operators
+- 🛠️ **Helper Classes**: Schema and column creation utilities
+- 🎯 **Vector Support**: AI/ML vector fields with multiple precisions
 
 ## Installation
 
@@ -30,13 +37,15 @@ const client = createClient('your-api-key', {
   debug: false,
 });
 
-// Use the client
+// Use the client for database operations
 const tables = client.tables;
 const columns = client.columns;
 const records = client.record;
 ```
 
-## API Key Setup
+## Authentication
+
+### API Key Setup
 
 Get your API key from [boltic.io](https://boltic.io) and use it to initialize the client:
 
@@ -45,6 +54,20 @@ import { createClient } from 'boltic-sdk';
 
 const client = createClient('your-api-key-here', {
   region: 'asia-south1',
+});
+```
+
+### Environment Variables
+
+```typescript
+import dotenv from 'dotenv';
+import { createClient } from 'boltic-sdk';
+
+dotenv.config();
+
+const client = createClient(process.env.BOLTIC_API_KEY!, {
+  region: process.env.BOLTIC_REGION || 'asia-south1',
+  debug: process.env.DEBUG === 'true',
 });
 ```
 
@@ -434,51 +457,19 @@ main().catch(console.error);
 
 ## Database Operations
 
-For comprehensive database operations including advanced table management, column operations, and record handling, see the [@boltic/database-js README](./src/services/databases/README.md).
+For comprehensive database operations including advanced table management, column operations, and record handling, see:
 
-## API Reference
+- **[Database Operations Guide](http://docs.boltic.io/docs/category/databases)** - Complete documentation
+- **[Database SDK README](./src/services/databases/README.md)** - Implementation guide with examples
 
-### Core Client
+The database operations include:
 
-- **`createClient(apiKey: string, options?: ClientOptions)`**: Initialize the Boltic client
-
-### Database Context
-
-- **`client.getCurrentDatabase()`**: Get current database context
-
-### Authentication
-
-- **`client.validateApiKey()`**: Validate the API key
-- **`client.isAuthenticated()`**: Check authentication status
-
-### Tables
-
-- **`client.tables.create(data)`**: Create a new table
-- **`client.tables.findAll(options?)`**: List tables with optional filtering
-- **`client.tables.findOne(options)`**: Get a specific table
-- **`client.tables.update(identifier, data)`**: Update table properties
-- **`client.tables.rename(oldName, newName)`**: Rename a table
-- **`client.tables.setAccess(data)`**: Update table access settings
-- **`client.tables.delete(options)`**: Delete a table
-- **`client.tables.getMetadata(name)`**: Get table metadata
-
-### Columns
-
-- **`client.columns.create(tableName, data)`**: Create a new column
-- **`client.columns.findAll(tableName, options?)`**: List columns with optional filtering
-- **`client.columns.findOne(tableName, options)`**: Get a specific column
-- **`client.columns.update(tableName, options)`**: Update column properties
-- **`client.columns.delete(tableName, options)`**: Delete a column
-
-### Records
-
-- **`client.record.insert(tableName, data)`**: Insert a new record
-- **`client.record.findAll(tableName, options?)`**: List records with optional filtering
-- **`client.record.findOne(tableName, options)`**: Get a specific record
-- **`client.record.update(tableName, options)`**: Update records by filters
-- **`client.record.updateById(tableName, options)`**: Update record by ID
-- **`client.record.delete(tableName, options)`**: Delete records by filters
-- **`client.record.deleteByIds(tableName, options)`**: Delete records by IDs
+- ✅ Table creation, update, deletion, and metadata management
+- ✅ Column operations with all supported data types
+- ✅ Record CRUD operations with advanced filtering
+- ✅ Vector columns for AI/ML applications
+- ✅ Advanced filtering with FilterBuilder
+- ✅ Schema helpers and testing utilities
 
 ## Development
 
