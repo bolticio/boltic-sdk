@@ -43,10 +43,10 @@ export { SchemaHelpers } from './utils/table/schema-helpers';
 
 // Filter utilities and constants
 export {
-  FILTER_OPERATORS,
-  FilterBuilder,
   buildApiFilters,
   createFilter,
+  FILTER_OPERATORS,
+  FilterBuilder,
   mapFiltersToWhere,
   mapWhereToFilters,
   normalizeFilters,
@@ -61,11 +61,11 @@ export { createTableBuilder } from './client/resources/table-builder';
 // Error handling utilities
 export {
   ApiError,
-  ValidationError,
   createErrorWithContext,
   formatError,
   getHttpStatusCode,
   isNetworkError,
+  ValidationError,
 } from './errors/utils';
 export type { ValidationFailure } from './errors/utils';
 
@@ -89,6 +89,9 @@ export * from './errors';
 
 // Export all types
 export * from './types';
+
+// SQL exports
+export * from './client/resources/sql';
 
 // Version information
 export const VERSION = '1.0.0';

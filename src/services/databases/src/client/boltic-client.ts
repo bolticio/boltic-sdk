@@ -12,6 +12,7 @@ import {
   TableUpdateRequest,
 } from '../types/api/table';
 import { Environment, EnvironmentConfig } from '../types/config/environment';
+import { TextToSQLOptions } from '../types/sql';
 import { HttpRequestConfig, HttpResponse } from '../utils/http/adapter';
 import { AuthManager } from './core/auth-manager';
 import { BaseClient } from './core/base-client';
@@ -19,6 +20,7 @@ import { ClientConfig, ConfigManager } from './core/config';
 import { ColumnResource } from './resources/column';
 import { RecordResource } from './resources/record';
 import { createRecordBuilder, RecordBuilder } from './resources/record-builder';
+import { SqlResource } from './resources/sql';
 import { TableResource } from './resources/table';
 import { createTableBuilder, TableBuilder } from './resources/table-builder';
 
@@ -41,6 +43,7 @@ export class BolticClient {
   private tableResource: TableResource;
   private columnResource: ColumnResource;
   private recordResource: RecordResource;
+  private sqlResource: SqlResource;
   private currentDatabase: DatabaseContext | null = null;
   private clientOptions: ClientOptions;
 
@@ -74,6 +77,9 @@ export class BolticClient {
 
     // Initialize record operations
     this.recordResource = new RecordResource(this.baseClient);
+
+    // Initialize SQL operations
+    this.sqlResource = new SqlResource(this.baseClient);
 
     // Set default database context
     this.currentDatabase = {
@@ -206,6 +212,20 @@ export class BolticClient {
       tableName,
       recordResource: this.recordResource,
     });
+  }
+
+  // Direct SQL operations
+  get sql() {
+    return {
+      textToSQL: (prompt: string, options?: TextToSQLOptions) =>
+        this.sqlResource.textToSQL(prompt, options),
+      executeSQL: (query: string) => this.sqlResource.executeSQL(query),
+    };
+  }
+
+  // SQL resource access for testing
+  getSqlResource(): SqlResource {
+    return this.sqlResource;
   }
 
   // Configuration management

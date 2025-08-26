@@ -9,7 +9,9 @@ export * from './common/responses';
 // API types
 // export * from './api/database';
 export * from './api/record';
-// export * from './api/sql';
+export * from './api/sql';
+
+// SQL types
 export type {
   AlignmentType,
   FieldDefinition,
@@ -23,3 +25,4 @@ export type {
   TableRecord,
   TableUpdateRequest,
 } from './api/table';
+export * from './sql';
