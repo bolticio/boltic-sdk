@@ -1,4 +1,5 @@
 // Testing utilities and helpers
+export * from './sql-test-client';
 export * from './test-client';
 
 // Version information
