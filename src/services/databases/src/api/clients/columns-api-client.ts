@@ -11,7 +11,10 @@ import { REGION_CONFIGS } from '../../types/config/environment';
 import { createHttpAdapter } from '../../utils/http';
 import { HttpAdapter } from '../../utils/http/adapter';
 import { buildEndpointPath, COLUMN_ENDPOINTS } from '../endpoints/columns';
-import { transformColumnUpdateRequest } from '../transformers/columns';
+import {
+  transformColumnCreateRequest,
+  transformColumnUpdateRequest,
+} from '../transformers/columns';
 
 export interface ColumnsApiClientConfig {
   apiKey: string;
@@ -125,11 +128,14 @@ export class ColumnsApiClient {
       const endpoint = COLUMN_ENDPOINTS.create;
       const url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
 
+      // Transform the request to ensure proper formatting (e.g., selection_source for dropdowns)
+      const transformedRequest = transformColumnCreateRequest(request);
+
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: request,
+        data: transformedRequest,
         timeout: this.config.timeout,
       });
 

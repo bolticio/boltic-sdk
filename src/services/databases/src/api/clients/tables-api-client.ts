@@ -9,6 +9,7 @@ import { REGION_CONFIGS } from '../../types/config/environment';
 import { createHttpAdapter } from '../../utils/http';
 import { HttpAdapter } from '../../utils/http/adapter';
 import { buildEndpointPath, TABLE_ENDPOINTS } from '../endpoints/tables';
+import { transformTableCreateRequest } from '../transformers/tables';
 
 export interface TablesApiClientConfig {
   apiKey: string;
@@ -107,17 +108,14 @@ export class TablesApiClient {
       const endpoint = TABLE_ENDPOINTS.create;
       const url = `${this.baseURL}${endpoint.path}`;
 
-      // Prepare request data without transformation
-      const requestData = {
-        ...request,
-        ...options,
-      };
+      // Transform the request to ensure proper formatting (e.g., selection_source for dropdowns)
+      const transformedRequest = transformTableCreateRequest(request, options);
 
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: requestData,
+        data: transformedRequest,
         timeout: this.config.timeout,
       });
 

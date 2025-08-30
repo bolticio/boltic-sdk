@@ -235,12 +235,21 @@ export function transformColumnUpdateRequest(
     apiRequest.currency_format = updates.currency_format;
 
   // Handle selection_source for dropdown columns
-  // Always hardcode to "provide-static-list" for dropdown columns or when selectable_items are provided
-  if (updates.type === 'dropdown' || updates.selectable_items !== undefined) {
+  // Set to "provide-static-list" when:
+  // 1. Changing type to dropdown
+  // 2. Updating selectable_items (implies dropdown behavior)
+  // 3. Explicitly setting selection_source
+  if (updates.type === 'dropdown') {
+    // When changing type to dropdown, always set selection_source
+    apiRequest.selection_source = 'provide-static-list';
+  } else if (updates.selectable_items !== undefined) {
+    // When updating selectable_items, ensure selection_source is set
     apiRequest.selection_source = 'provide-static-list';
   } else if (updates.selection_source !== undefined) {
+    // When explicitly setting selection_source, use the provided value
     apiRequest.selection_source = updates.selection_source;
   }
+  // If none of the above, don't modify selection_source (preserve existing)
 
   if (updates.selectable_items !== undefined)
     apiRequest.selectable_items = updates.selectable_items;

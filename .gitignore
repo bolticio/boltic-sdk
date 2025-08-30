@@ -61,6 +61,3 @@ test-results/
 
 # Husky
 .husky/_
-
-# SDK Test folder
-sdk-test/ 

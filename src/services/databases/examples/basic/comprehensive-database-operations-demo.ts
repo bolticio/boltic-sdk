@@ -101,7 +101,6 @@ const ALL_COLUMN_TYPES = [
     is_nullable: false,
     is_indexed: true,
     is_visible: true,
-    selection_source: 'provide-static-list',
     selectable_items: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
     multiple_selections: false,
     default_value: ['Option 1'],
@@ -594,6 +593,37 @@ class ComprehensiveDatabaseOperationsDemo {
         console.log(
           `📤 Output (updated ${columnData.type}):`,
           updateColumnResult.data
+        );
+      }
+    }
+
+    // Test updating description of a text type field specifically
+    console.log('\n📝 Input: Testing description update for text type field');
+    const textFieldUpdateResult = await this.client.columns.update(
+      this.createdTableName,
+      'text_field',
+      {
+        description: 'Updated product title with enhanced validation',
+      }
+    );
+
+    if (textFieldUpdateResult.error) {
+      console.error(
+        '❌ Failed to update text field description:',
+        textFieldUpdateResult.error
+      );
+    } else {
+      console.log(
+        '📤 Output (text field description updated):',
+        textFieldUpdateResult.data
+      );
+      if (
+        textFieldUpdateResult.data &&
+        'description' in textFieldUpdateResult.data
+      ) {
+        console.log(
+          '✅ Description updated:',
+          textFieldUpdateResult.data.description
         );
       }
     }
@@ -1244,6 +1274,34 @@ class ComprehensiveDatabaseOperationsDemo {
         date_time_field: '2024-04-25T16:45:00Z',
         half_vector_field: [0.4, 0.5, 0.6, 0.7, 0.8],
       },
+      {
+        text_field: 'Eva',
+        email_field: 'eva@company.com',
+        long_text_field:
+          'Eva is a creative designer with expertise in user experience and visual design.',
+        number_field: 28,
+        currency_field: 55000,
+        checkbox_field: true,
+        dropdown_field: ['Option 2'],
+        phone_field: '+91 543 210 9876',
+        link_field: 'https://eva.company.com',
+        date_time_field: '2024-05-30T11:20:00Z',
+        half_vector_field: [0.5, 0.6, 0.7, 0.8, 0.9],
+      },
+      {
+        text_field: 'Frank',
+        email_field: 'frank@startup.io',
+        long_text_field:
+          'Frank is an entrepreneur with a passion for building innovative products and scaling businesses.',
+        number_field: 32,
+        currency_field: 65000,
+        checkbox_field: false,
+        dropdown_field: ['Option 3'],
+        phone_field: '+91 432 109 8765',
+        link_field: 'https://frank.startup.io',
+        date_time_field: '2024-06-15T13:45:00Z',
+        half_vector_field: [0.6, 0.7, 0.8, 0.9, 1.0],
+      },
     ];
 
     console.log('📝 Input: Adding test records for filter demonstration');
@@ -1314,47 +1372,197 @@ class ComprehensiveDatabaseOperationsDemo {
 
     // Demonstrate different filter types using the new comprehensive filter system
     const filterExamples = [
+      // Text Field Filters
       {
-        name: 'Equality Filter (ApiFilter)',
+        name: 'Text Equality Filter',
         filters: [{ field: 'text_field', operator: '=', values: ['Alice'] }],
         description: 'Find records where text_field equals "Alice"',
       },
       {
-        name: 'Greater Than Filter',
-        filters: [{ field: 'number_field', operator: '>', values: [30] }],
-        description: 'Find records where number_field > 30',
+        name: 'Text Not Equals Filter',
+        filters: [{ field: 'text_field', operator: '!=', values: ['Admin'] }],
+        description: 'Find records where text_field is not "Admin"',
       },
       {
-        name: 'Between Filter',
-        filters: [
-          { field: 'number_field', operator: 'BETWEEN', values: [25, 35] },
-        ],
-        description: 'Find records where number_field is between 25 and 35',
+        name: 'Text Contains (Case Sensitive)',
+        filters: [{ field: 'text_field', operator: 'LIKE', values: ['%ice%'] }],
+        description:
+          'Find records where text_field contains "ice" (case sensitive)',
       },
       {
-        name: 'Like Filter (Case Sensitive)',
+        name: 'Text Contains (Case Insensitive)',
         filters: [
-          { field: 'email_field', operator: 'LIKE', values: ['%@test.%'] },
-        ],
-        description: 'Find records where email contains "@test."',
-      },
-      {
-        name: 'Case Insensitive Like Filter',
-        filters: [
-          { field: 'email_field', operator: 'ILIKE', values: ['%EXAMPLE%'] },
+          { field: 'text_field', operator: 'ILIKE', values: ['%alice%'] },
         ],
         description:
-          'Find records where email contains "EXAMPLE" (case insensitive)',
+          'Find records where text_field contains "alice" (case insensitive)',
       },
       {
-        name: 'Starts With Filter',
+        name: 'Text Starts With Filter',
         filters: [
           { field: 'text_field', operator: 'STARTS WITH', values: ['A'] },
         ],
         description: 'Find records where text_field starts with "A"',
       },
       {
-        name: 'Array Contains Filter (Dropdown)',
+        name: 'Text IN Filter',
+        filters: [
+          {
+            field: 'text_field',
+            operator: 'IN',
+            values: ['Alice', 'Bob', 'Charlie'],
+          },
+        ],
+        description:
+          'Find records where text_field is one of ["Alice", "Bob", "Charlie"]',
+      },
+      {
+        name: 'Text IS EMPTY Filter',
+        filters: [
+          { field: 'text_field', operator: 'IS EMPTY', values: [false] },
+        ],
+        description: 'Find records where text_field is not empty',
+      },
+
+      // Number Field Filters
+      {
+        name: 'Number Greater Than Filter',
+        filters: [{ field: 'number_field', operator: '>', values: [30] }],
+        description: 'Find records where number_field > 30',
+      },
+      {
+        name: 'Number Greater Than or Equal Filter',
+        filters: [{ field: 'number_field', operator: '>=', values: [30] }],
+        description: 'Find records where number_field >= 30',
+      },
+      {
+        name: 'Number Less Than Filter',
+        filters: [{ field: 'number_field', operator: '<', values: [35] }],
+        description: 'Find records where number_field < 35',
+      },
+      {
+        name: 'Number Between Filter',
+        filters: [
+          { field: 'number_field', operator: 'BETWEEN', values: [25, 35] },
+        ],
+        description: 'Find records where number_field is between 25 and 35',
+      },
+      {
+        name: 'Number IN Filter',
+        filters: [
+          { field: 'number_field', operator: 'IN', values: [25, 30, 35] },
+        ],
+        description: 'Find records where number_field is one of [25, 30, 35]',
+      },
+
+      // Currency Field Filters
+      {
+        name: 'Currency Greater Than Filter',
+        filters: [{ field: 'currency_field', operator: '>', values: [60000] }],
+        description: 'Find records where currency_field > 60000',
+      },
+      {
+        name: 'Currency Between Filter',
+        filters: [
+          {
+            field: 'currency_field',
+            operator: 'BETWEEN',
+            values: [50000, 70000],
+          },
+        ],
+        description:
+          'Find records where currency_field is between 50000 and 70000',
+      },
+
+      // Boolean Field Filters
+      {
+        name: 'Boolean True Filter',
+        filters: [{ field: 'checkbox_field', operator: '=', values: [true] }],
+        description: 'Find records where checkbox_field is true',
+      },
+      {
+        name: 'Boolean False Filter',
+        filters: [{ field: 'checkbox_field', operator: '=', values: [false] }],
+        description: 'Find records where checkbox_field is false',
+      },
+
+      // Date-Time Field Filters
+      {
+        name: 'Date Greater Than Filter',
+        filters: [
+          {
+            field: 'date_time_field',
+            operator: '>',
+            values: ['2024-02-01T00:00:00Z'],
+          },
+        ],
+        description: 'Find records where date_time_field is after Feb 1, 2024',
+      },
+      {
+        name: 'Date Between Filter',
+        filters: [
+          {
+            field: 'date_time_field',
+            operator: 'BETWEEN',
+            values: ['2024-01-01T00:00:00Z', '2024-03-31T23:59:59Z'],
+          },
+        ],
+        description: 'Find records where date_time_field is in Q1 2024',
+      },
+      {
+        name: 'Date WITHIN Filter',
+        filters: [
+          {
+            field: 'date_time_field',
+            operator: 'WITHIN',
+            values: ['last-30-days'],
+          },
+        ],
+        description:
+          'Find records where date_time_field is within last 30 days',
+      },
+
+      // Email Field Filters
+      {
+        name: 'Email Domain Filter',
+        filters: [
+          {
+            field: 'email_field',
+            operator: 'ILIKE',
+            values: ['%@example.com'],
+          },
+        ],
+        description: 'Find records where email ends with "@example.com"',
+      },
+      {
+        name: 'Email Contains Filter',
+        filters: [
+          { field: 'email_field', operator: 'ILIKE', values: ['%test%'] },
+        ],
+        description: 'Find records where email contains "test"',
+      },
+
+      // Phone Field Filters
+      {
+        name: 'Phone Starts With Filter',
+        filters: [
+          { field: 'phone_field', operator: 'STARTS WITH', values: ['+91'] },
+        ],
+        description: 'Find records where phone starts with "+91"',
+      },
+
+      // Link Field Filters
+      {
+        name: 'Link Contains Filter',
+        filters: [
+          { field: 'link_field', operator: 'LIKE', values: ['%example%'] },
+        ],
+        description: 'Find records where link contains "example"',
+      },
+
+      // Dropdown Field Filters (Array Fields)
+      {
+        name: 'Dropdown Array Contains Filter',
         filters: [
           {
             field: 'dropdown_field',
@@ -1366,7 +1574,7 @@ class ComprehensiveDatabaseOperationsDemo {
           'Find records where dropdown_field array contains "Option 1"',
       },
       {
-        name: 'Array Any Filter (Dropdown)',
+        name: 'Dropdown Any Element Filter',
         filters: [
           {
             field: 'dropdown_field',
@@ -1378,7 +1586,7 @@ class ComprehensiveDatabaseOperationsDemo {
           'Find records where any element in dropdown_field matches "Option 2"',
       },
       {
-        name: 'Array In Filter (Dropdown)',
+        name: 'Dropdown Array Overlap Filter',
         filters: [
           {
             field: 'dropdown_field',
@@ -1387,10 +1595,44 @@ class ComprehensiveDatabaseOperationsDemo {
           },
         ],
         description:
-          'Find records where dropdown_field is one of ["Option 1", "Option 3"]',
+          'Find records where dropdown_field overlaps with ["Option 1", "Option 3"]',
+      },
+
+      // Vector Field Filters
+      {
+        name: 'Vector Not Empty Filter',
+        filters: [
+          { field: 'half_vector_field', operator: '!=', values: [null] },
+        ],
+        description: 'Find records where half_vector_field is not null',
       },
       {
-        name: 'Complex Filter with Array Field',
+        name: 'Vector Similarity Search (Euclidean Distance)',
+        filters: [
+          {
+            field: 'half_vector_field',
+            operator: '<->',
+            values: ['[0.1,0.2,0.3,0.4,0.5]'],
+          },
+        ],
+        description:
+          'Find records with similar vectors using Euclidean distance',
+      },
+      {
+        name: 'Vector Similarity Search (Cosine Distance)',
+        filters: [
+          {
+            field: 'half_vector_field',
+            operator: '<=>',
+            values: ['[0.2,0.3,0.4,0.5,0.6]'],
+          },
+        ],
+        description: 'Find records with similar vectors using cosine distance',
+      },
+
+      // Complex Multi-Field Filters
+      {
+        name: 'Complex Filter with Multiple Conditions',
         filters: createFilter()
           .greaterThan('number_field', 25)
           .equals('checkbox_field', true)
@@ -1400,12 +1642,23 @@ class ComprehensiveDatabaseOperationsDemo {
           'Complex filter: number > 25 AND checkbox = true AND dropdown contains "Option 1"',
       },
       {
-        name: 'Multiple Conditions (AND)',
+        name: 'Multiple Conditions (AND Logic)',
         filters: [
           { field: 'number_field', operator: '>=', values: [30] },
           { field: 'checkbox_field', operator: '=', values: [false] },
+          { field: 'currency_field', operator: '>', values: [60000] },
         ],
-        description: 'Find records where number >= 30 AND checkbox = false',
+        description:
+          'Find records where number >= 30 AND checkbox = false AND currency > 60000',
+      },
+      {
+        name: 'Text and Number Combined Filter',
+        filters: [
+          { field: 'text_field', operator: 'ILIKE', values: ['%a%'] },
+          { field: 'number_field', operator: 'BETWEEN', values: [25, 35] },
+        ],
+        description:
+          'Find records where text contains "a" AND number is between 25-35',
       },
     ];
 
