@@ -16,7 +16,7 @@ export interface ExecuteSQLApiRequest {
 export interface ExecuteSQLApiResponse {
   data: [
     Record<string, unknown>[], // Query result rows
-    any, // Can be anything: number, object, list, etc. depending on SQL operation
+    unknown, // Can be anything: number, object, list, etc. depending on SQL operation
   ];
   pagination?: {
     total_count: number;
