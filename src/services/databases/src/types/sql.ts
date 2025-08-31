@@ -8,6 +8,6 @@ export interface TextToSQLOptions {
 export interface ExecutionResult {
   data: Record<string, unknown>[];
   count: number;
-  metadata: any; // Pass metadata as-is from API response
+  metadata: unknown; // Pass metadata as-is from API response
   pagination?: PaginationInfo;
 }
