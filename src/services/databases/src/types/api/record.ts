@@ -2,6 +2,7 @@ import { ApiFilter } from '../../utils/filters/filter-mapper';
 
 export interface RecordData {
   [fieldName: string]: unknown;
+  fields?: string[];
 }
 
 export interface RecordCreateRequest {
@@ -45,11 +46,13 @@ export interface RecordQueryOptions {
 export interface RecordUpdateOptions {
   set: RecordData;
   filters: ApiFilter[] | Record<string, unknown>[];
+  fields?: string[];
 }
 
 export interface RecordUpdateByIdOptions {
   id: string;
   set: RecordData;
+  fields?: string[];
 }
 
 // Unified delete options interface that supports both record_ids and filters

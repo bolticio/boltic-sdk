@@ -227,6 +227,7 @@ export const FIELD_SPECIFIC_KEYS_MAP = {
 
 export interface ColumnCreateRequest {
   columns: FieldDefinition[];
+  fields?: Array<keyof ColumnDetails>;
 }
 
 export interface ColumnUpdateRequest {
@@ -241,6 +242,7 @@ export interface ColumnUpdateRequest {
   is_readonly?: boolean;
   default_value?: unknown;
   field_order?: number;
+  fields?: Array<keyof ColumnDetails>;
 
   // Type-specific properties that can be updated
   alignment?: AlignmentType;

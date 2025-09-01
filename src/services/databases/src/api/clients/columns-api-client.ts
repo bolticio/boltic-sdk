@@ -8,6 +8,7 @@ import {
 import { FieldDefinition } from '../../types/api/table';
 import type { Environment, Region } from '../../types/config/environment';
 import { REGION_CONFIGS } from '../../types/config/environment';
+import { filterArrayFields, filterObjectFields } from '../../utils/common';
 import { createHttpAdapter } from '../../utils/http';
 import { HttpAdapter } from '../../utils/http/adapter';
 import { buildEndpointPath, COLUMN_ENDPOINTS } from '../endpoints/columns';
@@ -174,6 +175,15 @@ export class ColumnsApiClient {
         createdColumns.push(result.data);
       }
 
+      // Apply field filtering if fields are specified
+      if (request.fields && createdColumns.length > 0) {
+        const filteredColumns = filterArrayFields(
+          createdColumns as unknown as Record<string, unknown>[],
+          request.fields as string[]
+        ) as unknown as ColumnRecord[];
+        createdColumns.splice(0, createdColumns.length, ...filteredColumns);
+      }
+
       // Return in Boltic list format
       return {
         data: createdColumns,
@@ -203,8 +213,16 @@ export class ColumnsApiClient {
         timeout: this.config.timeout,
       });
 
-      // Return raw response without transformation
-      return response.data as BolticListResponse<ColumnDetails>;
+      // Apply field filtering if fields are specified
+      const responseData = response.data as BolticListResponse<ColumnDetails>;
+      if (options.fields && responseData.data) {
+        responseData.data = filterArrayFields(
+          responseData.data as unknown as Record<string, unknown>[],
+          options.fields as string[]
+        ) as unknown as ColumnDetails[];
+      }
+
+      return responseData;
     } catch (error) {
       return this.formatErrorResponse(error);
     }
@@ -215,7 +233,8 @@ export class ColumnsApiClient {
    */
   async getColumn(
     tableId: string,
-    columnId: string
+    columnId: string,
+    options: { fields?: Array<keyof ColumnDetails> } = {}
   ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
       const endpoint = COLUMN_ENDPOINTS.get;
@@ -237,8 +256,18 @@ export class ColumnsApiClient {
           JSON.stringify(response.data, null, 2)
         );
       }
-      // Return raw response without transformation
-      return response.data as BolticSuccessResponse<ColumnDetails>;
+
+      // Apply field filtering if fields are specified
+      const responseData =
+        response.data as BolticSuccessResponse<ColumnDetails>;
+      if (options.fields && responseData.data) {
+        responseData.data = filterObjectFields(
+          responseData.data as unknown as Record<string, unknown>,
+          options.fields as string[]
+        ) as unknown as ColumnDetails;
+      }
+
+      return responseData;
     } catch (error) {
       return this.formatErrorResponse(error);
     }
@@ -270,8 +299,17 @@ export class ColumnsApiClient {
         timeout: this.config.timeout,
       });
 
-      // Return raw response without transformation
-      return response.data as BolticSuccessResponse<ColumnDetails>;
+      // Apply field filtering if fields are specified
+      const responseData =
+        response.data as BolticSuccessResponse<ColumnDetails>;
+      if (updates.fields && responseData.data) {
+        responseData.data = filterObjectFields(
+          responseData.data as unknown as Record<string, unknown>,
+          updates.fields as string[]
+        ) as unknown as ColumnDetails;
+      }
+
+      return responseData;
     } catch (error) {
       return this.formatErrorResponse(error);
     }

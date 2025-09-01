@@ -298,6 +298,14 @@ export class TableResource extends BaseResource {
         throw new ApiError(`Table '${name}' not found`, 404);
       }
 
+      // Check if the table is a snapshot and prevent updates
+      if (tableResult.data.snapshot_url) {
+        throw new ApiError(
+          `Cannot update snapshot table '${name}'. Snapshots are read-only and cannot be modified.`,
+          400
+        );
+      }
+
       const result = await this.tablesApiClient.updateTable(
         tableResult.data.id,
         data
@@ -331,6 +339,14 @@ export class TableResource extends BaseResource {
 
       if (!tableResult.data) {
         throw new ApiError(`Table '${name}' not found`, 404);
+      }
+
+      // Check if the table is a snapshot and prevent deletion
+      if (tableResult.data.snapshot_url) {
+        throw new ApiError(
+          `Cannot delete snapshot table '${name}'. Snapshots are read-only and cannot be deleted.`,
+          400
+        );
       }
 
       const result = await this.tablesApiClient.deleteTable(

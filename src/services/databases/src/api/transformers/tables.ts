@@ -31,7 +31,6 @@ export interface TableUpdateApiRequest {
   name?: string;
   description?: string;
   is_shared?: boolean;
-  snapshot?: string;
 }
 
 export interface TableListApiResponse {
@@ -151,7 +150,6 @@ export function transformTableUpdateRequest(updates: {
   name?: string;
   description?: string;
   is_shared?: boolean;
-  snapshot?: string;
 }): TableUpdateApiRequest {
   const request: TableUpdateApiRequest = {};
 
@@ -165,10 +163,6 @@ export function transformTableUpdateRequest(updates: {
 
   if (updates.is_shared !== undefined) {
     request.is_shared = updates.is_shared;
-  }
-
-  if (updates.snapshot !== undefined) {
-    request.snapshot = updates.snapshot;
   }
 
   return request;

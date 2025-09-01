@@ -8,6 +8,7 @@ import {
 } from '../../types/api/record';
 import type { Environment, Region } from '../../types/config/environment';
 import { REGION_CONFIGS } from '../../types/config/environment';
+import { filterArrayFields, filterObjectFields } from '../../utils/common';
 import { createHttpAdapter } from '../../utils/http';
 import { HttpAdapter } from '../../utils/http/adapter';
 import {
@@ -98,7 +99,7 @@ export class RecordsApiClient {
     request: RecordData & { table_id?: string }
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
-      const { table_id, ...recordData } = request;
+      const { table_id, fields, ...recordData } = request;
 
       if (!table_id) {
         return this.formatErrorResponse(
@@ -117,8 +118,16 @@ export class RecordsApiClient {
         timeout: this.config.timeout,
       });
 
-      // Return raw response without transformation
-      return response.data as BolticSuccessResponse<RecordWithId>;
+      // Apply field filtering if fields are specified
+      const responseData = response.data as BolticSuccessResponse<RecordWithId>;
+      if (fields && responseData.data) {
+        responseData.data = filterObjectFields(
+          responseData.data,
+          fields
+        ) as RecordWithId;
+      }
+
+      return responseData;
     } catch (error) {
       return this.formatErrorResponse(error);
     }
@@ -129,7 +138,8 @@ export class RecordsApiClient {
    */
   async getRecord(
     recordId: string,
-    tableId: string
+    tableId: string,
+    options: { fields?: string[] } = {}
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
       if (!tableId) {
@@ -151,8 +161,16 @@ export class RecordsApiClient {
         timeout: this.config.timeout,
       });
 
-      // Return raw response without transformation
-      return response.data as BolticSuccessResponse<RecordWithId>;
+      // Apply field filtering if fields are specified
+      const responseData = response.data as BolticSuccessResponse<RecordWithId>;
+      if (options.fields && responseData.data) {
+        responseData.data = filterObjectFields(
+          responseData.data,
+          options.fields
+        ) as RecordWithId;
+      }
+
+      return responseData;
     } catch (error) {
       return this.formatErrorResponse(error);
     }
@@ -184,8 +202,16 @@ export class RecordsApiClient {
         timeout: this.config.timeout,
       });
 
-      // Return raw response without transformation
-      return response.data as BolticListResponse<RecordWithId>;
+      // Apply field filtering if fields are specified
+      const responseData = response.data as BolticListResponse<RecordWithId>;
+      if (queryOptions.fields && responseData.data) {
+        responseData.data = filterArrayFields(
+          responseData.data,
+          queryOptions.fields
+        ) as RecordWithId[];
+      }
+
+      return responseData;
     } catch (error) {
       return this.formatErrorResponse(error);
     }
@@ -217,8 +243,16 @@ export class RecordsApiClient {
         timeout: this.config.timeout,
       });
 
-      // Return raw response without transformation
-      return response.data as BolticListResponse<RecordWithId>;
+      // Apply field filtering if fields are specified in the request
+      const responseData = response.data as BolticListResponse<RecordWithId>;
+      if (updateOptions.fields && responseData.data) {
+        responseData.data = filterArrayFields(
+          responseData.data,
+          updateOptions.fields
+        ) as RecordWithId[];
+      }
+
+      return responseData;
     } catch (error) {
       return this.formatErrorResponse(error);
     }
@@ -254,8 +288,16 @@ export class RecordsApiClient {
         timeout: this.config.timeout,
       });
 
-      // Return raw response without transformation
-      return response.data as BolticSuccessResponse<RecordWithId>;
+      // Apply field filtering if fields are specified
+      const responseData = response.data as BolticSuccessResponse<RecordWithId>;
+      if (updateOptions.fields && responseData.data) {
+        responseData.data = filterObjectFields(
+          responseData.data,
+          updateOptions.fields
+        ) as RecordWithId;
+      }
+
+      return responseData;
     } catch (error) {
       return this.formatErrorResponse(error);
     }

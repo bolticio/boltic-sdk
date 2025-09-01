@@ -50,13 +50,14 @@ export interface TableCreateRequest {
   description?: string;
   is_ai_generated_schema?: boolean;
   is_template?: boolean;
+  responseFields?: Array<keyof TableRecord>;
 }
 
 export interface TableUpdateRequest {
   name?: string;
   description?: string;
-  snapshot?: string;
   is_shared?: boolean;
+  fields?: Array<keyof TableRecord>;
 }
 
 export interface TableCreateResponse {
@@ -99,6 +100,7 @@ export interface TableQueryOptions {
       $between?: [string, string];
     };
   };
+  fields?: Array<keyof TableRecord>;
   sort?: Array<{
     field: keyof TableRecord;
     order: 'asc' | 'desc';

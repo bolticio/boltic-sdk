@@ -6,6 +6,7 @@ import {
 } from '../../types/api/table';
 import type { Environment, Region } from '../../types/config/environment';
 import { REGION_CONFIGS } from '../../types/config/environment';
+import { filterArrayFields, filterObjectFields } from '../../utils/common';
 import { createHttpAdapter } from '../../utils/http';
 import { HttpAdapter } from '../../utils/http/adapter';
 import { buildEndpointPath, TABLE_ENDPOINTS } from '../endpoints/tables';
@@ -119,6 +120,7 @@ export class TablesApiClient {
         timeout: this.config.timeout,
       });
 
+      // Note: TableCreateResponse only contains id and message, so field filtering is not applicable
       // Return raw response without transformation
       return response.data as BolticSuccessResponse<TableCreateResponse>;
     } catch (error) {
@@ -144,8 +146,16 @@ export class TablesApiClient {
         timeout: this.config.timeout,
       });
 
-      // Return raw response without transformation
-      return response.data as BolticListResponse<TableRecord>;
+      // Apply field filtering if fields are specified
+      const responseData = response.data as BolticListResponse<TableRecord>;
+      if (options.fields && responseData.data) {
+        responseData.data = filterArrayFields(
+          responseData.data as unknown as Record<string, unknown>[],
+          options.fields
+        ) as unknown as TableRecord[];
+      }
+
+      return responseData;
     } catch (error) {
       return this.formatErrorResponse(error);
     }
@@ -155,7 +165,8 @@ export class TablesApiClient {
    * Get a specific table by ID
    */
   async getTable(
-    tableId: string
+    tableId: string,
+    options: { fields?: Array<keyof TableRecord> } = {}
   ): Promise<BolticSuccessResponse<TableRecord> | BolticErrorResponse> {
     try {
       const endpoint = TABLE_ENDPOINTS.get;
@@ -168,8 +179,16 @@ export class TablesApiClient {
         timeout: this.config.timeout,
       });
 
-      // Return raw response without transformation
-      return response.data as BolticSuccessResponse<TableRecord>;
+      // Apply field filtering if fields are specified
+      const responseData = response.data as BolticSuccessResponse<TableRecord>;
+      if (options.fields && responseData.data) {
+        responseData.data = filterObjectFields(
+          responseData.data as unknown as Record<string, unknown>,
+          options.fields as string[]
+        ) as unknown as TableRecord;
+      }
+
+      return responseData;
     } catch (error) {
       return this.formatErrorResponse(error);
     }
@@ -184,10 +203,11 @@ export class TablesApiClient {
       name?: string;
       description?: string;
       is_shared?: boolean;
-      snapshot?: string;
+      fields?: Array<keyof TableRecord>;
     }
   ): Promise<BolticSuccessResponse<TableRecord> | BolticErrorResponse> {
     try {
+      const { fields, ...updateData } = updates;
       const endpoint = TABLE_ENDPOINTS.update;
       const url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
 
@@ -195,12 +215,20 @@ export class TablesApiClient {
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: updates,
+        data: updateData,
         timeout: this.config.timeout,
       });
 
-      // Return raw response without transformation
-      return response.data as BolticSuccessResponse<TableRecord>;
+      // Apply field filtering if fields are specified
+      const responseData = response.data as BolticSuccessResponse<TableRecord>;
+      if (fields && responseData.data) {
+        responseData.data = filterObjectFields(
+          responseData.data as unknown as Record<string, unknown>,
+          fields as string[]
+        ) as unknown as TableRecord;
+      }
+
+      return responseData;
     } catch (error) {
       return this.formatErrorResponse(error);
     }

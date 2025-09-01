@@ -49,14 +49,25 @@ export class RecordResource {
     data: RecordData
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
         return {
           data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
+          },
+        };
+      }
+
+      // Check if the table is a snapshot and prevent record insertion
+      if (tableInfo.snapshot_url) {
+        return {
+          data: {},
+          error: {
+            code: 'SNAPSHOT_PROTECTION',
+            message: `Cannot insert record into snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
           },
         };
       }
@@ -73,7 +84,7 @@ export class RecordResource {
       // Include table_id in the request payload
       const requestData = {
         ...(completeDataResult as RecordData),
-        table_id: tableId,
+        table_id: tableInfo.id,
       };
       const result = await this.apiClient.insertRecord(requestData);
 
@@ -102,9 +113,9 @@ export class RecordResource {
     recordId: string
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
         return {
           data: {},
           error: {
@@ -114,7 +125,7 @@ export class RecordResource {
         };
       }
 
-      const result = await this.apiClient.getRecord(recordId, tableId);
+      const result = await this.apiClient.getRecord(recordId, tableInfo.id);
 
       if (isErrorResponse(result)) {
         return result;
@@ -141,9 +152,9 @@ export class RecordResource {
     options: RecordQueryOptions = {}
   ): Promise<BolticListResponse<RecordWithId> | BolticErrorResponse> {
     try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
         return {
           data: {},
           error: {
@@ -154,7 +165,7 @@ export class RecordResource {
       }
 
       // Include table_id in the request payload
-      const requestOptions = { ...options, table_id: tableId };
+      const requestOptions = { ...options, table_id: tableInfo.id };
       const result = await this.apiClient.listRecords(requestOptions);
 
       if (isErrorResponse(result)) {
@@ -182,9 +193,9 @@ export class RecordResource {
     options: RecordUpdateOptions
   ): Promise<BolticListResponse<RecordWithId> | BolticErrorResponse> {
     try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
         return {
           data: {},
           error: {
@@ -194,8 +205,19 @@ export class RecordResource {
         };
       }
 
+      // Check if the table is a snapshot and prevent record updates
+      if (tableInfo.snapshot_url) {
+        return {
+          data: {},
+          error: {
+            code: 'SNAPSHOT_PROTECTION',
+            message: `Cannot update records in snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
+          },
+        };
+      }
+
       // Include table_id in the request payload
-      const requestOptions = { ...options, table_id: tableId };
+      const requestOptions = { ...options, table_id: tableInfo.id };
       const result = await this.apiClient.updateRecords(requestOptions);
 
       if (isErrorResponse(result)) {
@@ -224,9 +246,9 @@ export class RecordResource {
     data: RecordData
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
         return {
           data: {},
           error: {
@@ -236,11 +258,22 @@ export class RecordResource {
         };
       }
 
+      // Check if the table is a snapshot and prevent record updates
+      if (tableInfo.snapshot_url) {
+        return {
+          data: {},
+          error: {
+            code: 'SNAPSHOT_PROTECTION',
+            message: `Cannot update record in snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
+          },
+        };
+      }
+
       // Include table_id in the request payload
       const requestOptions: RecordUpdateByIdOptions & { table_id: string } = {
         id: recordId,
         set: data,
-        table_id: tableId,
+        table_id: tableInfo.id,
       };
       const result = await this.apiClient.updateRecordById(
         recordId,
@@ -272,9 +305,9 @@ export class RecordResource {
     options: RecordDeleteOptions
   ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
         return {
           data: {},
           error: {
@@ -284,8 +317,19 @@ export class RecordResource {
         };
       }
 
+      // Check if the table is a snapshot and prevent record deletion
+      if (tableInfo.snapshot_url) {
+        return {
+          data: {},
+          error: {
+            code: 'SNAPSHOT_PROTECTION',
+            message: `Cannot delete records from snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
+          },
+        };
+      }
+
       // Include table_id in the request payload
-      const requestOptions = { ...options, table_id: tableId };
+      const requestOptions = { ...options, table_id: tableInfo.id };
       const result = await this.apiClient.deleteRecords(requestOptions);
 
       if (isErrorResponse(result)) {
@@ -313,9 +357,9 @@ export class RecordResource {
     recordId: string
   ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
         return {
           data: {},
           error: {
@@ -325,8 +369,19 @@ export class RecordResource {
         };
       }
 
+      // Check if the table is a snapshot and prevent record deletion
+      if (tableInfo.snapshot_url) {
+        return {
+          data: {},
+          error: {
+            code: 'SNAPSHOT_PROTECTION',
+            message: `Cannot delete record from snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
+          },
+        };
+      }
+
       const result = await this.apiClient.deleteRecordById(recordId, {
-        table_id: tableId,
+        table_id: tableInfo.id,
       });
 
       if (isErrorResponse(result)) {
@@ -347,21 +402,26 @@ export class RecordResource {
   }
 
   /**
-   * Helper method to get table ID by name
+   * Helper method to get table information by name
    */
-  private async getTableId(tableName: string): Promise<string | null> {
+  private async getTableInfo(
+    tableName: string
+  ): Promise<{ id: string; snapshot_url?: string } | null> {
     try {
       // Use the table resource to find the table by name
       const tableResource = new TableResource(this.client);
       const tableResult = await tableResource.findByName(tableName);
 
       if (tableResult.data) {
-        return tableResult.data.id;
+        return {
+          id: tableResult.data.id,
+          snapshot_url: tableResult.data.snapshot_url,
+        };
       }
 
       return null;
     } catch (error) {
-      console.error('Error getting table ID:', error);
+      console.error('Error getting table info:', error);
       return null;
     }
   }
