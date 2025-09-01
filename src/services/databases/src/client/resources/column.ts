@@ -46,16 +46,16 @@ export class ColumnResource extends BaseResource {
   }
 
   /**
-   * Add a single column to existing table
+   * Create a single column in a table
    */
   async create(
     tableName: string,
     column: FieldDefinition
   ): Promise<BolticSuccessResponse<ColumnRecord> | BolticErrorResponse> {
     try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
         return {
           data: {},
           error: {
@@ -65,11 +65,25 @@ export class ColumnResource extends BaseResource {
         };
       }
 
+      // Check if the table is a snapshot and prevent column creation
+      if (tableInfo.snapshot_url) {
+        return {
+          data: {},
+          error: {
+            code: 'SNAPSHOT_PROTECTION',
+            message: `Cannot create column in snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
+          },
+        };
+      }
+
       // Apply defaults and auto-generate field_order
-      const processedColumn = await this.processColumnDefaults(tableId, column);
+      const processedColumn = await this.processColumnDefaults(
+        tableInfo.id,
+        column
+      );
 
       const result = await this.columnsApiClient.createColumn(
-        tableId,
+        tableInfo.id,
         processedColumn
       );
 
@@ -217,9 +231,9 @@ export class ColumnResource extends BaseResource {
     columns: FieldDefinition[]
   ): Promise<BolticListResponse<ColumnRecord> | BolticErrorResponse> {
     try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
         return {
           data: {},
           error: {
@@ -229,17 +243,28 @@ export class ColumnResource extends BaseResource {
         };
       }
 
+      // Check if the table is a snapshot and prevent column creation
+      if (tableInfo.snapshot_url) {
+        return {
+          data: {},
+          error: {
+            code: 'SNAPSHOT_PROTECTION',
+            message: `Cannot create columns in snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
+          },
+        };
+      }
+
       // Process all columns with defaults and auto-generate field_order
       const processedColumns: FieldDefinition[] = [];
       for (const column of columns) {
         const processedColumn = await this.processColumnDefaults(
-          tableId,
+          tableInfo.id,
           column
         );
         processedColumns.push(processedColumn);
       }
 
-      const result = await this.columnsApiClient.createColumns(tableId, {
+      const result = await this.columnsApiClient.createColumns(tableInfo.id, {
         columns: processedColumns,
       });
 
@@ -268,9 +293,9 @@ export class ColumnResource extends BaseResource {
     options: ColumnQueryOptions = {}
   ): Promise<BolticListResponse<ColumnDetails> | BolticErrorResponse> {
     try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
         return {
           data: {},
           error: {
@@ -284,7 +309,7 @@ export class ColumnResource extends BaseResource {
       const apiRequest = this.transformColumnQueryToApiRequest(options);
 
       const result = await this.columnsApiClient.listColumns(
-        tableId,
+        tableInfo.id,
         apiRequest as unknown as ColumnQueryOptions
       );
 
@@ -313,9 +338,9 @@ export class ColumnResource extends BaseResource {
     columnName: string
   ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
         return {
           data: {},
           error: {
@@ -326,7 +351,7 @@ export class ColumnResource extends BaseResource {
       }
 
       const result = await this.columnsApiClient.findColumnByName(
-        tableId,
+        tableInfo.id,
         columnName
       );
 
@@ -365,9 +390,9 @@ export class ColumnResource extends BaseResource {
     columnId: string
   ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
         return {
           data: {},
           error: {
@@ -378,7 +403,10 @@ export class ColumnResource extends BaseResource {
       }
 
       // Use the direct getColumn API method
-      const result = await this.columnsApiClient.getColumn(tableId, columnId);
+      const result = await this.columnsApiClient.getColumn(
+        tableInfo.id,
+        columnId
+      );
 
       if (isErrorResponse(result)) {
         return result;
@@ -406,9 +434,9 @@ export class ColumnResource extends BaseResource {
     updates: ColumnUpdateRequest
   ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
         return {
           data: {},
           error: {
@@ -418,8 +446,19 @@ export class ColumnResource extends BaseResource {
         };
       }
 
+      // Check if the table is a snapshot and prevent column updates
+      if (tableInfo.snapshot_url) {
+        return {
+          data: {},
+          error: {
+            code: 'SNAPSHOT_PROTECTION',
+            message: `Cannot update column '${columnName}' in snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
+          },
+        };
+      }
+
       const result = await this.columnsApiClient.updateColumnByName(
-        tableId,
+        tableInfo.id,
         columnName,
         updates
       );
@@ -452,9 +491,9 @@ export class ColumnResource extends BaseResource {
     | BolticErrorResponse
   > {
     try {
-      // Get table ID first
-      const tableId = await this.getTableId(tableName);
-      if (!tableId) {
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
         return {
           data: {},
           error: {
@@ -464,8 +503,19 @@ export class ColumnResource extends BaseResource {
         };
       }
 
+      // Check if the table is a snapshot and prevent column deletion
+      if (tableInfo.snapshot_url) {
+        return {
+          data: {},
+          error: {
+            code: 'SNAPSHOT_PROTECTION',
+            message: `Cannot delete column '${columnName}' from snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
+          },
+        };
+      }
+
       const result = await this.columnsApiClient.deleteColumnByName(
-        tableId,
+        tableInfo.id,
         columnName
       );
 
@@ -492,22 +542,35 @@ export class ColumnResource extends BaseResource {
   }
 
   /**
-   * Helper method to get table ID by name
+   * Helper method to get table information by name
    */
-  private async getTableId(tableName: string): Promise<string | null> {
+  private async getTableInfo(
+    tableName: string
+  ): Promise<{ id: string; snapshot_url?: string } | null> {
     try {
       // Use the table resource to find the table by name
       const tableResource = new TableResource(this.client);
       const tableResult = await tableResource.findByName(tableName);
 
       if (tableResult.data) {
-        return tableResult.data.id;
+        return {
+          id: tableResult.data.id,
+          snapshot_url: tableResult.data.snapshot_url,
+        };
       }
 
       return null;
     } catch (error) {
-      console.error('Error getting table ID:', error);
+      console.error('Error getting table info:', error);
       return null;
     }
+  }
+
+  /**
+   * Helper method to get table ID by name (deprecated, use getTableInfo instead)
+   */
+  private async getTableId(tableName: string): Promise<string | null> {
+    const tableInfo = await this.getTableInfo(tableName);
+    return tableInfo?.id || null;
   }
 }

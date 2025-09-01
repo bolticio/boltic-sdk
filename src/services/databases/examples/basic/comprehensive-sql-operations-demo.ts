@@ -26,7 +26,7 @@ dotenv.config({ path: '../.env' });
 
 // Configuration
 const DEMO_CONFIG = {
-  environment: 'uat' as const, // Change to 'prod' for production
+  environment: 'sit' as const, // Change to 'prod' for production
   debug: true,
   timeout: 30000,
   region: 'asia-south1' as const,
@@ -867,7 +867,7 @@ async function runComprehensiveSQLDemo() {
     await populateTestData(client);
 
     // Run all demonstrations
-    // await demonstrateTextToSQL(client, testClient);
+    await demonstrateTextToSQL(client, testClient);
     await demonstrateSQLExecution(client);
     await demonstrateAdvancedFeatures(client, testClient);
     await runPerformanceBenchmark(client);
