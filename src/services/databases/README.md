@@ -106,6 +106,8 @@ These columns are managed by the system and provide essential functionality for 
 
 ### Creating Tables
 
+#### Method 1: Direct API
+
 ```typescript
 // Create a table with schema
 const tableResult = await client.tables.create({
@@ -164,6 +166,209 @@ if (tableResult.error) {
 } else {
   console.log('Table created:', tableResult.data);
 }
+```
+
+#### Method 2: Fluent Interface (Recommended)
+
+The fluent interface provides a more intuitive and type-safe way to create tables with method chaining:
+
+```typescript
+// Create table with fluent interface
+const { data: table, error } = await client
+  .table('products')
+  .describe('Product catalog table')
+  .text('name', { nullable: false, unique: true })
+  .longText('description', { nullable: true })
+  .email('contact_email', { nullable: true })
+  .phone('phone', { format: '+91 123 456 7890' })
+  .link('website', { nullable: true })
+  .number('age', { nullable: true, decimals: '0' })
+  .currency('price', { currencyFormat: 'USD', decimals: '0.00' })
+  .checkbox('is_active', { defaultValue: true })
+  .dropdown('category', ['electronics', 'clothing', 'books'], {
+    multiple: false,
+    nullable: false,
+  })
+  .json('metadata', { nullable: true })
+  .dateTime('product_created_at', {
+    dateFormat: 'YYYY_MM_DD',
+    timeFormat: 'HH_mm_ss',
+    timezone: 'UTC',
+    nullable: false,
+  })
+  .vector('embedding', 1536, { nullable: true })
+  .halfVector('half_embedding', 768, { nullable: true })
+  .sparseVector('sparse_embedding', 1024, { nullable: true })
+  .create();
+
+if (error) {
+  console.error('Table creation failed:', error);
+} else {
+  console.log('Table created:', table);
+}
+```
+
+#### Fluent Interface Methods
+
+##### Table Configuration
+
+```typescript
+const tableBuilder = client
+  .table('table-name')
+  .describe('Table description')
+  .public(true); // Make table publicly accessible
+```
+
+##### Field Types
+
+**Text Fields:**
+
+```typescript
+.text('name', { nullable: false, unique: true })
+.longText('description', { nullable: true })
+.email('contact_email', { nullable: true })
+.phone('phone', { format: '+91 123 456 7890' })
+.link('website', { nullable: true })
+```
+
+**Numeric Fields:**
+
+```typescript
+.number('age', { nullable: true, decimals: '0' })
+.currency('price', { currencyFormat: 'USD', decimals: '0.00' })
+```
+
+**Vector Fields:**
+
+```typescript
+.vector('embedding', 1536, { nullable: false })
+.halfVector('half_embedding', 768, { nullable: true })
+.sparseVector('sparse_embedding', 1024, { nullable: true })
+```
+
+**Selection Fields:**
+
+```typescript
+.checkbox('is_active', { defaultValue: true })
+.dropdown('category', ['option1', 'option2'], {
+  multiple: false,
+  nullable: false
+})
+```
+
+**Special Fields:**
+
+```typescript
+.json('metadata', { nullable: true })
+.dateTime('created_at', {
+  dateFormat: 'YYYY_MM_DD',
+  timeFormat: 'HH_mm_ss',
+  timezone: 'UTC',
+  nullable: false
+})
+```
+
+##### Field Management
+
+```typescript
+// Add custom field
+.addField({
+  name: 'custom_field',
+  type: 'text',
+  is_nullable: true,
+  description: 'Custom field description'
+})
+
+// Remove field
+.removeField('field_name')
+
+// Get field information
+const fields = tableBuilder.getFields();
+const tableName = tableBuilder.getName();
+const description = tableBuilder.getDescription();
+```
+
+##### Build and Create Operations
+
+```typescript
+// Build request object (without API call)
+const requestObject = tableBuilder.build();
+
+// Create table (with API call)
+const result = await tableBuilder.create();
+```
+
+#### Complex Example: E-commerce Product Table
+
+```typescript
+const result = await client
+  .table('products')
+  .describe('E-commerce product catalog')
+  .public(true)
+  .text('product_name', { nullable: false, unique: true, indexed: true })
+  .longText('description', { nullable: true })
+  .number('sku', { nullable: false, unique: true, decimals: '0' })
+  .currency('price', { currencyFormat: 'USD', decimals: '0.00' })
+  .currency('cost', { currencyFormat: 'USD', decimals: '0.00' })
+  .number('stock_quantity', { nullable: false, decimals: '0' })
+  .dropdown(
+    'category',
+    [
+      'Electronics',
+      'Books',
+      'Clothing',
+      'Home & Garden',
+      'Sports',
+      'Toys',
+      'Health & Beauty',
+      'Automotive',
+    ],
+    { multiple: false, nullable: false }
+  )
+  .dropdown(
+    'tags',
+    [
+      'New',
+      'Sale',
+      'Featured',
+      'Limited Edition',
+      'Eco-Friendly',
+      'Premium',
+      'Budget',
+      'Seasonal',
+    ],
+    { multiple: true, nullable: true }
+  )
+  .email('supplier_email', { indexed: true })
+  .phone('supplier_phone', { format: '+91 123 456 7890' })
+  .link('product_url', { nullable: true })
+  .link('image_url', { nullable: true })
+  .checkbox('is_active', { defaultValue: true })
+  .checkbox('requires_shipping', { defaultValue: true })
+  .checkbox('is_digital', { defaultValue: false })
+  .dateTime('product_created_at', {
+    dateFormat: 'YYYY_MM_DD',
+    timeFormat: 'HH_mm_ss',
+    timezone: 'UTC',
+  })
+  .dateTime('product_updated_at', {
+    dateFormat: 'YYYY_MM_DD',
+    timeFormat: 'HH_mm_ss',
+    timezone: 'UTC',
+  })
+  .dateTime('launch_date', {
+    dateFormat: 'YYYY_MM_DD',
+    timeFormat: 'HH_mm_ss',
+    timezone: 'UTC',
+    nullable: true,
+  })
+  .vector('product_embedding', 1536, { nullable: true })
+  .halfVector('category_embedding', 768, { nullable: true })
+  .sparseVector('keyword_embedding', 1024, { nullable: true })
+  .json('specifications', { nullable: true })
+  .json('reviews_summary', { nullable: true })
+  .json('seo_metadata', { nullable: true })
+  .create();
 ```
 
 ### Listing and Filtering Tables
@@ -260,7 +465,7 @@ const columnTypes = [
   {
     name: 'phone',
     type: 'phone-number',
-    phone_format: '+1 123 456 7890',
+    phone_format: '+91 123 456 7890',
     description: 'Phone number',
   },
   {
@@ -605,7 +810,7 @@ import { createClient } from 'boltic-sdk';
 ### CommonJS
 
 ```javascript
-const { createClient } = require('boltic-sdk');
+const { BolticClient } = require('boltic-sdk');
 ```
 
 ## Development
@@ -655,6 +860,8 @@ npm run build
 
 ### Tables
 
+#### Method 1: Direct API
+
 - **`client.tables.create(data)`**: Create a new table
 - **`client.tables.findAll(options?)`**: List tables with optional filtering
 - **`client.tables.findOne(options)`**: Get a specific table
@@ -662,6 +869,33 @@ npm run build
 - **`client.tables.rename(oldName, newName)`**: Rename a table
 - **`client.tables.setAccess(data)`**: Update table access settings
 - **`client.tables.delete(options)`**: Delete a table
+
+#### Method 2: Fluent Interface
+
+- **`client.table(name)`**: Start fluent table builder
+- **`tableBuilder.describe(description)`**: Set table description
+- **`tableBuilder.public(isPublic)`**: Set table public access
+- **`tableBuilder.text(name, options?)`**: Add text field
+- **`tableBuilder.longText(name, options?)`**: Add long text field
+- **`tableBuilder.email(name, options?)`**: Add email field
+- **`tableBuilder.phone(name, options?)`**: Add phone field
+- **`tableBuilder.link(name, options?)`**: Add link field
+- **`tableBuilder.number(name, options?)`**: Add number field
+- **`tableBuilder.currency(name, options?)`**: Add currency field
+- **`tableBuilder.checkbox(name, options?)`**: Add checkbox field
+- **`tableBuilder.dropdown(name, items, options?)`**: Add dropdown field
+- **`tableBuilder.json(name, options?)`**: Add JSON field
+- **`tableBuilder.dateTime(name, options?)`**: Add date-time field
+- **`tableBuilder.vector(name, dimension, options?)`**: Add vector field
+- **`tableBuilder.halfVector(name, dimension, options?)`**: Add half-precision vector field
+- **`tableBuilder.sparseVector(name, dimension, options?)`**: Add sparse vector field
+- **`tableBuilder.addField(fieldDefinition)`**: Add custom field
+- **`tableBuilder.removeField(fieldName)`**: Remove field
+- **`tableBuilder.getFields()`**: Get all fields
+- **`tableBuilder.getName()`**: Get table name
+- **`tableBuilder.getDescription()`**: Get table description
+- **`tableBuilder.build()`**: Build request object without API call
+- **`tableBuilder.create()`**: Create table with API call
 
 ### Columns
 
@@ -702,9 +936,12 @@ npm run build
 Check out the comprehensive demo file for complete usage examples:
 
 - [`comprehensive-database-operations-demo.ts`](./examples/basic/comprehensive-database-operations-demo.ts) - Complete SDK functionality demo
+- [`fluent-interface-demo.ts`](./examples/basic/fluent-interface-demo.ts) - Fluent interface demo for table creation
 
 This demo covers:
 
+- Fluent interface for table creation
+- Method chaining and builder patterns
 - All column types and their properties
 - Advanced filtering and querying
 - Error handling patterns

@@ -36,6 +36,12 @@ export class TableResource extends BaseResource {
   }
 
   /**
+   * Get the TablesApiClient instance
+   */
+  getTablesApiClient(): TablesApiClient {
+    return this.tablesApiClient;
+  }
+  /**
    * Create a new table
    */
   async create(

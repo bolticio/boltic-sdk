@@ -1,4 +1,4 @@
-# Implementation Plan for Boltic Tables SDK (@boltic/database-js)
+# Implementation Plan for Boltic Tables SDK (boltic-sdk)
 
 ## Feature Analysis
 

@@ -1,4 +1,5 @@
 import { TablesApiClient } from '../../api/clients/tables-api-client';
+import { EnhancedTableValidator } from '../../utils/table/enhanced-validation';
 import { ValidationError } from '../../errors/utils';
 import {
   FieldDefinition,
@@ -6,9 +7,15 @@ import {
   TableCreateResponse,
 } from '../../types/api/table';
 import {
-  BolticErrorResponse,
   BolticSuccessResponse,
+  BolticErrorResponse,
 } from '../../types/common/responses';
+import {
+  DecimalType,
+  PhoneFormatType,
+  DateFormatEnum,
+  TimeFormatEnum,
+} from '../../types/api/column';
 
 export interface TableBuilderOptions {
   name: string;
@@ -121,7 +128,7 @@ export class TableBuilder {
       indexed?: boolean;
       defaultValue?: number;
       description?: string;
-      decimals?: string;
+      decimals?: DecimalType;
       alignment?: 'left' | 'center' | 'right';
     } = {}
   ): TableBuilder {
@@ -150,8 +157,8 @@ export class TableBuilder {
       nullable?: boolean;
       defaultValue?: number;
       description?: string;
-      currencyFormat?: string;
-      decimals?: string;
+      currencyFormat?: string; // ISO currency code (e.g., USD, EUR)
+      decimals?: DecimalType;
     } = {}
   ): TableBuilder {
     this.fields.push({
@@ -262,7 +269,7 @@ export class TableBuilder {
     options: {
       nullable?: boolean;
       description?: string;
-      format?: string;
+      format?: PhoneFormatType;
     } = {}
   ): TableBuilder {
     this.fields.push({
@@ -336,8 +343,8 @@ export class TableBuilder {
     options: {
       nullable?: boolean;
       description?: string;
-      dateFormat?: string;
-      timeFormat?: string;
+      dateFormat?: keyof typeof DateFormatEnum;
+      timeFormat?: keyof typeof TimeFormatEnum;
       timezone?: string;
     } = {}
   ): TableBuilder {
@@ -349,8 +356,12 @@ export class TableBuilder {
       is_indexed: false,
       is_primary_key: false,
       description: options.description,
-      date_format: options.dateFormat,
-      time_format: options.timeFormat,
+      date_format: options.dateFormat
+        ? DateFormatEnum[options.dateFormat]
+        : undefined,
+      time_format: options.timeFormat
+        ? TimeFormatEnum[options.timeFormat]
+        : undefined,
       timezone: options.timezone,
       alignment: 'left',
       field_order: this.fields.length + 1,
@@ -372,6 +383,58 @@ export class TableBuilder {
     this.fields.push({
       name,
       type: 'vector',
+      is_nullable: options.nullable ?? true,
+      is_unique: false,
+      is_indexed: false,
+      is_primary_key: false,
+      description: options.description,
+      vector_dimension: dimension,
+      alignment: 'left',
+      field_order: this.fields.length + 1,
+    });
+    return this;
+  }
+
+  /**
+   * Add a half-precision vector field
+   */
+  halfVector(
+    name: string,
+    dimension: number,
+    options: {
+      nullable?: boolean;
+      description?: string;
+    } = {}
+  ): TableBuilder {
+    this.fields.push({
+      name,
+      type: 'halfvec',
+      is_nullable: options.nullable ?? true,
+      is_unique: false,
+      is_indexed: false,
+      is_primary_key: false,
+      description: options.description,
+      vector_dimension: dimension,
+      alignment: 'left',
+      field_order: this.fields.length + 1,
+    });
+    return this;
+  }
+
+  /**
+   * Add a sparse vector field
+   */
+  sparseVector(
+    name: string,
+    dimension: number,
+    options: {
+      nullable?: boolean;
+      description?: string;
+    } = {}
+  ): TableBuilder {
+    this.fields.push({
+      name,
+      type: 'sparsevec',
       is_nullable: options.nullable ?? true,
       is_unique: false,
       is_indexed: false,
@@ -444,6 +507,17 @@ export class TableBuilder {
       ]);
     }
 
+    // Enhanced validation
+    try {
+      EnhancedTableValidator.validateTableSchema(this.fields, this.description);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new ValidationError('Schema validation failed', [
+        { field: 'schema', message: (error as Error).message },
+      ]);
+    }
     return {
       name: this.tableName,
       description: this.description,
@@ -452,21 +526,22 @@ export class TableBuilder {
   }
 
   /**
-   * Build and create the table (requires API client)
+   * Create the table using the TablesApiClient
    */
-  async create(
-    options: { is_ai_generated_schema?: boolean; is_template?: boolean } = {}
-  ): Promise<BolticSuccessResponse<TableCreateResponse> | BolticErrorResponse> {
+  async create(): Promise<
+    BolticSuccessResponse<TableCreateResponse> | BolticErrorResponse
+  > {
     if (!this.tablesApiClient) {
-      throw new Error('TablesApiClient is required for table creation');
+      throw new Error('TablesApiClient is required to create a table');
     }
+
     const request = this.build();
-    return this.tablesApiClient.createTable(request, options);
+    return this.tablesApiClient.createTable(request);
   }
 }
 
 /**
- * Create a new table builder
+ * Factory function to create a new TableBuilder instance
  */
 export function createTableBuilder(
   options: TableBuilderOptions,

@@ -1738,7 +1738,7 @@ await db
 ### Type Conversion Safety
 
 ```typescript
-import { ColumnHelpers } from '@boltic/database-js/utils';
+import { ColumnHelpers } from 'boltic-sdk/utils';
 
 // Validate column for specific type
 const validation = ColumnHelpers.validateColumnForType(column, 'vector');

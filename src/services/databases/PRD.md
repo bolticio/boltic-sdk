@@ -4,7 +4,7 @@
 
 ### 1.1 Project Overview
 
-The Boltic Tables SDK (`@boltic/database-js`) is a lightweight, environment-aware JavaScript SDK that provides an ORM-like interface for interacting with Boltic Tables infrastructure. It enables both frontend and backend developers to manage databases, tables, columns, and rows through a unified API.
+The Boltic Tables SDK (`boltic-sdk`) is a lightweight, environment-aware JavaScript SDK that provides an ORM-like interface for interacting with Boltic Tables infrastructure. It enables both frontend and backend developers to manage databases, tables, columns, and rows through a unified API.
 
 ### 1.2 Business Objectives
 
@@ -125,7 +125,7 @@ const transformed = sourceData.map((record) => ({
 #### 4.1.1 Client Initialization
 
 ```javascript
-import { createClient } from '@boltic/database-js';
+import { createClient } from 'boltic-sdk';
 
 const boltic = createClient('your-api-key', {
   environment: 'prod' | 'sit' | 'uat', // Default: 'prod'
@@ -1028,7 +1028,7 @@ const { data: userOrders } = await db
 
 ```json
 {
-  "name": "@boltic/database-js",
+  "name": "boltic-sdk",
   "version": "1.0.0",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -1178,11 +1178,11 @@ const cacheConfig = {
 
 ```javascript
 // Modular imports to reduce bundle size
-import { createTableClient } from '@boltic/database-js/table';
-import { createRecordClient } from '@boltic/database-js/record';
+import { createTableClient } from 'boltic-sdk/table';
+import { createRecordClient } from 'boltic-sdk/record';
 
 // Full SDK import
-import { createClient } from '@boltic/database-js';
+import { createClient } from 'boltic-sdk';
 ```
 
 ### 5.5 Error Handling & Resilience
@@ -1363,7 +1363,7 @@ if (process.env.NODE_ENV === 'development') {
 
 ```javascript
 // Mock client for testing
-import { createMockClient } from '@boltic/database-js/testing';
+import { createMockClient } from 'boltic-sdk/testing';
 
 const mockBoltic = createMockClient({
   tables: {
@@ -1372,7 +1372,7 @@ const mockBoltic = createMockClient({
 });
 
 // Test utilities
-import { fixtures } from '@boltic/database-js/testing';
+import { fixtures } from 'boltic-sdk/testing';
 const testData = fixtures.generateProducts(100);
 ```
 

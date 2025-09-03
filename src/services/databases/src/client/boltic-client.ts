@@ -136,7 +136,10 @@ export class BolticClient {
 
   // Fluent table operations
   table(name: string): TableBuilder {
-    const tableBuilder = createTableBuilder({ name });
+    const tableBuilder = createTableBuilder(
+      { name },
+      this.tableResource.getTablesApiClient()
+    );
     return tableBuilder;
   }
 
