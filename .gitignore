@@ -23,9 +23,16 @@ coverage/
 # Editor directories and files
 .vscode/
 .idea/
+.claude/
+.cursor/
+.vim/
+.netrwhist
 *.swp
 *.swo
 *~
+.history/
+.metals/
+.bloop/
 
 # OS generated files
 .DS_Store
@@ -61,3 +68,24 @@ test-results/
 
 # Husky
 .husky/_
+
+# Documentation folders (exclude from tracking)
+**/docs/
+src/services/databases/docs/
+
+# Temporary and cache files
+*.tmp
+*.temp
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.output/
+.vercel/
+
+# IDE and editor specific files
+.project
+.classpath
+.settings/
+.metadata/
+.recommenders/
