@@ -114,4 +114,23 @@ export abstract class BaseApiClient {
       },
     };
   }
+
+  // Security methods to prevent API key exposure
+  toString(): string {
+    return `${this.constructor.name} { environment: "${this.config.environment || 'prod'}", debug: ${this.config.debug || false} }`;
+  }
+
+  toJSON(): object {
+    const safeConfig = { ...this.config };
+    delete (safeConfig as Record<string, unknown>).apiKey;
+    return {
+      client: this.constructor.name,
+      config: safeConfig,
+    };
+  }
+
+  // Custom inspect method for Node.js console logging
+  [Symbol.for('nodejs.util.inspect.custom')](): string {
+    return this.toString();
+  }
 }

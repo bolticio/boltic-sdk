@@ -56,6 +56,7 @@ export class AxiosAdapter implements HttpAdapter {
         name?: string;
       };
 
+      // Handle timeout errors
       if (
         axiosError.code === 'ECONNABORTED' ||
         axiosError.message?.includes('timeout')
@@ -67,6 +68,32 @@ export class AxiosAdapter implements HttpAdapter {
         });
       }
 
+      // Handle VPN and network connectivity issues
+      if (
+        axiosError.code === 'ERR_NETWORK' ||
+        axiosError.code === 'ENOTFOUND' ||
+        axiosError.code === 'ECONNREFUSED' ||
+        axiosError.code === 'EHOSTUNREACH' ||
+        axiosError.code === 'ETIMEDOUT' ||
+        axiosError.code === 'ERR_INTERNET_DISCONNECTED' ||
+        axiosError.message?.includes('network') ||
+        axiosError.message?.includes('internet') ||
+        axiosError.message?.includes('connection') ||
+        axiosError.message?.includes('resolve')
+      ) {
+        throw createErrorWithContext(
+          'Network connection failed. Please check your internet connection or VPN settings.',
+          {
+            url: config.url,
+            method: config.method,
+            networkError: true,
+            errorCode: axiosError.code,
+            originalMessage: axiosError.message,
+          }
+        );
+      }
+
+      // Handle request cancellation
       if (
         axiosError.name === 'AbortError' ||
         axiosError.code === 'ERR_CANCELED'
@@ -77,6 +104,7 @@ export class AxiosAdapter implements HttpAdapter {
         });
       }
 
+      // Generic HTTP error fallback
       throw createErrorWithContext(
         `HTTP request failed: ${axiosError.message || 'Unknown error'}`,
         {

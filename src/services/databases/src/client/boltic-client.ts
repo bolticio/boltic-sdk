@@ -237,6 +237,7 @@ export class BolticClient {
   updateConfig(updates: Partial<ClientConfig>): void {
     this.configManager.updateConfig(updates);
     this.baseClient.updateConfig(this.configManager.getConfig());
+    this.updateAllResourcesConfig();
   }
 
   getConfig(): ClientConfig {
@@ -311,13 +312,48 @@ export class BolticClient {
   // Debug helpers
   enableDebug(): void {
     this.configManager.updateConfig({ debug: true });
+    this.baseClient.updateConfig(this.configManager.getConfig());
+    this.updateAllResourcesConfig();
   }
 
   disableDebug(): void {
     this.configManager.updateConfig({ debug: false });
+    this.baseClient.updateConfig(this.configManager.getConfig());
+    this.updateAllResourcesConfig();
   }
 
   isDebugEnabled(): boolean {
     return this.configManager.getConfig().debug || false;
+  }
+
+  // Private method to update all resource configurations
+  private updateAllResourcesConfig(): void {
+    // Recreate all resources with updated config
+    this.tableResource = new TableResource(this.baseClient);
+    this.columnResource = new ColumnResource(this.baseClient);
+    this.recordResource = new RecordResource(this.baseClient);
+    this.sqlResource = new SqlResource(this.baseClient);
+  }
+
+  // Security methods to prevent API key exposure
+  toString(): string {
+    const config = this.getConfig();
+    return `BolticClient { environment: "${config.environment}", region: "${config.region}", debug: ${config.debug} }`;
+  }
+
+  toJSON(): object {
+    const config = this.getConfig();
+    return {
+      environment: config.environment,
+      region: config.region,
+      debug: config.debug,
+      timeout: config.timeout,
+      version: this.getVersion(),
+    };
+  }
+
+  // Custom inspect method for Node.js console logging
+  [Symbol.for('nodejs.util.inspect.custom')](): string {
+    return this.toString();
   }
 }

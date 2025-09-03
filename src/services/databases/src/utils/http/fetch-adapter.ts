@@ -91,6 +91,31 @@ export class FetchAdapter implements HttpAdapter {
         });
       }
 
+      // Handle VPN and network connectivity issues
+      if (error instanceof Error) {
+        const errorMessage = error.message.toLowerCase();
+        if (
+          error.name === 'TypeError' &&
+          (errorMessage.includes('network') ||
+            errorMessage.includes('fetch') ||
+            errorMessage.includes('failed to fetch') ||
+            errorMessage.includes('internet') ||
+            errorMessage.includes('connection') ||
+            errorMessage.includes('resolve') ||
+            errorMessage.includes('unreachable'))
+        ) {
+          throw createErrorWithContext(
+            'Network connection failed. Please check your internet connection or VPN settings.',
+            {
+              url: config.url,
+              method: config.method,
+              networkError: true,
+              originalMessage: error.message,
+            }
+          );
+        }
+      }
+
       throw createErrorWithContext(
         `HTTP request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         {

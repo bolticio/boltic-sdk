@@ -53,4 +53,20 @@ export class ConfigManager {
   updateConfig(updates: Partial<ClientConfig>): void {
     this.config = { ...this.config, ...updates };
   }
+
+  // Security methods to prevent API key exposure
+  toString(): string {
+    return `ConfigManager { environment: "${this.config.environment}", region: "${this.config.region}", debug: ${this.config.debug} }`;
+  }
+
+  toJSON(): object {
+    const safeConfig = { ...this.config };
+    delete (safeConfig as Record<string, unknown>).apiKey;
+    return safeConfig;
+  }
+
+  // Custom inspect method for Node.js console logging
+  [Symbol.for('nodejs.util.inspect.custom')](): string {
+    return this.toString();
+  }
 }

@@ -70,4 +70,21 @@ export class AuthManager {
   getMaxRetries(): number {
     return this.config.maxRetries || 3;
   }
+
+  // Security methods to prevent API key exposure
+  toString(): string {
+    return `AuthManager { authenticated: ${this.isAuthenticated()}, maxRetries: ${this.getMaxRetries()} }`;
+  }
+
+  toJSON(): object {
+    return {
+      authenticated: this.isAuthenticated(),
+      maxRetries: this.getMaxRetries(),
+    };
+  }
+
+  // Custom inspect method for Node.js console logging
+  [Symbol.for('nodejs.util.inspect.custom')](): string {
+    return this.toString();
+  }
 }
