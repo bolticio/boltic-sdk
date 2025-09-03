@@ -16,9 +16,15 @@ A powerful TypeScript SDK for seamless integration with the Boltic platform. Sim
 - 🧪 **Testing Utilities**: Built-in testing helpers and mocks
 - 📦 **Zero Dependencies**: Lightweight with optional peer dependencies
 - 🌐 **Multi-Region Support**: Asia Pacific and US Central regions
-- 🔍 **Advanced Filtering**: FilterBuilder with comprehensive query operators
+- 🔍 **Advanced Filtering**: Comprehensive query operators
 - 🛠️ **Helper Classes**: Schema and column creation utilities
+- ⚡ **HTTP Adapters**: Support for both Axios and Fetch
 - 🎯 **Vector Support**: AI/ML vector fields with multiple precisions
+
+## Prerequisites
+
+- **Node.js:** >=18.0.0
+- **NPM:** >=8.0.0
 
 ## Installation
 
@@ -40,7 +46,7 @@ const client = createClient('your-api-key', {
 // Use the client for database operations
 const tables = client.tables;
 const columns = client.columns;
-const records = client.record;
+const records = client.records; // Note: correct syntax is client.records
 ```
 
 ## Authentication
@@ -93,20 +99,6 @@ const client = createClient('your-api-key', {
 });
 ```
 
-## Environment Variables
-
-```typescript
-import dotenv from 'dotenv';
-import { createClient } from 'boltic-sdk';
-
-dotenv.config();
-
-const client = createClient(process.env.BOLTIC_API_KEY!, {
-  region: process.env.BOLTIC_REGION || 'asia-south1',
-  debug: process.env.DEBUG === 'true',
-});
-```
-
 ## Database Context
 
 The client automatically uses a default database context for all operations:
@@ -117,18 +109,22 @@ const currentDb = client.getCurrentDatabase();
 console.log('Current database:', currentDb);
 ```
 
-## Basic Operations
+## Table Operations
 
-### Table Operations
+### Reserved Columns
 
-**Note**: The following columns are automatically added to all tables and cannot be modified:
+The following columns are automatically added to all tables and cannot be modified or deleted:
 
-- `id`: Primary key (text, unique, not nullable)
-- `created_at`: Creation timestamp
-- `updated_at`: Last update timestamp
+- **`id`**: Primary key field (text type, unique, not nullable)
+- **`created_at`**: Timestamp when the record was created
+- **`updated_at`**: Timestamp when the record was last updated
+
+These columns are managed by the system and provide essential functionality for record identification and tracking.
+
+### Creating Tables
 
 ```typescript
-// Create a table
+// Create a table with schema
 const tableResult = await client.tables.create({
   name: 'users',
   description: 'User management table',
@@ -137,12 +133,40 @@ const tableResult = await client.tables.create({
       name: 'name',
       type: 'text',
       is_nullable: false,
+      description: 'User name',
     },
     {
       name: 'email',
       type: 'email',
       is_nullable: false,
       is_unique: true,
+      description: 'User email',
+    },
+    {
+      name: 'age',
+      type: 'number',
+      decimals: '0.00',
+      description: 'User age',
+    },
+    {
+      name: 'salary',
+      type: 'currency',
+      currency_format: 'USD',
+      decimals: '0.00',
+      description: 'User salary',
+    },
+    {
+      name: 'is_active',
+      type: 'checkbox',
+      default_value: true,
+      description: 'User status',
+    },
+    {
+      name: 'role',
+      type: 'dropdown',
+      selectable_items: ['Admin', 'User', 'Guest'],
+      multiple_selections: false,
+      description: 'User role',
     },
   ],
 });
@@ -152,61 +176,538 @@ const tableResult = await client.tables.create({
 // - 'created_at': Timestamp when record was created
 // - 'updated_at': Timestamp when record was last updated
 
+if (tableResult.error) {
+  console.error('Table creation failed:', tableResult.error);
+} else {
+  console.log('Table created:', tableResult.data);
+}
+```
+
+### Listing and Filtering Tables
+
+```typescript
 // List all tables
 const allTables = await client.tables.findAll();
+
+// Filter tables by name
+const filteredTables = await client.tables.findAll({
+  where: { name: 'users' },
+});
 
 // Get a specific table
 const table = await client.tables.findOne({
   where: { name: 'users' },
 });
+
+// Get table by name
+const tableByName = await client.tables.findByName('users');
 ```
 
-### Column Operations
+### Updating Tables
 
 ```typescript
-// Create a column
-const columnResult = await client.columns.create('users', {
-  name: 'age',
-  type: 'number',
-  decimals: '0.00',
-  description: 'User age',
+// Update table properties
+const updateResult = await client.tables.update('users', {
+  name: 'updated_users',
+  snapshot: 'new-snapshot',
+  is_shared: true,
 });
 
+// Rename table
+const renameResult = await client.tables.rename('users', 'new_users');
+
+// Set table access
+const accessResult = await client.tables.setAccess({
+  table_name: 'users',
+  is_shared: true,
+});
+```
+
+### Deleting Tables
+
+```typescript
+// Delete table by name
+const deleteResult = await client.tables.delete('users');
+```
+
+## Column Operations
+
+### Creating Columns
+
+```typescript
+// Create different types of columns
+const columnTypes = [
+  {
+    name: 'description',
+    type: 'long-text',
+    description: 'User description',
+  },
+  {
+    name: 'age',
+    type: 'number',
+    decimals: '0.00',
+    description: 'User age',
+  },
+  {
+    name: 'salary',
+    type: 'currency',
+    currency_format: 'USD',
+    decimals: '0.00',
+    description: 'User salary',
+  },
+  {
+    name: 'is_active',
+    type: 'checkbox',
+    default_value: true,
+    description: 'User status',
+  },
+  {
+    name: 'role',
+    type: 'dropdown',
+    selectable_items: ['Admin', 'User', 'Guest'],
+    multiple_selections: false,
+    description: 'User role',
+  },
+  {
+    name: 'phone',
+    type: 'phone-number',
+    phone_format: '+91 123 456 7890',
+    description: 'Phone number',
+  },
+  {
+    name: 'embedding',
+    type: 'vector',
+    vector_dimension: 1536,
+    description: 'Text embedding vector',
+  },
+];
+
+for (const columnData of columnTypes) {
+  const result = await client.columns.create('users', columnData);
+  if (result.error) {
+    console.error(`Failed to create ${columnData.type} column:`, result.error);
+  } else {
+    console.log(`Created ${columnData.type} column:`, result.data);
+  }
+}
+```
+
+### Listing and Filtering Columns
+
+```typescript
 // List all columns in a table
 const allColumns = await client.columns.findAll('users');
 
-// Update a column
-const updateResult = await client.columns.update('users', {
-  where: { name: 'age' },
-  set: { description: 'Updated age description' },
+// Filter columns by type
+const textColumns = await client.columns.findAll('users', {
+  where: { type: 'text' },
+});
+
+// Get a specific column
+const column = await client.columns.findOne('users', {
+  where: { name: 'email' },
+});
+
+// Get column by ID
+const columnById = await client.columns.findById('users', 'column-id');
+```
+
+### Updating Columns
+
+```typescript
+// Update column properties
+const updateResult = await client.columns.update('users', 'description', {
+  description: 'Updated user description',
 });
 ```
 
-### Record Operations
+### Deleting Columns
 
 ```typescript
-// Insert a record
+// Delete a column
+const deleteResult = await client.columns.delete('users', 'description');
+```
+
+## Record Operations
+
+### Inserting Records
+
+```typescript
+// Insert a single record
 const recordData = {
   name: 'John Doe',
   email: 'john.doe@example.com',
   age: 30,
+  salary: 75000,
+  is_active: true,
+  role: 'Admin',
 };
 
-const insertResult = await client.record.insert('users', recordData);
+const insertResult = await client.records.insert('users', recordData);
 
+if (insertResult.error) {
+  console.error('Record insertion failed:', insertResult.error);
+} else {
+  console.log('Record inserted:', insertResult.data);
+}
+
+// Insert multiple records
+const multipleRecords = [
+  { name: 'Jane Smith', email: 'jane@example.com', age: 28 },
+  { name: 'Bob Johnson', email: 'bob@example.com', age: 35 },
+];
+
+for (const record of multipleRecords) {
+  await client.records.insert('users', record);
+}
+
+// Insert record with sparse vector example
+const sparseVectorRecord = {
+  name: 'AI Model User',
+  email: 'ai@example.com',
+  age: 25,
+  sparse_features: { 1: 1, 3: 2, 5: 3 }, // Sparse vector: {1:1,3:2,5:3}/5
+  // This represents a 5-dimensional vector where positions 1, 3, 5 have values 1, 2, 3
+  // and positions 2, 4 are implicitly 0
+};
+
+const sparseInsertResult = await client.records.insert(
+  'users',
+  sparseVectorRecord
+);
+```
+
+### Querying Records
+
+```typescript
 // Find all records
-const allRecords = await client.record.findAll('users');
+const allRecords = await client.records.findAll('users');
 
-// Find records with filters
-const filteredRecords = await client.record.findAll('users', {
-  filters: [{ age: { $gte: 25 } }, { name: { $like: 'John%' } }],
+// Find records with pagination
+const paginatedRecords = await client.records.findAll('users', {
+  page: {
+    page_no: 1,
+    page_size: 10,
+  },
 });
 
-// Update records
-const updateResult = await client.record.update('users', {
-  set: { age: 31 },
-  filters: [{ email: 'john.doe@example.com' }],
+// Find records with filters (API format)
+const filteredRecords = await client.records.findAll('users', {
+  filters: [
+    { field: 'age', operator: '>=', values: [25] },
+    { field: 'is_active', operator: '=', values: [true] },
+    { field: 'role', operator: 'IN', values: ['Admin', 'User'] },
+  ],
 });
+
+// Find records with sorting
+const sortedRecords = await client.records.findAll('users', {
+  sort: [
+    { field: 'age', order: 'desc' },
+    { field: 'name', order: 'asc' },
+  ],
+});
+
+// Find a specific record
+const specificRecord = await client.records.findOne('users', 'record-id');
+
+// Find one record with filters
+const filteredRecord = await client.records.findOne('users', {
+  filters: [
+    { field: 'email', operator: '=', values: ['john.doe@example.com'] },
+  ],
+});
+```
+
+### Advanced Filtering
+
+The SDK supports comprehensive filtering with various operators:
+
+```typescript
+// Text field filters
+const textFilters = [
+  { field: 'name', operator: '=', values: ['John'] }, // Equals
+  { field: 'name', operator: '!=', values: ['Admin'] }, // Not equals
+  { field: 'name', operator: 'LIKE', values: ['%John%'] }, // Contains (case sensitive)
+  { field: 'name', operator: 'ILIKE', values: ['%john%'] }, // Contains (case insensitive)
+  { field: 'name', operator: 'STARTS WITH', values: ['J'] }, // Starts with
+  { field: 'name', operator: 'IN', values: ['John', 'Jane'] }, // Is one of
+  { field: 'name', operator: 'IS EMPTY', values: [false] }, // Is not empty
+];
+
+// Number field filters
+const numberFilters = [
+  { field: 'age', operator: '>', values: [30] }, // Greater than
+  { field: 'age', operator: '>=', values: [30] }, // Greater than or equal
+  { field: 'age', operator: '<', values: [35] }, // Less than
+  { field: 'age', operator: '<=', values: [35] }, // Less than or equal
+  { field: 'age', operator: 'BETWEEN', values: [25, 35] }, // Between
+  { field: 'age', operator: 'IN', values: [25, 30, 35] }, // Is one of
+];
+
+// Boolean field filters
+const booleanFilters = [
+  { field: 'is_active', operator: '=', values: [true] }, // Is true
+  { field: 'is_active', operator: '=', values: [false] }, // Is false
+];
+
+// Date field filters
+const dateFilters = [
+  { field: 'created_at', operator: '>', values: ['2024-01-01T00:00:00Z'] },
+  {
+    field: 'created_at',
+    operator: 'BETWEEN',
+    values: ['2024-01-01T00:00:00Z', '2024-12-31T23:59:59Z'],
+  },
+  { field: 'created_at', operator: 'WITHIN', values: ['last-30-days'] },
+];
+
+// Array/dropdown field filters
+const arrayFilters = [
+  { field: 'tags', operator: '@>', values: [['tag1']] }, // Array contains
+  { field: 'tags', operator: 'ANY', values: ['tag1'] }, // Any element matches
+  { field: 'category', operator: 'IS ONE OF', values: ['tech', 'business'] },
+];
+
+// Vector field filters
+const vectorFilters = [
+  { field: 'embedding', operator: '!=', values: [null] }, // Not null
+  { field: 'embedding', operator: '<->', values: ['[0.1,0.2,0.3]'] }, // Euclidean distance
+  { field: 'embedding', operator: '<=>', values: ['[0.1,0.2,0.3]'] }, // Cosine distance
+];
+
+// Multiple conditions (AND logic)
+const multipleFilters = await client.records.findAll('users', {
+  filters: [
+    { field: 'age', operator: '>=', values: [25] },
+    { field: 'is_active', operator: '=', values: [true] },
+    { field: 'salary', operator: '>', values: [50000] },
+  ],
+});
+```
+
+### Updating Records
+
+```typescript
+// Update records by filters
+const updateResult = await client.records.update('users', {
+  set: { is_active: false },
+  filters: [{ field: 'role', operator: '=', values: ['Guest'] }],
+});
+
+// Update record by ID
+const updateByIdResult = await client.records.updateById('users', {
+  id: 'record-id-here',
+  set: { salary: 80000 },
+});
+```
+
+### Deleting Records
+
+```typescript
+// Delete records by filters
+const deleteResult = await client.records.delete('users', {
+  filters: [{ field: 'is_active', operator: '=', values: [false] }],
+});
+
+// Delete records by IDs
+const deleteByIdsResult = await client.records.delete('users', {
+  record_ids: ['id1', 'id2', 'id3'],
+});
+
+// Delete with multiple filter conditions
+const deleteWithFilters = await client.records.delete('users', {
+  filters: [
+    { field: 'last_login', operator: '<', values: ['2023-01-01'] },
+    { field: 'is_active', operator: '=', values: [false] },
+  ],
+});
+```
+
+## SQL Operations
+
+The Boltic SDK provides powerful SQL capabilities including natural language to SQL conversion and direct SQL query execution.
+
+### Text-to-SQL Conversion
+
+Convert natural language descriptions into SQL queries using AI:
+
+```typescript
+// Basic text-to-SQL conversion (streaming)
+const sqlStream = await client.sql.textToSQL(
+  'Find all active users who registered this year'
+);
+
+// Collect the streaming response
+let generatedSQL = '';
+for await (const chunk of sqlStream) {
+  process.stdout.write(chunk); // Real-time output
+  generatedSQL += chunk;
+}
+
+console.log('\nGenerated SQL:', generatedSQL);
+```
+
+### SQL Query Refinement
+
+Refine existing SQL queries with additional instructions:
+
+```typescript
+// Start with a base query
+const baseQuery = `SELECT * FROM "users" WHERE "created_at" > '2024-01-01'`;
+
+// Refine it with additional instructions
+const refinedStream = await client.sql.textToSQL(
+  'Add sorting by registration date and limit to 10 results',
+  {
+    currentQuery: baseQuery,
+  }
+);
+
+// Process the refined query
+let refinedSQL = '';
+for await (const chunk of refinedStream) {
+  refinedSQL += chunk;
+}
+
+console.log('Refined SQL:', refinedSQL);
+```
+
+### SQL Query Execution
+
+Execute SQL queries directly with built-in safety measures:
+
+```typescript
+// Execute a simple SQL query
+const result = await client.sql.executeSQL(
+  `SELECT "name", "email" FROM "users" WHERE "is_active" = true`
+);
+
+if (result.error) {
+  console.error('SQL execution failed:', result.error);
+} else {
+  // Extract data from Boltic API Response Structure
+  const [resultRows, metadata] = result.data;
+
+  console.log('Query results:', resultRows);
+  console.log('Metadata:', metadata);
+
+  if (result.pagination) {
+    console.log('Total records:', result.pagination.total_count);
+    console.log('Current page:', result.pagination.current_page);
+  }
+}
+```
+
+### Complex SQL Operations
+
+```typescript
+// Execute complex queries with JOINs
+const complexQuery = `
+  SELECT 
+    u."name", 
+    u."email", 
+    COUNT(o."id") as order_count,
+    SUM(o."total") as total_spent
+  FROM "users" u 
+  LEFT JOIN "orders" o ON u."id" = o."user_id"::uuid 
+  WHERE u."is_active" = true 
+  GROUP BY u."id", u."name", u."email"
+  ORDER BY total_spent DESC 
+  LIMIT 10
+`;
+
+const complexResult = await client.sql.executeSQL(complexQuery);
+
+if (complexResult.error) {
+  console.error('Complex query failed:', complexResult.error);
+} else {
+  const [rows, metadata] = complexResult.data;
+  console.log('Top customers:', rows);
+}
+```
+
+### Multiple Query Execution
+
+Execute multiple SQL statements in a single request:
+
+```typescript
+const multipleQueries = `
+  INSERT INTO "users" ("name", "email", "is_active") 
+  VALUES ('New User', 'new@example.com', true);
+  
+  UPDATE "users" SET "last_login" = NOW() WHERE "email" = 'new@example.com';
+  
+  SELECT * FROM "users" WHERE "email" = 'new@example.com';
+`;
+
+const multiResult = await client.sql.executeSQL(multipleQueries);
+
+if (multiResult.error) {
+  console.error('Multi-query execution failed:', multiResult.error);
+} else {
+  console.log('Multi-query results:', multiResult.data);
+}
+```
+
+### Streaming SQL Generation
+
+Process SQL generation in real-time:
+
+```typescript
+async function processStreamingSQL(prompt: string) {
+  console.log(`Generating SQL for: "${prompt}"`);
+
+  const sqlStream = await client.sql.textToSQL(prompt);
+
+  let partialSQL = '';
+  let chunkCount = 0;
+
+  for await (const chunk of sqlStream) {
+    partialSQL += chunk;
+    chunkCount++;
+
+    // Custom processing logic
+    if (chunk.toLowerCase().includes('select')) {
+      console.log('Found SELECT statement in chunk');
+    }
+
+    // Show progress
+    process.stdout.write(`\rProcessing chunk ${chunkCount}...`);
+  }
+
+  console.log(`\nSQL generation complete: ${partialSQL}`);
+  return partialSQL;
+}
+
+// Usage
+const sql = await processStreamingSQL('Get top 5 users by order value');
+```
+
+### SQL Error Handling
+
+```typescript
+try {
+  const result = await client.sql.executeSQL(
+    'SELECT * FROM "non_existent_table"'
+  );
+
+  if (result.error) {
+    console.error('SQL Error:', result.error);
+
+    // Handle specific SQL errors
+    if (result.error.message?.includes('does not exist')) {
+      console.log('Table not found - creating table...');
+      // Handle table creation logic
+    }
+
+    // Access detailed error information
+    console.log('Error code:', result.error.code);
+    console.log('Error details:', result.error.details);
+  }
+} catch (error) {
+  console.error('SQL execution exception:', error);
+}
 ```
 
 ## Advanced Features
@@ -236,29 +737,16 @@ const vectorColumns = [
   },
 ];
 
+// Sparse Vector Format Example:
+// {1:1,3:2,5:3}/5 represents a 5-dimensional vector where:
+// - Position 1 has value 1
+// - Position 3 has value 2
+// - Position 5 has value 3
+// - Positions 2 and 4 are implicitly 0
+
 for (const vectorColumn of vectorColumns) {
   await client.columns.create('users', vectorColumn);
 }
-```
-
-### Interceptors
-
-```typescript
-// Add request interceptor
-const requestId = client.addRequestInterceptor((config) => {
-  config.headers['X-Request-ID'] = crypto.randomUUID();
-  return config;
-});
-
-// Add response interceptor
-const responseId = client.addResponseInterceptor((response) => {
-  console.log('Response received:', response.status);
-  return response;
-});
-
-// Remove interceptors
-client.removeInterceptor('request', requestId);
-client.removeInterceptor('response', responseId);
 ```
 
 ### Configuration Management
@@ -280,6 +768,8 @@ console.log('Current config:', config);
 
 ## Error Handling
 
+The SDK provides comprehensive error handling with detailed error objects:
+
 ```typescript
 try {
   const result = await client.tables.create({
@@ -289,15 +779,35 @@ try {
 
   if (result.error) {
     console.error('Operation failed:', result.error);
+
     // Handle specific error cases
-    if (result.error.includes('already exists')) {
+    if (
+      result.error.message &&
+      result.error.message.includes('already exists')
+    ) {
       console.log('Table already exists, continuing...');
     }
+
+    // Access error details
+    console.log('Error metadata:', result.error.meta);
+    console.log('Error message:', result.error.message);
   } else {
     console.log('Success:', result.data);
   }
 } catch (error) {
-  console.error('Unexpected error:', error);
+  console.error('API Error:', error.message);
+}
+```
+
+### Error Object Structure
+
+```typescript
+interface ErrorResponse {
+  error: {
+    message: string; // Human-readable error message
+    meta?: string[]; // Additional metadata
+  };
+  data?: null;
 }
 ```
 
@@ -427,7 +937,7 @@ async function main() {
     console.log('Table created:', tableResult.data);
 
     // Insert a record
-    const recordResult = await client.record.insert('users', {
+    const recordResult = await client.records.insert('users', {
       name: 'John Doe',
       email: 'john@example.com',
       age: 30,
@@ -440,13 +950,64 @@ async function main() {
 
     console.log('Record inserted:', recordResult.data);
 
-    // Query records
-    const records = await client.record.findAll('users', {
-      filters: [{ age: { $gte: 25 } }],
+    // Query records with filters
+    const records = await client.records.findAll('users', {
+      filters: [{ field: 'age', operator: '>=', values: [25] }],
       sort: [{ field: 'name', order: 'asc' }],
     });
 
     console.log('Records found:', records);
+
+    // Update a record
+    const updateResult = await client.records.updateById('users', {
+      id: recordResult.data.id,
+      set: { age: 31 },
+    });
+
+    if (updateResult.error) {
+      console.error('Record update failed:', updateResult.error);
+    } else {
+      console.log('Record updated:', updateResult.data);
+    }
+
+    // Delete a record
+    const deleteResult = await client.records.delete('users', {
+      record_ids: [recordResult.data.id],
+    });
+
+    if (deleteResult.error) {
+      console.error('Record deletion failed:', deleteResult.error);
+    } else {
+      console.log('Record deleted:', deleteResult.data);
+    }
+
+    // Demonstrate SQL operations
+    const sqlResult = await client.sql.textToSQL(
+      'Find all users with age greater than 25'
+    );
+
+    let generatedSQL = '';
+    for await (const chunk of sqlResult) {
+      generatedSQL += chunk;
+    }
+
+    console.log('Generated SQL:', generatedSQL);
+
+    // Execute the generated SQL
+    const sqlExecutionResult = await client.sql.executeSQL(generatedSQL);
+    if (sqlExecutionResult.error) {
+      console.error('SQL execution failed:', sqlExecutionResult.error);
+    } else {
+      console.log('SQL results:', sqlExecutionResult.data);
+    }
+
+    // Clean up - delete the table
+    const deleteTableResult = await client.tables.delete('users');
+    if (deleteTableResult.error) {
+      console.error('Table deletion failed:', deleteTableResult.error);
+    } else {
+      console.log('Table deleted:', deleteTableResult.data);
+    }
   } catch (error) {
     console.error('Error:', error);
   }
@@ -455,21 +1016,61 @@ async function main() {
 main().catch(console.error);
 ```
 
-## Database Operations
+## API Reference
 
-For comprehensive database operations including advanced table management, column operations, and record handling, see:
+### Core Client
 
-- **[Database Operations Guide](http://docs.boltic.io/docs/category/databases)** - Complete documentation
-- **[Database SDK README](./src/services/databases/README.md)** - Implementation guide with examples
+- **`createClient(apiKey: string, options?: ClientOptions)`**: Initialize the Boltic client
 
-The database operations include:
+### Tables
 
-- ✅ Table creation, update, deletion, and metadata management
-- ✅ Column operations with all supported data types
-- ✅ Record CRUD operations with advanced filtering
-- ✅ Vector columns for AI/ML applications
-- ✅ Advanced filtering with FilterBuilder
-- ✅ Schema helpers and testing utilities
+- **`client.tables.create(data)`**: Create a new table
+- **`client.tables.findAll(options?)`**: List tables with optional filtering
+- **`client.tables.findOne(options)`**: Get a specific table
+- **`client.tables.findByName(name)`**: Get table by name
+- **`client.tables.update(identifier, data)`**: Update table properties
+- **`client.tables.rename(oldName, newName)`**: Rename a table
+- **`client.tables.setAccess(data)`**: Update table access settings
+- **`client.tables.delete(name)`**: Delete a table by name
+
+### Columns
+
+- **`client.columns.create(tableName, data)`**: Create a new column
+- **`client.columns.findAll(tableName, options?)`**: List columns with optional filtering
+- **`client.columns.findOne(tableName, options)`**: Get a specific column
+- **`client.columns.findById(tableName, columnId)`**: Get column by ID
+- **`client.columns.update(tableName, columnName, data)`**: Update column properties
+- **`client.columns.delete(tableName, columnName)`**: Delete a column
+
+### Records
+
+- **`client.records.insert(tableName, data)`**: Insert a new record
+- **`client.records.findAll(tableName, options?)`**: List records with optional filtering
+- **`client.records.findOne(tableName, idOrOptions)`**: Get a specific record
+- **`client.records.update(tableName, options)`**: Update records by filters
+- **`client.records.updateById(tableName, options)`**: Update record by ID
+- **`client.records.delete(tableName, options)`**: Delete records by filters or IDs
+
+### SQL Operations
+
+- **`client.sql.textToSQL(prompt, options?)`**: Convert natural language to SQL query (streaming)
+- **`client.sql.executeSQL(query)`**: Execute SQL query with safety measures
+
+## Examples and Demos
+
+Check out the comprehensive demo files for complete usage examples:
+
+- **[Comprehensive Database Operations Demo](./src/services/databases/examples/basic/comprehensive-database-operations-demo.ts)** - Complete SDK functionality demo
+- **[SQL Operations Demo](./src/services/databases/examples/basic/comprehensive-sql-operations-demo.ts)** - SQL operations and text-to-SQL demo
+
+These demos cover:
+
+- All column types and their properties
+- Advanced filtering and querying
+- Error handling patterns
+- Testing utilities usage
+- Vector operations
+- SQL operations and text-to-SQL conversion
 
 ## Development
 

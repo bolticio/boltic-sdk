@@ -1,32 +1,10 @@
 # Boltic SDK - Database Operations
 
-A powerful TypeScript SDK for seamless integration with Boltic Tables infrastructure. Provides comprehensive database operations including table management, column operations, record handling, and authentication.
+This is the database-specific documentation for the Boltic SDK. For the complete SDK documentation, see the [main README](../../README.md).
 
-## Features
+## Overview
 
-- 🔧 **Full TypeScript Support**: Comprehensive type definitions and IntelliSense
-- 🚀 **Modern Architecture**: ES modules and CommonJS support
-- 🔐 **Built-in Authentication**: Integrated API key management
-- 📊 **Database Operations**: Complete table and column management
-- 📝 **Record Operations**: Full CRUD operations with advanced querying
-- 🧪 **Testing Utilities**: Built-in testing helpers and mocks
-- 📦 **Zero Dependencies**: Lightweight with optional peer dependencies
-- 🌐 **Multi-Region Support**: Asia Pacific and US Central regions
-- 🔍 **Advanced Filtering**: FilterBuilder with comprehensive query operators
-- 🛠️ **Helper Classes**: Schema and column creation utilities
-- ⚡ **HTTP Adapters**: Support for both Axios and Fetch
-- 🎯 **Vector Support**: AI/ML vector fields with multiple precisions
-
-## Prerequisites
-
-- **Node.js:** >=18.0.0
-- **NPM:** >=8.0.0
-
-## Installation
-
-```bash
-npm install boltic-sdk
-```
+The Boltic Database SDK provides comprehensive database operations including table management, column operations, record handling, and advanced features like vector support for AI/ML applications.
 
 ## Quick Start
 
@@ -34,67 +12,18 @@ npm install boltic-sdk
 import { createClient } from 'boltic-sdk';
 
 // Initialize the client
-const client = createClient('your-api-key');
-
-// Use the SDK...
-```
-
-## Authentication
-
-### API Key Setup
-
-Get your API key from [boltic.io](https://boltic.io) and use it to initialize the client:
-
-```typescript
-import { createClient } from 'boltic-sdk';
-
-const client = createClient('your-api-key-here');
-```
-
-### Environment Variables
-
-```typescript
-import dotenv from 'dotenv';
-import { createClient } from 'boltic-sdk';
-
-dotenv.config();
-
-const client = createClient(process.env.BOLTIC_API_KEY!);
-```
-
-## Configuration Options
-
-```typescript
-interface ClientOptions {
-  region?: 'asia-south1' | 'us-central1';
-  retryAttempts?: number;
-  retryDelay?: number;
-  maxRetries?: number;
-  timeout?: number;
-  debug?: boolean;
-}
-
 const client = createClient('your-api-key', {
   region: 'asia-south1',
   debug: true,
-  timeout: 30000,
-  maxRetries: 3,
 });
+
+// Use the client for database operations
+const tables = client.tables;
+const columns = client.columns;
+const records = client.records; // Note: correct syntax is client.records
 ```
 
-## Database Context
-
-The client automatically uses a default database context for all operations:
-
-```typescript
-// Get current database context
-const currentDb = client.getCurrentDatabase();
-console.log('Current database:', currentDb);
-```
-
-## Table Operations
-
-### Reserved Columns
+## Reserved Columns
 
 The following columns are automatically added to all tables and cannot be modified or deleted:
 
@@ -103,6 +32,8 @@ The following columns are automatically added to all tables and cannot be modifi
 - **`updated_at`**: Timestamp when the record was last updated
 
 These columns are managed by the system and provide essential functionality for record identification and tracking.
+
+## Table Operations
 
 ### Creating Tables
 
@@ -182,8 +113,8 @@ const table = await client.tables.findOne({
   where: { name: 'users' },
 });
 
-// Get table metadata
-const metadata = await client.tables.getMetadata('users');
+// Get table by name
+const tableByName = await client.tables.findByName('users');
 ```
 
 ### Updating Tables
@@ -211,12 +142,6 @@ const accessResult = await client.tables.setAccess({
 ```typescript
 // Delete table by name
 const deleteResult = await client.tables.delete('users');
-
-// Delete table with options
-const deleteWithOptions = await client.tables.delete({
-  table_name: 'users',
-  force: true,
-});
 ```
 
 ## Column Operations
@@ -260,7 +185,7 @@ const columnTypes = [
   {
     name: 'phone',
     type: 'phone-number',
-    phone_format: '+1 123 456 7890',
+    phone_format: '+91 123 456 7890',
     description: 'Phone number',
   },
   {
@@ -334,7 +259,7 @@ const recordData = {
   role: 'Admin',
 };
 
-const insertResult = await client.record.insert('users', recordData);
+const insertResult = await client.records.insert('users', recordData);
 
 if (insertResult.error) {
   console.error('Record insertion failed:', insertResult.error);
@@ -349,78 +274,18 @@ const multipleRecords = [
 ];
 
 for (const record of multipleRecords) {
-  await client.record.insert('users', record);
+  await client.records.insert('users', record);
 }
-
-// Insert record with sparse vector example
-const sparseVectorRecord = {
-  name: 'AI Model User',
-  email: 'ai@example.com',
-  age: 25,
-  sparse_features: { 1: 1, 3: 2, 5: 3 }, // Sparse vector: {1:1,3:2,5:3}/5
-  // This represents a 5-dimensional vector where positions 1, 3, 5 have values 1, 2, 3
-  // and positions 2, 4 are implicitly 0
-};
-
-const sparseInsertResult = await client.record.insert(
-  'users',
-  sparseVectorRecord
-);
-```
-
-### Advanced Filtering with FilterBuilder
-
-```typescript
-import { createFilter, FilterBuilder } from 'boltic-sdk';
-
-// Create complex filters using FilterBuilder
-const complexFilters = createFilter()
-  .greaterThan('age', 25)
-  .equals('is_active', true)
-  .contains('name', 'John')
-  .between('salary', 50000, 100000)
-  .isOneOf('role', ['Admin', 'User'])
-  .build();
-
-// Use filters in queries
-const filteredRecords = await client.record.findAll('users', {
-  filters: complexFilters,
-  sort: [{ field: 'age', order: 'desc' }],
-  page: { page_no: 1, page_size: 10 },
-});
-
-// Available filter operators
-const advancedFilters = createFilter()
-  .equals('status', 'active')
-  .notEquals('type', 'guest')
-  .greaterThan('score', 80)
-  .greaterThanOrEqual('rating', 4.0)
-  .lessThan('attempts', 5)
-  .lessThanOrEqual('age', 65)
-  .between('created_at', '2024-01-01', '2024-12-31')
-  .contains('description', 'urgent')
-  .startsWith('name', 'A')
-  .endsWith('email', '@company.com')
-  .isNull('deleted_at')
-  .isNotNull('confirmed_at')
-  .isEmpty('notes')
-  .isNotEmpty('tags')
-  .isOneOf('category', ['tech', 'business'])
-  .isNotOneOf('status', ['banned', 'suspended'])
-  .arrayContains('skills', 'javascript')
-  .arrayContainsAny('languages', ['en', 'es'])
-  .arrayContainsAll('permissions', ['read', 'write'])
-  .build();
 ```
 
 ### Querying Records
 
 ```typescript
 // Find all records
-const allRecords = await client.record.findAll('users');
+const allRecords = await client.records.findAll('users');
 
 // Find records with pagination
-const paginatedRecords = await client.record.findAll('users', {
+const paginatedRecords = await client.records.findAll('users', {
   page: {
     page_no: 1,
     page_size: 10,
@@ -428,25 +293,16 @@ const paginatedRecords = await client.record.findAll('users', {
 });
 
 // Find records with filters
-const filteredRecords = await client.record.findAll('users', {
+const filteredRecords = await client.records.findAll('users', {
   filters: [
     { field: 'age', operator: '>=', values: [25] },
     { field: 'is_active', operator: '=', values: [true] },
-    { field: 'role', operator: 'IS ONE OF', values: ['Admin', 'User'] },
+    { field: 'role', operator: 'IN', values: ['Admin', 'User'] },
   ],
 });
 
-// Method 3: FilterBuilder (recommended)
-const builderFilterRecords = await client.record.findAll('users', {
-  filters: createFilter()
-    .greaterThanOrEqual('age', 25)
-    .equals('is_active', true)
-    .isOneOf('role', ['Admin', 'User'])
-    .build(),
-});
-
 // Find records with sorting
-const sortedRecords = await client.record.findAll('users', {
+const sortedRecords = await client.records.findAll('users', {
   sort: [
     { field: 'age', order: 'desc' },
     { field: 'name', order: 'asc' },
@@ -454,11 +310,13 @@ const sortedRecords = await client.record.findAll('users', {
 });
 
 // Find a specific record
-const specificRecord = await client.record.findOne('users', 'record-id');
+const specificRecord = await client.records.findOne('users', 'record-id');
 
 // Find one record with filters
-const filteredRecord = await client.record.findOne('users', {
-  filters: [{ email: 'john.doe@example.com' }],
+const filteredRecord = await client.records.findOne('users', {
+  filters: [
+    { field: 'email', operator: '=', values: ['john.doe@example.com'] },
+  ],
 });
 ```
 
@@ -466,13 +324,13 @@ const filteredRecord = await client.record.findOne('users', {
 
 ```typescript
 // Update records by filters
-const updateResult = await client.record.update('users', {
+const updateResult = await client.records.update('users', {
   set: { is_active: false },
-  filters: [{ role: 'Guest' }],
+  filters: [{ field: 'role', operator: '=', values: ['Guest'] }],
 });
 
 // Update record by ID
-const updateByIdResult = await client.record.updateById('users', {
+const updateByIdResult = await client.records.updateById('users', {
   id: 'record-id-here',
   set: { salary: 80000 },
 });
@@ -482,22 +340,80 @@ const updateByIdResult = await client.record.updateById('users', {
 
 ```typescript
 // Delete records by filters
-const deleteResult = await client.record.delete('users', {
-  filters: [{ is_active: false }],
+const deleteResult = await client.records.delete('users', {
+  filters: [{ field: 'is_active', operator: '=', values: [false] }],
 });
 
 // Delete records by IDs
-const deleteByIdsResult = await client.record.delete('users', {
+const deleteByIdsResult = await client.records.delete('users', {
   record_ids: ['id1', 'id2', 'id3'],
 });
 
-// Delete with FilterBuilder
-const deleteWithFilters = await client.record.delete('users', {
-  filters: createFilter()
-    .lessThan('last_login', '2023-01-01')
-    .equals('is_active', false)
-    .build(),
+// Delete with multiple filter conditions
+const deleteWithFilters = await client.records.delete('users', {
+  filters: [
+    { field: 'last_login', operator: '<', values: ['2023-01-01'] },
+    { field: 'is_active', operator: '=', values: [false] },
+  ],
 });
+```
+
+## SQL Operations
+
+### Text-to-SQL Conversion
+
+Convert natural language to SQL queries with AI assistance:
+
+```typescript
+// Basic text-to-SQL conversion (streaming)
+const sqlStream = await client.sql.textToSQL('Find all active users');
+
+// Collect the streaming response
+let generatedSQL = '';
+for await (const chunk of sqlStream) {
+  generatedSQL += chunk;
+}
+
+console.log('Generated SQL:', generatedSQL);
+```
+
+### SQL Query Execution
+
+Execute SQL queries directly:
+
+```typescript
+// Execute SQL query
+const result = await client.sql.executeSQL(
+  `SELECT "name", "email" FROM "users" WHERE "is_active" = true`
+);
+
+if (result.error) {
+  console.error('SQL execution failed:', result.error);
+} else {
+  const [resultRows, metadata] = result.data;
+  console.log('Query results:', resultRows);
+  console.log('Row count:', metadata);
+}
+```
+
+### Query Refinement
+
+Refine existing queries with additional instructions:
+
+```typescript
+const baseQuery = `SELECT * FROM "users"`;
+
+const refinedStream = await client.sql.textToSQL(
+  'Add filtering for active users and sort by name',
+  { currentQuery: baseQuery }
+);
+
+let refinedSQL = '';
+for await (const chunk of refinedStream) {
+  refinedSQL += chunk;
+}
+
+console.log('Refined SQL:', refinedSQL);
 ```
 
 ## Advanced Features
@@ -539,28 +455,9 @@ for (const vectorColumn of vectorColumns) {
 }
 ```
 
-### Configuration Management
-
-```typescript
-// Update API key
-client.updateApiKey('new-api-key');
-
-// Update configuration
-client.updateConfig({
-  debug: true,
-  timeout: 45000,
-});
-
-// Get current configuration
-const config = client.getConfig();
-console.log('Current config:', config);
-
-// Get effective configuration
-const effectiveConfig = client.getEffectiveConfig();
-console.log('Effective config:', effectiveConfig);
-```
-
 ## Error Handling
+
+The SDK provides comprehensive error handling with detailed error objects:
 
 ```typescript
 try {
@@ -571,12 +468,26 @@ try {
 
   if (result.error) {
     console.error('Operation failed:', result.error);
+
+    // Handle specific error cases
+    if (
+      result.error.message &&
+      result.error.message.includes('already exists')
+    ) {
+      console.log('Table already exists, continuing...');
+    }
+
+    // Access error details
+    console.log('Error code:', result.error.code);
+    console.log('Error message:', result.error.message);
+    console.log('Error details:', result.error.details);
   } else {
     console.log('Success:', result.data);
   }
 } catch (error) {
   if (error instanceof ApiError) {
     console.error('API Error:', error.message, error.statusCode);
+    console.error('Error details:', error.details);
   } else if (error instanceof ValidationError) {
     console.error('Validation Error:', error.failures);
   } else {
@@ -585,32 +496,7 @@ try {
 }
 ```
 
-## Regions
-
-The SDK supports multiple regions for global deployment:
-
-- **`asia-south1`** (default): Asia Pacific (Mumbai) region
-- **`us-central1`**: US Central (Iowa) region
-
-## Module Formats
-
-The SDK supports both ES modules and CommonJS:
-
-### ES Modules (Recommended)
-
-```typescript
-import { createClient } from 'boltic-sdk';
-```
-
-### CommonJS
-
-```javascript
-const { createClient } = require('boltic-sdk');
-```
-
-## Development
-
-### Setup
+## Development Setup
 
 ```bash
 # Clone the repository
@@ -627,7 +513,7 @@ npm test
 npm run build
 ```
 
-### Scripts
+### Available Scripts
 
 - `npm run build` - Build the project
 - `npm run dev` - Build in watch mode
@@ -638,76 +524,57 @@ npm run build
 - `npm run lint` - Lint the codebase
 - `npm run format` - Format code with Prettier
 
-## API Reference
-
-### Core Client
-
-- **`createClient(apiKey: string, options?: ClientOptions)`**: Initialize the Boltic client
-
-### Database Context
-
-- **`client.getCurrentDatabase()`**: Get current database context
-
-### Authentication
-
-- **`client.validateApiKey()`**: Validate the API key
-- **`client.isAuthenticated()`**: Check authentication status
-
-### Tables
-
-- **`client.tables.create(data)`**: Create a new table
-- **`client.tables.findAll(options?)`**: List tables with optional filtering
-- **`client.tables.findOne(options)`**: Get a specific table
-- **`client.tables.update(identifier, data)`**: Update table properties
-- **`client.tables.rename(oldName, newName)`**: Rename a table
-- **`client.tables.setAccess(data)`**: Update table access settings
-- **`client.tables.delete(options)`**: Delete a table
-
-### Columns
-
-- **`client.columns.create(tableName, data)`**: Create a new column
-- **`client.columns.findAll(tableName, options?)`**: List columns with optional filtering
-- **`client.columns.findOne(tableName, options)`**: Get a specific column
-- **`client.columns.findById(tableName, columnId)`**: Get column by ID
-- **`client.columns.update(tableName, columnName, data)`**: Update column properties
-- **`client.columns.delete(tableName, columnName)`**: Delete a column
-
-### Records
-
-- **`client.record.insert(tableName, data)`**: Insert a new record
-- **`client.record.findAll(tableName, options?)`**: List records with optional filtering
-- **`client.record.findOne(tableName, idOrOptions)`**: Get a specific record
-- **`client.record.update(tableName, options)`**: Update records by filters
-- **`client.record.updateById(tableName, options)`**: Update record by ID
-- **`client.record.delete(tableName, options)`**: Delete records by filters or IDs
-
-### Utilities
-
-- **`createFilter()`**: Create a FilterBuilder instance
-- **`SchemaHelpers`**: Helper class for creating field definitions
-- **`ColumnHelpers`**: Utility functions for column operations
-- **`createTestClient(options)`**: Create a test client for testing
-- **`createMockResponse(data, pagination?)`**: Create mock responses for testing
-- **`createErrorResponse(message, code?)`**: Create error responses for testing
-- **`isErrorResponse(response)`**: Check if response is an error
-
-### Builder Functions
-
-- **`createTableBuilder(client)`**: Create a table builder instance
-- **`createColumnBuilder(client, tableName)`**: Create a column builder instance
-- **`createRecordBuilder(client, tableName)`**: Create a record builder instance
-
 ## Examples and Demos
 
-Check out the comprehensive demo file for complete usage examples:
+Check out the comprehensive demo files for complete usage examples:
 
-- [`comprehensive-database-operations-demo.ts`](./examples/basic/comprehensive-database-operations-demo.ts) - Complete SDK functionality demo
+- **[Comprehensive Database Operations Demo](./examples/basic/comprehensive-database-operations-demo.ts)** - Complete SDK functionality demo
+- **[SQL Operations Demo](./examples/basic/comprehensive-sql-operations-demo.ts)** - SQL operations and text-to-SQL demo
 
-This demo covers:
+These demos cover:
 
 - All column types and their properties
 - Advanced filtering and querying
 - Error handling patterns
 - Testing utilities usage
 - Vector operations
-- Builder patterns
+- SQL operations and text-to-SQL conversion
+
+## API Reference
+
+For the complete API reference including all methods, parameters, and return types, see the [main README](../../README.md).
+
+### Key Methods
+
+#### Tables
+
+- **`client.tables.create(data)`**: Create a new table
+- **`client.tables.findAll(options?)`**: List tables with optional filtering
+- **`client.tables.findByName(name)`**: Get table by name
+- **`client.tables.delete(name)`**: Delete a table by name
+
+#### Columns
+
+- **`client.columns.create(tableName, data)`**: Create a new column
+- **`client.columns.findAll(tableName, options?)`**: List columns with optional filtering
+- **`client.columns.delete(tableName, columnName)`**: Delete a column
+
+#### Records
+
+- **`client.records.insert(tableName, data)`**: Insert a new record
+- **`client.records.findAll(tableName, options?)`**: List records with optional filtering
+- **`client.records.update(tableName, options)`**: Update records by filters
+- **`client.records.delete(tableName, options)`**: Delete records by filters or IDs
+
+#### SQL Operations
+
+- **`client.sql.textToSQL(prompt, options?)`**: Convert natural language to SQL query (streaming)
+- **`client.sql.executeSQL(query)`**: Execute SQL query with safety measures
+
+## Complete Documentation
+
+For the complete SDK documentation including all features, examples, and API reference, see the [main README](../../README.md).
+
+## Support
+
+For support, email support@boltic.io or create an issue on [GitHub](https://github.com/bolticio/boltic-sdk).
