@@ -1,10 +1,11 @@
 {
-  "name": "@boltic/database-js",
+  "name": "@boltic-sdk/databases",
   "version": "1.0.0",
-  "description": "TypeScript SDK for Boltic Tables infrastructure",
+  "description": "Database service module for Boltic SDK",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
+  "license": "MIT",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"

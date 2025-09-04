@@ -65,17 +65,6 @@ export class ColumnResource extends BaseResource {
         };
       }
 
-      // Check if the table is a snapshot and prevent column creation
-      if (tableInfo.snapshot_url) {
-        return {
-          data: {},
-          error: {
-            code: 'SNAPSHOT_PROTECTION',
-            message: `Cannot create column in snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
-          },
-        };
-      }
-
       // Apply defaults and auto-generate field_order
       const processedColumn = await this.processColumnDefaults(
         tableInfo.id,
@@ -239,17 +228,6 @@ export class ColumnResource extends BaseResource {
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
-          },
-        };
-      }
-
-      // Check if the table is a snapshot and prevent column creation
-      if (tableInfo.snapshot_url) {
-        return {
-          data: {},
-          error: {
-            code: 'SNAPSHOT_PROTECTION',
-            message: `Cannot create columns in snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
           },
         };
       }
@@ -446,17 +424,6 @@ export class ColumnResource extends BaseResource {
         };
       }
 
-      // Check if the table is a snapshot and prevent column updates
-      if (tableInfo.snapshot_url) {
-        return {
-          data: {},
-          error: {
-            code: 'SNAPSHOT_PROTECTION',
-            message: `Cannot update column '${columnName}' in snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
-          },
-        };
-      }
-
       const result = await this.columnsApiClient.updateColumnByName(
         tableInfo.id,
         columnName,
@@ -499,17 +466,6 @@ export class ColumnResource extends BaseResource {
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
-          },
-        };
-      }
-
-      // Check if the table is a snapshot and prevent column deletion
-      if (tableInfo.snapshot_url) {
-        return {
-          data: {},
-          error: {
-            code: 'SNAPSHOT_PROTECTION',
-            message: `Cannot delete column '${columnName}' from snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
           },
         };
       }

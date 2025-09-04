@@ -63,17 +63,6 @@ export class RecordResource {
         };
       }
 
-      // Check if the table is a snapshot and prevent record insertion
-      if (tableInfo.snapshot_url) {
-        return {
-          data: {},
-          error: {
-            code: 'SNAPSHOT_PROTECTION',
-            message: `Cannot insert record into snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
-          },
-        };
-      }
-
       // Get table columns to determine which fields might be missing
       const completeDataResult = await this.ensureCompleteRecordData(
         tableName,
@@ -135,17 +124,6 @@ export class RecordResource {
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
-          },
-        };
-      }
-
-      // Check if the table is a snapshot and prevent record insertion
-      if (tableInfo.snapshot_url) {
-        return {
-          data: {},
-          error: {
-            code: 'SNAPSHOT_PROTECTION',
-            message: `Cannot insert records into snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
           },
         };
       }
@@ -274,17 +252,6 @@ export class RecordResource {
         };
       }
 
-      // Check if the table is a snapshot and prevent record updates
-      if (tableInfo.snapshot_url) {
-        return {
-          data: {},
-          error: {
-            code: 'SNAPSHOT_PROTECTION',
-            message: `Cannot update records in snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
-          },
-        };
-      }
-
       // Include table_id in the request payload
       const requestOptions = { ...options, table_id: tableInfo.id };
       const result = await this.apiClient.updateRecords(requestOptions);
@@ -323,17 +290,6 @@ export class RecordResource {
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
-          },
-        };
-      }
-
-      // Check if the table is a snapshot and prevent record updates
-      if (tableInfo.snapshot_url) {
-        return {
-          data: {},
-          error: {
-            code: 'SNAPSHOT_PROTECTION',
-            message: `Cannot update record in snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
           },
         };
       }
@@ -386,17 +342,6 @@ export class RecordResource {
         };
       }
 
-      // Check if the table is a snapshot and prevent record deletion
-      if (tableInfo.snapshot_url) {
-        return {
-          data: {},
-          error: {
-            code: 'SNAPSHOT_PROTECTION',
-            message: `Cannot delete records from snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
-          },
-        };
-      }
-
       // Include table_id in the request payload
       const requestOptions = { ...options, table_id: tableInfo.id };
       const result = await this.apiClient.deleteRecords(requestOptions);
@@ -434,17 +379,6 @@ export class RecordResource {
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
-          },
-        };
-      }
-
-      // Check if the table is a snapshot and prevent record deletion
-      if (tableInfo.snapshot_url) {
-        return {
-          data: {},
-          error: {
-            code: 'SNAPSHOT_PROTECTION',
-            message: `Cannot delete record from snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
           },
         };
       }
