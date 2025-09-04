@@ -9,6 +9,18 @@ export interface RecordCreateRequest {
   [fieldName: string]: unknown;
 }
 
+export interface RecordBulkInsertOptions {
+  validation?: boolean;
+}
+
+export interface RecordBulkInsertResponse {
+  data: {
+    records: RecordWithId[];
+    insert_count: number;
+  };
+  message: string;
+}
+
 export interface RecordUpdateRequest {
   [fieldName: string]: unknown;
 }

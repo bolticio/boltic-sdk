@@ -10,6 +10,7 @@ export interface RecordApiEndpoint {
 
 export interface RecordEndpoints {
   insert: RecordApiEndpoint;
+  insertMany: RecordApiEndpoint;
   list: RecordApiEndpoint;
   get: RecordApiEndpoint;
   update: RecordApiEndpoint;
@@ -20,6 +21,11 @@ export interface RecordEndpoints {
 export const RECORD_ENDPOINTS: RecordEndpoints = {
   insert: {
     path: '/tables/{table_id}/records',
+    method: 'POST',
+    authenticated: true,
+  },
+  insertMany: {
+    path: '/tables/{table_id}/records/bulk-insert',
     method: 'POST',
     authenticated: true,
   },

@@ -1,6 +1,8 @@
 import { RecordsApiClient } from '../../api/clients/records-api-client';
 import { TablesApiClient } from '../../api/clients/tables-api-client';
 import {
+  RecordBulkInsertOptions,
+  RecordBulkInsertResponse,
   RecordData,
   RecordDeleteOptions,
   RecordQueryOptions,
@@ -98,6 +100,73 @@ export class RecordResource {
         data: {},
         error: {
           code: 'INSERT_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
+      };
+    }
+  }
+
+  /**
+   * Insert multiple records in bulk
+   */
+  async insertMany(
+    tableName: string,
+    records: RecordData[],
+    options: RecordBulkInsertOptions = { validation: true }
+  ): Promise<RecordBulkInsertResponse | BolticErrorResponse> {
+    try {
+      // Validate input
+      if (!records || !Array.isArray(records) || records.length === 0) {
+        return {
+          data: {},
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'Records array is required and cannot be empty',
+          },
+        };
+      }
+
+      // Get table information first
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
+        return {
+          data: {},
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
+        };
+      }
+
+      // Check if the table is a snapshot and prevent record insertion
+      if (tableInfo.snapshot_url) {
+        return {
+          data: {},
+          error: {
+            code: 'SNAPSHOT_PROTECTION',
+            message: `Cannot insert records into snapshot table '${tableName}'. Snapshots are read-only and cannot be modified.`,
+          },
+        };
+      }
+
+      // Send records as-is to API with validation parameter
+      const result = await this.apiClient.insertManyRecords(
+        records,
+        tableInfo.id,
+        options
+      );
+
+      if (isErrorResponse(result)) {
+        return result;
+      }
+
+      return result as RecordBulkInsertResponse;
+    } catch (error) {
+      return {
+        data: {},
+        error: {
+          code: 'INSERT_MANY_ERROR',
           message:
             error instanceof Error ? error.message : 'Unknown error occurred',
         },

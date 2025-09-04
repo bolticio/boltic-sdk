@@ -351,22 +351,52 @@ if (insertResult.error) {
   console.log('Record inserted:', insertResult.data);
 }
 
-// Insert multiple records
+// Insert multiple records using insertMany() for better performance
 const multipleRecords = [
-  { name: 'Jane Smith', email: 'jane@example.com', age: 28 },
-  { name: 'Bob Johnson', email: 'bob@example.com', age: 35 },
+  {
+    name: 'Jane Smith',
+    email: 'jane@example.com',
+    age: 28,
+    salary: 65000,
+    is_active: true,
+    role: 'User',
+  },
+  {
+    name: 'Bob Johnson',
+    email: 'bob@example.com',
+    age: 35,
+    salary: 70000,
+    is_active: true,
+    role: 'Admin',
+  },
 ];
 
-for (const record of multipleRecords) {
-  await client.records.insert('users', record);
+// Bulk insert with validation (default)
+const bulkResult = await client.records.insertMany('users', multipleRecords);
+
+if (bulkResult.error) {
+  console.error('Bulk insertion failed:', bulkResult.error);
+} else {
+  console.log(`Successfully inserted ${bulkResult.data.insert_count} records`);
+  console.log('Inserted records:', bulkResult.data.records);
 }
+
+// Bulk insert without validation
+const bulkNoValidationResult = await client.records.insertMany(
+  'users',
+  multipleRecords,
+  { validation: false }
+);
+
+// Note: Unlike single insert(), insertMany() requires complete records
+// All required fields must be provided - partial record insertion is not supported
 
 // Insert record with sparse vector example
 const sparseVectorRecord = {
   name: 'AI Model User',
   email: 'ai@example.com',
   age: 25,
-  sparse_features: { 1: 1, 3: 2, 5: 3 }, // Sparse vector: {1:1,3:2,5:3}/5
+  sparse_features: '{ 1: 1, 3: 2, 5: 3 }/5',
   // This represents a 5-dimensional vector where positions 1, 3, 5 have values 1, 2, 3
   // and positions 2, 4 are implicitly 0
 };
@@ -375,6 +405,37 @@ const sparseInsertResult = await client.records.insert(
   'users',
   sparseVectorRecord
 );
+```
+
+### Bulk Insert Operations
+
+The SDK provides an efficient `insertMany()` method for inserting multiple records in a single API call:
+
+```typescript
+// Bulk insert with validation (default behavior)
+const records = [
+  { name: 'User 1', email: 'user1@example.com', age: 25 },
+  { name: 'User 2', email: 'user2@example.com', age: 30 },
+  { name: 'User 3', email: 'user3@example.com', age: 35 },
+];
+
+const result = await client.records.insertMany('users', records);
+
+if (result.error) {
+  console.error('Bulk insertion failed:', result.error);
+} else {
+  console.log(`Successfully inserted ${result.data.insert_count} records`);
+  console.log('Response:', result.data);
+}
+
+// Bulk insert without validation (faster, less safe)
+const resultNoValidation = await client.records.insertMany('users', records, {
+  validation: false,
+});
+
+// Important: insertMany() requires complete records
+// All required fields must be provided - partial records will cause errors
+// For partial record support, use individual insert() calls instead
 ```
 
 ### Querying Records
@@ -1045,6 +1106,7 @@ main().catch(console.error);
 ### Records
 
 - **`client.records.insert(tableName, data)`**: Insert a new record
+- **`client.records.insertMany(tableName, records, options?)`**: Insert multiple records in bulk
 - **`client.records.findAll(tableName, options?)`**: List records with optional filtering
 - **`client.records.findOne(tableName, idOrOptions)`**: Get a specific record
 - **`client.records.update(tableName, options)`**: Update records by filters

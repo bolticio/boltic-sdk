@@ -299,6 +299,9 @@ class ComprehensiveDatabaseOperationsDemo {
       // 14. Add rows in table (with/without null)
       await this.demoAddRecords();
 
+      // 14.5. Demo bulk insert (insertMany)
+      await this.demoBulkInsertRecords();
+
       // 15. Get row
       await this.demoGetRecord();
 
@@ -935,6 +938,159 @@ class ComprehensiveDatabaseOperationsDemo {
     }
 
     console.log('✅ Step 14 completed');
+  }
+
+  /**
+   * 14.5. Demo bulk insert (insertMany)
+   */
+  private async demoBulkInsertRecords(): Promise<void> {
+    console.log('\n1️⃣4️⃣.5️⃣  Bulk Insert Multiple Records (insertMany)');
+    console.log('-'.repeat(40));
+
+    // Prepare multiple records for bulk insertion
+    const bulkRecords = [
+      {
+        text_field: 'Bulk User 1',
+        email_field: 'bulk1@example.com',
+        long_text_field: 'First bulk inserted user with complete data.',
+        number_field: 45,
+        currency_field: 90000,
+        checkbox_field: true,
+        dropdown_field: ['Option 1'],
+        phone_field: '+91 111 222 3333',
+        link_field: 'https://bulk1.example.com',
+        date_time_field: '2024-07-01T10:00:00Z',
+        half_vector_field: [0.1, 0.1, 0.1, 0.1, 0.1],
+      },
+      {
+        text_field: 'Bulk User 2',
+        email_field: 'bulk2@example.com',
+        long_text_field: 'Second bulk inserted user with different values.',
+        number_field: 50,
+        currency_field: 95000,
+        checkbox_field: false,
+        dropdown_field: ['Option 2'],
+        phone_field: '+91 222 333 4444',
+        link_field: 'https://bulk2.example.com',
+        date_time_field: '2024-07-02T11:00:00Z',
+        half_vector_field: [0.2, 0.2, 0.2, 0.2, 0.2],
+      },
+      {
+        text_field: 'Bulk User 3',
+        email_field: 'bulk3@example.com',
+        long_text_field: 'Third bulk inserted user with complete data.',
+        number_field: 55,
+        currency_field: 100000,
+        checkbox_field: true,
+        dropdown_field: ['Option 3'],
+        phone_field: '+91 333 444 5555',
+        link_field: 'https://bulk3.example.com',
+        date_time_field: '2024-07-03T12:00:00Z',
+        half_vector_field: [0.3, 0.3, 0.3, 0.3, 0.3],
+      },
+    ];
+
+    console.log('📝 Input: Bulk inserting 3 records using insertMany()');
+    console.log('   Records include complete data');
+    console.log('   Testing both validation enabled and disabled');
+
+    // Demo 1: insertMany() with validation enabled (default)
+    console.log(
+      '\n🔹 Method 1: insertMany() with validation enabled (default)'
+    );
+    const bulkInsertResult = await this.client.records.insertMany(
+      this.createdTableName,
+      bulkRecords
+    );
+
+    if (isErrorResponse(bulkInsertResult)) {
+      console.error(
+        '❌ Failed to bulk insert records:',
+        bulkInsertResult.error
+      );
+    } else {
+      console.log('📤 Output (bulk insert):', bulkInsertResult.data);
+      console.log(
+        `✅ Successfully inserted ${bulkInsertResult.data.insert_count} records`
+      );
+      console.log('   Response includes:');
+      console.log(`   - insert_count: ${bulkInsertResult.data.insert_count}`);
+      console.log(
+        `   - records array with ${bulkInsertResult.data.records.length} items`
+      );
+      console.log(`   - message: ${bulkInsertResult.message}`);
+
+      // Add the IDs to our tracking array
+      if (bulkInsertResult.data.records) {
+        bulkInsertResult.data.records.forEach((record) => {
+          if (record.id) {
+            this.createdRecordIds.push(record.id);
+          }
+        });
+      }
+    }
+
+    // Demo 2: insertMany() with validation disabled
+    console.log('\n🔹 Method 2: insertMany() with validation disabled');
+    const noValidationRecords = [
+      {
+        text_field: 'No Validation 1',
+        email_field: 'noval1@example.com',
+        number_field: 60,
+        currency_field: 110000,
+        checkbox_field: true,
+      },
+      {
+        text_field: 'No Validation 2',
+        email_field: 'noval2@example.com',
+        number_field: 65,
+        currency_field: 115000,
+        checkbox_field: false,
+      },
+    ];
+
+    const noValidationResult = await this.client.records.insertMany(
+      this.createdTableName,
+      noValidationRecords,
+      { validation: false }
+    );
+
+    if (isErrorResponse(noValidationResult)) {
+      console.error(
+        '❌ Failed bulk insert without validation:',
+        noValidationResult.error
+      );
+    } else {
+      console.log('📤 Output (no validation):', noValidationResult.data);
+      console.log(
+        `✅ Successfully inserted ${noValidationResult.data.insert_count} records without validation`
+      );
+
+      // Add the IDs to our tracking array
+      if (noValidationResult.data.records) {
+        noValidationResult.data.records.forEach((record) => {
+          if (record.id) {
+            this.createdRecordIds.push(record.id);
+          }
+        });
+      }
+    }
+
+    // Demo 3: Error handling - empty array
+    console.log('\n🔹 Error Handling Demo: Empty array');
+    const emptyArrayResult = await this.client.records.insertMany(
+      this.createdTableName,
+      []
+    );
+
+    if (isErrorResponse(emptyArrayResult)) {
+      console.log('📤 Output (expected error):', emptyArrayResult.error);
+      console.log('✅ Correctly handled empty array with proper error message');
+    } else {
+      console.log('❌ Empty array should have returned an error');
+    }
+
+    console.log('✅ Step 14.5 completed - Bulk insert demonstration');
   }
 
   /**

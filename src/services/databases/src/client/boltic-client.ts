@@ -161,6 +161,10 @@ export class BolticClient {
       records: () => ({
         insert: (data: RecordData) =>
           this.recordResource.insert(tableName, data),
+        insertMany: (
+          records: RecordData[],
+          options?: { validation?: boolean }
+        ) => this.recordResource.insertMany(tableName, records, options),
         findOne: (recordId: string) =>
           this.recordResource.get(tableName, recordId),
         update: (options: RecordUpdateOptions) =>
@@ -191,6 +195,11 @@ export class BolticClient {
     return {
       insert: (tableName: string, data: RecordData) =>
         this.recordResource.insert(tableName, data),
+      insertMany: (
+        tableName: string,
+        records: RecordData[],
+        options?: { validation?: boolean }
+      ) => this.recordResource.insertMany(tableName, records, options),
       findAll: (tableName: string, options?: RecordQueryOptions) =>
         this.recordResource.list(tableName, options),
       findOne: (tableName: string, recordId: string) =>

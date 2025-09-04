@@ -1,4 +1,6 @@
 import {
+  RecordBulkInsertOptions,
+  RecordBulkInsertResponse,
   RecordData,
   RecordDeleteOptions,
   RecordQueryOptions,
@@ -128,6 +130,54 @@ export class RecordsApiClient {
       }
 
       return responseData;
+    } catch (error) {
+      return this.formatErrorResponse(error);
+    }
+  }
+
+  /**
+   * Insert multiple records in bulk
+   */
+  async insertManyRecords(
+    records: RecordData[],
+    tableId: string,
+    options: RecordBulkInsertOptions = { validation: true }
+  ): Promise<RecordBulkInsertResponse | BolticErrorResponse> {
+    try {
+      if (!tableId) {
+        return this.formatErrorResponse(
+          new Error('table_id is required for bulk insert operation')
+        );
+      }
+
+      if (!records || !Array.isArray(records) || records.length === 0) {
+        return this.formatErrorResponse(
+          new Error('records array is required and cannot be empty')
+        );
+      }
+
+      const endpoint = RECORD_ENDPOINTS.insertMany;
+      let url = `${this.baseURL}${buildRecordEndpointPath(endpoint, { table_id: tableId })}`;
+
+      // Add validation query parameter
+      const queryParams = new URLSearchParams();
+      if (options.validation !== undefined) {
+        queryParams.append('validation', options.validation.toString());
+      }
+
+      if (queryParams.toString()) {
+        url += `?${queryParams.toString()}`;
+      }
+
+      const response = await this.httpAdapter.request({
+        url,
+        method: endpoint.method,
+        headers: this.buildHeaders(),
+        data: records,
+        timeout: this.config.timeout,
+      });
+
+      return response.data as RecordBulkInsertResponse;
     } catch (error) {
       return this.formatErrorResponse(error);
     }

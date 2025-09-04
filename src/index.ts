@@ -6,6 +6,18 @@ export * from './errors';
 export { BolticClient, createClient } from './services/databases/src/client';
 export type { ClientOptions, Region } from './services/databases/src/client';
 
+// Export response helpers - Essential for error handling
+export {
+  isErrorResponse,
+  isListResponse,
+} from './services/databases/src/types/common/responses';
+export type {
+  ApiResponse,
+  BolticErrorResponse,
+  BolticListResponse,
+  BolticSuccessResponse,
+} from './services/databases/src/types/common/responses';
+
 // Export common types
 export type {
   FieldDefinition,
