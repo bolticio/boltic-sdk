@@ -51,6 +51,8 @@
     "format": "prettier --write src tests examples docs",
     "docs:generate": "typedoc src/index.ts",
     "docs:serve": "npx serve docs/api",
+    "publish:branch": "npm run build && npm publish --tag $(git branch --show-current | sed 's/[^a-zA-Z0-9]/-/g')",
+    "publish:latest": "npm run build && npm publish",
     "release": "npm run build && npm run test && npm publish"
   },
   "devDependencies": {
