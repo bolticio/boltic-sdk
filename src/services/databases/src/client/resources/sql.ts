@@ -53,11 +53,16 @@ export class SqlResource {
    * @returns Promise<ExecuteSQLApiResponse> with raw API response following Boltic API Response Structure
    *
    */
-  async executeSQL(query: string): Promise<ExecuteSQLApiResponse> {
+  async executeSQL(
+    query: string
+  ): Promise<
+    | ExecuteSQLApiResponse
+    | import('../../types/common/responses').BolticErrorResponse
+  > {
     const response = await this.sqlApiClient.executeSQL({ query });
 
     if (isErrorResponse(response)) {
-      throw response; // Throw the API response directly
+      return response; // Return error response for caller to handle
     }
 
     return response; // Return raw API response following Boltic API Response Structure

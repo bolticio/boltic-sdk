@@ -26,4 +26,9 @@ export interface ExecuteSQLApiResponse {
     type: string;
   };
   message?: string; // Optional message following Boltic API Response Structure
+  error?: {
+    code?: string;
+    message?: string;
+    meta?: string[];
+  };
 }

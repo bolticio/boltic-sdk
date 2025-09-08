@@ -60,7 +60,6 @@ export abstract class BaseResource {
     } catch (error) {
       // Return error response in Boltic format
       return {
-        data: {},
         error: {
           code: 'CLIENT_ERROR',
           message: formatError(error),

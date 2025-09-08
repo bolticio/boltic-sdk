@@ -73,7 +73,7 @@ interface BolticListResponse<T = unknown> {
 }
 
 interface BolticErrorResponse {
-  data: {};
+  data?: never;
   error: {
     code?: string;
     message?: string;
@@ -433,7 +433,6 @@ export class ColumnsApiClient {
 
       if (!findResult.data) {
         return {
-          data: {},
           error: {
             code: 'COLUMN_NOT_FOUND',
             message: `Column '${columnName}' not found in table`,
@@ -481,7 +480,6 @@ export class ColumnsApiClient {
 
       if (!findResult.data) {
         return {
-          data: {},
           error: {
             code: 'COLUMN_NOT_FOUND',
             message: `Column '${columnName}' not found in table`,
@@ -526,7 +524,6 @@ export class ColumnsApiClient {
 
       // Otherwise format it to Boltic structure
       return {
-        data: {},
         error: {
           code: 'API_ERROR',
           message: (error as unknown as Error).message || 'Unknown API error',
@@ -537,7 +534,6 @@ export class ColumnsApiClient {
 
     if (error && typeof error === 'object' && 'message' in error) {
       return {
-        data: {},
         error: {
           code: 'CLIENT_ERROR',
           message: (error as Error).message,
@@ -547,7 +543,6 @@ export class ColumnsApiClient {
     }
 
     return {
-      data: {},
       error: {
         code: 'UNKNOWN_ERROR',
         message: 'An unexpected error occurred',

@@ -29,7 +29,7 @@ export interface BolticListResponse<T> {
 }
 
 export interface BolticErrorResponse {
-  data?: {};
+  data?: never;
   message?: string;
   error: {
     code?: string;

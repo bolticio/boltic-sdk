@@ -49,7 +49,7 @@ interface BolticListResponse<T = unknown> {
 }
 
 interface BolticErrorResponse {
-  data: {};
+  data?: never;
   error: {
     code?: string;
     message?: string;
@@ -432,7 +432,6 @@ export class RecordsApiClient {
 
       // Otherwise format it to Boltic structure
       return {
-        data: {},
         error: {
           code: 'API_ERROR',
           message: (error as unknown as Error).message || 'Unknown API error',
@@ -443,7 +442,6 @@ export class RecordsApiClient {
 
     if (error && typeof error === 'object' && 'message' in error) {
       return {
-        data: {},
         error: {
           code: 'CLIENT_ERROR',
           message: (error as Error).message,
@@ -453,7 +451,6 @@ export class RecordsApiClient {
     }
 
     return {
-      data: {},
       error: {
         code: 'UNKNOWN_ERROR',
         message: 'An unexpected error occurred',

@@ -84,7 +84,6 @@ export abstract class BaseApiClient {
 
       // Otherwise format it to Boltic structure
       return {
-        data: {},
         error: {
           code: `${prefix}_ERROR`,
           message:
@@ -96,7 +95,6 @@ export abstract class BaseApiClient {
 
     if (error && typeof error === 'object' && 'message' in error) {
       return {
-        data: {},
         error: {
           code: `${prefix}_CLIENT_ERROR`,
           message: (error as Error).message,
@@ -106,7 +104,6 @@ export abstract class BaseApiClient {
     }
 
     return {
-      data: {},
       error: {
         code: `${prefix}_UNKNOWN_ERROR`,
         message: `An unexpected ${prefix} error occurred`,

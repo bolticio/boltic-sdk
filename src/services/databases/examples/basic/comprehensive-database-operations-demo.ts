@@ -365,12 +365,6 @@ class ComprehensiveDatabaseOperationsDemo {
       fields: basicSchema as FieldDefinition[],
     });
 
-    if (isErrorResponse(createTableResult)) {
-      throw new Error(
-        `Table creation failed: ${createTableResult.error.message}`
-      );
-    }
-
     console.log('📤 Output:', createTableResult.data);
     console.log('✅ Step 2 completed');
   }

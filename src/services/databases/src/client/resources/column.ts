@@ -57,7 +57,6 @@ export class ColumnResource extends BaseResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -83,7 +82,6 @@ export class ColumnResource extends BaseResource {
       return result as BolticSuccessResponse<ColumnRecord>;
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'CREATE_COLUMN_ERROR',
           message:
@@ -224,7 +222,6 @@ export class ColumnResource extends BaseResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -253,7 +250,6 @@ export class ColumnResource extends BaseResource {
       return result as BolticListResponse<ColumnRecord>;
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'CREATE_COLUMNS_ERROR',
           message:
@@ -275,7 +271,6 @@ export class ColumnResource extends BaseResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -298,7 +293,6 @@ export class ColumnResource extends BaseResource {
       return result as BolticListResponse<ColumnDetails>;
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'LIST_COLUMNS_ERROR',
           message:
@@ -320,7 +314,6 @@ export class ColumnResource extends BaseResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -339,7 +332,6 @@ export class ColumnResource extends BaseResource {
 
       if (!result.data) {
         return {
-          data: {},
           error: {
             code: 'COLUMN_NOT_FOUND',
             message: `Column '${columnName}' not found in table '${tableName}'`,
@@ -353,7 +345,6 @@ export class ColumnResource extends BaseResource {
       };
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'GET_COLUMN_ERROR',
           message:
@@ -372,7 +363,6 @@ export class ColumnResource extends BaseResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -393,7 +383,6 @@ export class ColumnResource extends BaseResource {
       return result as BolticSuccessResponse<ColumnDetails>;
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'FIND_COLUMN_BY_ID_ERROR',
           message:
@@ -416,7 +405,6 @@ export class ColumnResource extends BaseResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -437,7 +425,6 @@ export class ColumnResource extends BaseResource {
       return result as BolticSuccessResponse<ColumnDetails>;
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'UPDATE_COLUMN_ERROR',
           message:
@@ -462,7 +449,6 @@ export class ColumnResource extends BaseResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -487,7 +473,6 @@ export class ColumnResource extends BaseResource {
       };
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'DELETE_COLUMN_ERROR',
           message:

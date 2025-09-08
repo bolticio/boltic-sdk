@@ -200,12 +200,11 @@ export class RecordBuilder {
   > {
     if (!this.updateData) {
       return {
-        data: [],
         error: {
           code: 'MISSING_UPDATE_DATA',
           message: 'Update data is required for update operation',
         },
-      };
+      } as unknown as BolticErrorResponse;
     }
 
     const updateOptions: RecordUpdateOptions = {
@@ -251,7 +250,6 @@ export class RecordBuilder {
   > {
     if (!this.queryOptions.filters || this.queryOptions.filters.length === 0) {
       return {
-        data: {},
         error: {
           code: 'MISSING_DELETE_CONDITIONS',
           message:

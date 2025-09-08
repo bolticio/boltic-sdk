@@ -100,7 +100,6 @@ export class ColumnBuilder {
   > {
     if (!this.queryOptions.where?.name) {
       return {
-        data: {},
         error: {
           code: 'MISSING_COLUMN_NAME',
           message: 'Column name is required for get operation',
@@ -122,7 +121,6 @@ export class ColumnBuilder {
   > {
     if (!this.queryOptions.where?.name) {
       return {
-        data: {},
         error: {
           code: 'MISSING_COLUMN_NAME',
           message: 'Column name is required for update operation',
@@ -146,7 +144,6 @@ export class ColumnBuilder {
   > {
     if (!this.queryOptions.where?.name) {
       return {
-        data: {},
         error: {
           code: 'MISSING_COLUMN_NAME',
           message: 'Column name is required for delete operation',

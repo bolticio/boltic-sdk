@@ -55,7 +55,6 @@ export class RecordResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -86,7 +85,6 @@ export class RecordResource {
       return result as BolticSuccessResponse<RecordWithId>;
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'INSERT_ERROR',
           message:
@@ -108,7 +106,6 @@ export class RecordResource {
       // Validate input
       if (!records || !Array.isArray(records) || records.length === 0) {
         return {
-          data: {},
           error: {
             code: 'INVALID_INPUT',
             message: 'Records array is required and cannot be empty',
@@ -120,7 +117,6 @@ export class RecordResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -142,7 +138,6 @@ export class RecordResource {
       return result as RecordBulkInsertResponse;
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'INSERT_MANY_ERROR',
           message:
@@ -164,7 +159,6 @@ export class RecordResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -181,7 +175,6 @@ export class RecordResource {
       return result as BolticSuccessResponse<RecordWithId>;
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'GET_ERROR',
           message:
@@ -203,7 +196,6 @@ export class RecordResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -222,7 +214,6 @@ export class RecordResource {
       return result as BolticListResponse<RecordWithId>;
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'LIST_ERROR',
           message:
@@ -244,7 +235,6 @@ export class RecordResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -263,7 +253,6 @@ export class RecordResource {
       return result as BolticListResponse<RecordWithId>;
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'UPDATE_ERROR',
           message:
@@ -286,7 +275,6 @@ export class RecordResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -312,7 +300,6 @@ export class RecordResource {
       return result as BolticSuccessResponse<RecordWithId>;
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'UPDATE_BY_ID_ERROR',
           message:
@@ -334,7 +321,6 @@ export class RecordResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -353,7 +339,6 @@ export class RecordResource {
       return result as BolticSuccessResponse<{ message: string }>;
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'DELETE_ERROR',
           message:
@@ -375,7 +360,6 @@ export class RecordResource {
       const tableInfo = await this.getTableInfo(tableName);
       if (!tableInfo) {
         return {
-          data: {},
           error: {
             code: 'TABLE_NOT_FOUND',
             message: `Table '${tableName}' not found`,
@@ -394,7 +378,6 @@ export class RecordResource {
       return result as BolticSuccessResponse<{ message: string }>;
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'DELETE_BY_ID_ERROR',
           message:
@@ -473,7 +456,6 @@ export class RecordResource {
       return completeData;
     } catch (error) {
       return {
-        data: {},
         error: {
           code: 'COMPLETE_DATA_ERROR',
           message:

@@ -165,7 +165,7 @@ export class TableResource extends BaseResource {
    */
   async findAll(
     options: TableQueryOptions = {}
-  ): Promise<ApiResponse<TableRecord[]>> {
+  ): Promise<ApiResponse<TableRecord>> {
     try {
       // Transform SDK format to API format
       const apiRequest = this.transformTableQueryToApiRequest(options);
@@ -195,7 +195,10 @@ export class TableResource extends BaseResource {
    */
   async findOne(
     options: TableQueryOptions
-  ): Promise<BolticSuccessResponse<TableRecord | null>> {
+  ): Promise<
+    | BolticSuccessResponse<TableRecord | null>
+    | import('../../types/common/responses').BolticErrorResponse
+  > {
     try {
       if (!options.where?.id && !options.where?.name) {
         throw new ValidationError(
@@ -270,7 +273,10 @@ export class TableResource extends BaseResource {
    */
   async findByName(
     name: string
-  ): Promise<BolticSuccessResponse<TableRecord | null>> {
+  ): Promise<
+    | BolticSuccessResponse<TableRecord | null>
+    | import('../../types/common/responses').BolticErrorResponse
+  > {
     return this.findOne({ where: { name } });
   }
 
@@ -279,7 +285,10 @@ export class TableResource extends BaseResource {
    */
   async findById(
     id: string
-  ): Promise<BolticSuccessResponse<TableRecord | null>> {
+  ): Promise<
+    | BolticSuccessResponse<TableRecord | null>
+    | import('../../types/common/responses').BolticErrorResponse
+  > {
     return this.findOne({ where: { id } });
   }
 
@@ -289,7 +298,10 @@ export class TableResource extends BaseResource {
   async update(
     name: string,
     data: TableUpdateRequest
-  ): Promise<BolticSuccessResponse<TableRecord>> {
+  ): Promise<
+    | BolticSuccessResponse<TableRecord>
+    | import('../../types/common/responses').BolticErrorResponse
+  > {
     try {
       // First find the table to get its ID
       const tableResult = await this.findByName(name);
@@ -332,7 +344,10 @@ export class TableResource extends BaseResource {
    */
   async delete(
     name: string
-  ): Promise<BolticSuccessResponse<{ message: string }>> {
+  ): Promise<
+    | BolticSuccessResponse<{ message: string }>
+    | import('../../types/common/responses').BolticErrorResponse
+  > {
     try {
       // First find the table to get its ID
       const tableResult = await this.findByName(name);
@@ -377,9 +392,11 @@ export class TableResource extends BaseResource {
     newName: string
   ): Promise<BolticSuccessResponse<TableRecord>> {
     try {
-      return await this.update(oldName, {
+      const result = await this.update(oldName, {
         name: newName,
       });
+      // update throws on error, so cast to success
+      return result as BolticSuccessResponse<TableRecord>;
     } catch (error) {
       throw error instanceof ApiError
         ? error
@@ -396,9 +413,11 @@ export class TableResource extends BaseResource {
   }): Promise<BolticSuccessResponse<TableRecord>> {
     try {
       // Update the table with the new access settings
-      return await this.update(request.table_name, {
+      const result = await this.update(request.table_name, {
         is_shared: request.is_shared,
       });
+      // update throws on error, so cast to success
+      return result as BolticSuccessResponse<TableRecord>;
     } catch (error) {
       throw error instanceof ApiError
         ? error

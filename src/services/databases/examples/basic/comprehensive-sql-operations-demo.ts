@@ -397,7 +397,7 @@ async function populateTestData(client: BolticClient) {
     );
   }, 'Fetching user UUIDs for orders');
 
-  if (usersResult) {
+  if (usersResult && !('error' in usersResult)) {
     const [userRows] = usersResult.data;
 
     if (userRows && userRows.length >= 3) {
@@ -519,9 +519,14 @@ async function executeSQLQuery(client: BolticClient): Promise<void> {
     `SELECT "name", "email" FROM "${TEST_TABLES.users.name}" WHERE "active" = true`
   );
 
+  if ('error' in result && result.error) {
+    colorLog('red', `SQL execution failed: ${result.error.message}`);
+    return;
+  }
+
   console.log('Query Results:');
   // Extract data from Boltic API Response Structure
-  const [resultRows, metadata] = result.data;
+  const [resultRows, metadata] = (result as any).data;
   console.log('Data:', resultRows);
 
   // Extract count from metadata
@@ -535,8 +540,8 @@ async function executeSQLQuery(client: BolticClient): Promise<void> {
   }
   console.log('Row count:', count);
 
-  if (result.pagination) {
-    console.log('Total count:', result.pagination.total_count);
+  if ((result as any).pagination) {
+    console.log('Total count:', (result as any).pagination.total_count);
   }
 }
 
@@ -661,8 +666,16 @@ async function demonstrateSQLExecution(client: BolticClient) {
 
         colorLog('green', `✅ Query executed successfully!`);
 
+        if ('error' in apiResponse && apiResponse.error) {
+          colorLog('red', `   ❌ SQL error: ${apiResponse.error.message}`);
+          return apiResponse;
+        }
+
+        const successResponse =
+          apiResponse as import('../../src/types/api/sql').ExecuteSQLApiResponse;
+
         // Extract data from Boltic API Response Structure
-        const [resultRows, metadata] = apiResponse.data;
+        const [resultRows, metadata] = successResponse.data;
 
         // Extract count from metadata
         let count: number;
@@ -686,16 +699,16 @@ async function demonstrateSQLExecution(client: BolticClient) {
           console.log('  ', JSON.stringify(resultRows[0], null, 2));
         }
 
-        if (apiResponse.pagination) {
+        if (successResponse.pagination) {
           console.log(
-            `   📄 Pagination: Page ${apiResponse.pagination.current_page} of ${apiResponse.pagination.total_pages}`
+            `   📄 Pagination: Page ${successResponse.pagination.current_page} of ${successResponse.pagination.total_pages}`
           );
           console.log(
-            `   📊 Total records: ${apiResponse.pagination.total_count}`
+            `   📊 Total records: ${successResponse.pagination.total_count}`
           );
         }
 
-        return apiResponse;
+        return successResponse;
       },
       `Query execution ${index + 1}`
     );
@@ -745,8 +758,19 @@ async function demonstrateAdvancedFeatures(
     batchQueries.map(async (query, index) => {
       const result = await client.sql.executeSQL(query);
 
+      if ('error' in result && result.error) {
+        colorLog(
+          'red',
+          `   ❌ Batch ${index + 1} SQL error: ${result.error.message}`
+        );
+        return result;
+      }
+
+      const success =
+        result as import('../../src/types/api/sql').ExecuteSQLApiResponse;
+
       // Extract count from Boltic API Response Structure
-      const [resultRows, metadata] = result.data;
+      const [resultRows, metadata] = success.data;
       let count: number;
       if (typeof metadata === 'number') {
         count = metadata;
@@ -761,7 +785,7 @@ async function demonstrateAdvancedFeatures(
       }
 
       console.log(`   ✅ Batch ${index + 1}: ${count} rows`);
-      return result;
+      return success;
     })
   );
 

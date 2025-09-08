@@ -18,7 +18,12 @@ export interface RecordBulkInsertResponse {
     records: RecordWithId[];
     insert_count: number;
   };
-  message: string;
+  message?: string;
+  error?: {
+    code?: string;
+    message?: string;
+    meta?: string[];
+  };
 }
 
 export interface RecordUpdateRequest {
