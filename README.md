@@ -1,6 +1,6 @@
 # Boltic SDK
 
-A powerful TypeScript SDK for seamless integration with the Boltic platform. Simplifies database operations, table management, column operations, record handling, and authentication for building modern applications.
+Boltic SDK is an open-source TypeScript library, developed by Fynd, designed to empower developers worldwide with integration to the Boltic platform. Effortlessly manage databases, tables, columns, records, and run SQL queries to build robust, modern applications with ease and confidence.
 
 ## Documentation
 
@@ -13,12 +13,9 @@ A powerful TypeScript SDK for seamless integration with the Boltic platform. Sim
 - 🔐 **Built-in Authentication**: Integrated API key management
 - 📊 **Database Operations**: Complete table and column management
 - 📝 **Record Operations**: Full CRUD operations with advanced querying
-- 🧪 **Testing Utilities**: Built-in testing helpers and mocks
-- 📦 **Zero Dependencies**: Lightweight with optional peer dependencies
 - 🌐 **Multi-Region Support**: Asia Pacific and US Central regions
 - 🔍 **Advanced Filtering**: Comprehensive query operators
 - 🛠️ **Helper Classes**: Schema and column creation utilities
-- ⚡ **HTTP Adapters**: Support for both Axios and Fetch
 - 🎯 **Vector Support**: AI/ML vector fields with multiple precisions
 
 ## Prerequisites
@@ -46,14 +43,18 @@ const client = createClient('your-api-key', {
 // Use the client for database operations
 const tables = client.tables;
 const columns = client.columns;
-const records = client.records; // Note: correct syntax is client.records
+const records = client.records;
 ```
 
 ## Authentication
 
 ### API Key Setup
 
-Get your API key from [boltic.io](https://boltic.io) and use it to initialize the client:
+You can get your API key from [boltic.io](https://boltic.io).
+
+1. Log into your [Boltic](https://boltic.io) account
+2. Go to Settings → PAT Tokens
+3. Generate and copy your API key
 
 ```typescript
 import { createClient } from 'boltic-sdk';
@@ -97,6 +98,12 @@ const client = createClient('your-api-key', {
   maxRetries: 3,
   timeout: 30000,
 });
+```
+
+Run your file to create client:
+
+```sh
+npx tsx create-client.ts
 ```
 
 ## Database Context
@@ -209,7 +216,6 @@ const tableByName = await client.tables.findByName('users');
 // Update table properties
 const updateResult = await client.tables.update('users', {
   name: 'updated_users',
-  snapshot: 'new-snapshot',
   is_shared: true,
 });
 
@@ -218,7 +224,7 @@ const renameResult = await client.tables.rename('users', 'new_users');
 
 // Set table access
 const accessResult = await client.tables.setAccess({
-  table_name: 'users',
+  table_name: 'new_users',
   is_shared: true,
 });
 ```
@@ -308,7 +314,7 @@ const column = await client.columns.findOne('users', {
   where: { name: 'email' },
 });
 
-// Get column by ID
+// Get column by UUID
 const columnById = await client.columns.findById('users', 'column-id');
 ```
 
@@ -387,25 +393,11 @@ const bulkNoValidationResult = await client.records.insertMany(
   multipleRecords,
   { validation: false }
 );
-
-// Note: Unlike single insert(), insertMany() requires complete records
-// All required fields must be provided - partial record insertion is not supported
-
-// Insert record with sparse vector example
-const sparseVectorRecord = {
-  name: 'AI Model User',
-  email: 'ai@example.com',
-  age: 25,
-  sparse_features: '{ 1: 1, 3: 2, 5: 3 }/5',
-  // This represents a 5-dimensional vector where positions 1, 3, 5 have values 1, 2, 3
-  // and positions 2, 4 are implicitly 0
-};
-
-const sparseInsertResult = await client.records.insert(
-  'users',
-  sparseVectorRecord
-);
 ```
+
+**Note:**
+
+- Unlike single insert(), insertMany() requires complete records. All required fields must be provided in insertMany() call.
 
 ### Bulk Insert Operations
 
@@ -432,10 +424,6 @@ if (result.error) {
 const resultNoValidation = await client.records.insertMany('users', records, {
   validation: false,
 });
-
-// Important: insertMany() requires complete records
-// All required fields must be provided - partial records will cause errors
-// For partial record support, use individual insert() calls instead
 ```
 
 ### Querying Records
@@ -473,7 +461,7 @@ const sortedRecords = await client.records.findAll('users', {
 const specificRecord = await client.records.findOne('users', 'record-id');
 
 // Find one record with filters
-const filteredRecord = await client.records.findOne('users', {
+const filteredRecord = await client.records.findAll('users', {
   filters: [
     { field: 'email', operator: '=', values: ['john.doe@example.com'] },
   ],
@@ -557,10 +545,13 @@ const updateResult = await client.records.update('users', {
 });
 
 // Update record by ID
-const updateByIdResult = await client.records.updateById('users', {
-  id: 'record-id-here',
-  set: { salary: 80000 },
-});
+const updateByIdResult = await client.records.updateById(
+  'users',
+  'record-id-here',
+  {
+    salary: 80000,
+  }
+);
 ```
 
 ### Deleting Records
@@ -578,10 +569,7 @@ const deleteByIdsResult = await client.records.delete('users', {
 
 // Delete with multiple filter conditions
 const deleteWithFilters = await client.records.delete('users', {
-  filters: [
-    { field: 'last_login', operator: '<', values: ['2023-01-01'] },
-    { field: 'is_active', operator: '=', values: [false] },
-  ],
+  filters: [{ field: 'is_active', operator: '=', values: [false] }],
 });
 ```
 
@@ -660,91 +648,6 @@ if (result.error) {
 }
 ```
 
-### Complex SQL Operations
-
-```typescript
-// Execute complex queries with JOINs
-const complexQuery = `
-  SELECT 
-    u."name", 
-    u."email", 
-    COUNT(o."id") as order_count,
-    SUM(o."total") as total_spent
-  FROM "users" u 
-  LEFT JOIN "orders" o ON u."id" = o."user_id"::uuid 
-  WHERE u."is_active" = true 
-  GROUP BY u."id", u."name", u."email"
-  ORDER BY total_spent DESC 
-  LIMIT 10
-`;
-
-const complexResult = await client.sql.executeSQL(complexQuery);
-
-if (complexResult.error) {
-  console.error('Complex query failed:', complexResult.error);
-} else {
-  const [rows, metadata] = complexResult.data;
-  console.log('Top customers:', rows);
-}
-```
-
-### Multiple Query Execution
-
-Execute multiple SQL statements in a single request:
-
-```typescript
-const multipleQueries = `
-  INSERT INTO "users" ("name", "email", "is_active") 
-  VALUES ('New User', 'new@example.com', true);
-  
-  UPDATE "users" SET "last_login" = NOW() WHERE "email" = 'new@example.com';
-  
-  SELECT * FROM "users" WHERE "email" = 'new@example.com';
-`;
-
-const multiResult = await client.sql.executeSQL(multipleQueries);
-
-if (multiResult.error) {
-  console.error('Multi-query execution failed:', multiResult.error);
-} else {
-  console.log('Multi-query results:', multiResult.data);
-}
-```
-
-### Streaming SQL Generation
-
-Process SQL generation in real-time:
-
-```typescript
-async function processStreamingSQL(prompt: string) {
-  console.log(`Generating SQL for: "${prompt}"`);
-
-  const sqlStream = await client.sql.textToSQL(prompt);
-
-  let partialSQL = '';
-  let chunkCount = 0;
-
-  for await (const chunk of sqlStream) {
-    partialSQL += chunk;
-    chunkCount++;
-
-    // Custom processing logic
-    if (chunk.toLowerCase().includes('select')) {
-      console.log('Found SELECT statement in chunk');
-    }
-
-    // Show progress
-    process.stdout.write(`\rProcessing chunk ${chunkCount}...`);
-  }
-
-  console.log(`\nSQL generation complete: ${partialSQL}`);
-  return partialSQL;
-}
-
-// Usage
-const sql = await processStreamingSQL('Get top 5 users by order value');
-```
-
 ### SQL Error Handling
 
 ```typescript
@@ -755,12 +658,6 @@ try {
 
   if (result.error) {
     console.error('SQL Error:', result.error);
-
-    // Handle specific SQL errors
-    if (result.error.message?.includes('does not exist')) {
-      console.log('Table not found - creating table...');
-      // Handle table creation logic
-    }
 
     // Access detailed error information
     console.log('Error code:', result.error.code);
@@ -806,7 +703,7 @@ const vectorColumns = [
 // - Positions 2 and 4 are implicitly 0
 
 for (const vectorColumn of vectorColumns) {
-  await client.columns.create('users', vectorColumn);
+  await client.columns.create('vectors', vectorColumn);
 }
 ```
 
@@ -850,7 +747,8 @@ try {
     }
 
     // Access error details
-    console.log('Error metadata:', result.error.meta);
+    console.log('Error code:', result.error.code);
+    console.log('Error details:', result.error.details);
     console.log('Error message:', result.error.message);
   } else {
     console.log('Success:', result.data);
@@ -866,7 +764,8 @@ try {
 interface ErrorResponse {
   error: {
     message: string; // Human-readable error message
-    meta?: string[]; // Additional metadata
+    code?: string; // Specific error code
+    details?: string[]; // Additional details
   };
   data?: null;
 }
@@ -964,119 +863,6 @@ async function main() {
 main().catch(console.error);
 ```
 
-## Complete Example
-
-```typescript
-import { createClient } from 'boltic-sdk';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-async function main() {
-  // Initialize client
-  const client = createClient(process.env.BOLTIC_API_KEY!);
-
-  try {
-    // Create a table
-    const tableResult = await client.tables.create({
-      name: 'users',
-      description: 'User management table',
-      fields: [
-        { name: 'name', type: 'text', is_nullable: false },
-        { name: 'email', type: 'email', is_unique: true },
-        { name: 'age', type: 'number', decimals: '0.00' },
-      ],
-    });
-
-    // Note: 'id', 'created_at', and 'updated_at' columns are automatically added
-
-    if (tableResult.error) {
-      console.error('Table creation failed:', tableResult.error);
-      return;
-    }
-
-    console.log('Table created:', tableResult.data);
-
-    // Insert a record
-    const recordResult = await client.records.insert('users', {
-      name: 'John Doe',
-      email: 'john@example.com',
-      age: 30,
-    });
-
-    if (recordResult.error) {
-      console.error('Record insertion failed:', recordResult.error);
-      return;
-    }
-
-    console.log('Record inserted:', recordResult.data);
-
-    // Query records with filters
-    const records = await client.records.findAll('users', {
-      filters: [{ field: 'age', operator: '>=', values: [25] }],
-      sort: [{ field: 'name', order: 'asc' }],
-    });
-
-    console.log('Records found:', records);
-
-    // Update a record
-    const updateResult = await client.records.updateById('users', {
-      id: recordResult.data.id,
-      set: { age: 31 },
-    });
-
-    if (updateResult.error) {
-      console.error('Record update failed:', updateResult.error);
-    } else {
-      console.log('Record updated:', updateResult.data);
-    }
-
-    // Delete a record
-    const deleteResult = await client.records.delete('users', {
-      record_ids: [recordResult.data.id],
-    });
-
-    if (deleteResult.error) {
-      console.error('Record deletion failed:', deleteResult.error);
-    } else {
-      console.log('Record deleted:', deleteResult.data);
-    }
-
-    // Demonstrate SQL operations
-    const sqlResult = await client.sql.textToSQL(
-      'Find all users with age greater than 25'
-    );
-
-    let generatedSQL = '';
-    for await (const chunk of sqlResult) {
-      generatedSQL += chunk;
-    }
-
-    console.log('Generated SQL:', generatedSQL);
-
-    // Execute the generated SQL
-    const sqlExecutionResult = await client.sql.executeSQL(generatedSQL);
-    if (sqlExecutionResult.error) {
-      console.error('SQL execution failed:', sqlExecutionResult.error);
-    } else {
-      console.log('SQL results:', sqlExecutionResult.data);
-    }
-
-    // Clean up - delete the table
-    const deleteTableResult = await client.tables.delete('users');
-    if (deleteTableResult.error) {
-      console.error('Table deletion failed:', deleteTableResult.error);
-    } else {
-      console.log('Table deleted:', deleteTableResult.data);
-    }
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}
-
-main().catch(console.error);
-```
-
 ## API Reference
 
 ### Core Client
@@ -1130,7 +916,6 @@ These demos cover:
 - All column types and their properties
 - Advanced filtering and querying
 - Error handling patterns
-- Testing utilities usage
 - Vector operations
 - SQL operations and text-to-SQL conversion
 
@@ -1145,9 +930,6 @@ npm run build
 
 # Run tests
 npm test
-
-# Run tests with coverage
-npm run test:coverage
 
 # Type checking
 npm run type-check

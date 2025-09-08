@@ -20,7 +20,13 @@ const client = createClient('your-api-key', {
 // Use the client for database operations
 const tables = client.tables;
 const columns = client.columns;
-const records = client.records; // Note: correct syntax is client.records
+const records = client.records;
+```
+
+Run your file to create client:
+
+```sh
+npx tsx create-client.ts
 ```
 
 ## Reserved Columns
@@ -123,7 +129,6 @@ const tableByName = await client.tables.findByName('users');
 // Update table properties
 const updateResult = await client.tables.update('users', {
   name: 'updated_users',
-  snapshot: 'new-snapshot',
   is_shared: true,
 });
 
@@ -132,7 +137,7 @@ const renameResult = await client.tables.rename('users', 'new_users');
 
 // Set table access
 const accessResult = await client.tables.setAccess({
-  table_name: 'users',
+  table_name: 'new_users',
   is_shared: true,
 });
 ```
@@ -222,7 +227,7 @@ const column = await client.columns.findOne('users', {
   where: { name: 'email' },
 });
 
-// Get column by ID
+// Get column by UUID
 const columnById = await client.columns.findById('users', 'column-id');
 ```
 
@@ -232,8 +237,6 @@ const columnById = await client.columns.findById('users', 'column-id');
 // Update column properties
 const updateResult = await client.columns.update('users', 'description', {
   description: 'Updated user description',
-  is_visible: true,
-  is_indexed: true,
 });
 ```
 
@@ -359,10 +362,6 @@ if (result.error) {
 const resultNoValidation = await client.records.insertMany('users', records, {
   validation: false,
 });
-
-// Important: insertMany() requires complete records
-// All required fields must be provided - partial records will cause errors
-// For partial record support, use individual insert() calls instead
 ```
 
 ### Querying Records
@@ -400,7 +399,7 @@ const sortedRecords = await client.records.findAll('users', {
 const specificRecord = await client.records.findOne('users', 'record-id');
 
 // Find one record with filters
-const filteredRecord = await client.records.findOne('users', {
+const filteredRecord = await client.records.findAll('users', {
   filters: [
     { field: 'email', operator: '=', values: ['john.doe@example.com'] },
   ],
@@ -417,10 +416,11 @@ const updateResult = await client.records.update('users', {
 });
 
 // Update record by ID
-const updateByIdResult = await client.records.updateById('users', {
-  id: 'record-id-here',
-  set: { salary: 80000 },
-});
+const updateByIdResult = await client.records.updateById(
+  'users',
+  'record-id-here',
+  { salary: 80000 }
+);
 ```
 
 ### Deleting Records
@@ -438,10 +438,7 @@ const deleteByIdsResult = await client.records.delete('users', {
 
 // Delete with multiple filter conditions
 const deleteWithFilters = await client.records.delete('users', {
-  filters: [
-    { field: 'last_login', operator: '<', values: ['2023-01-01'] },
-    { field: 'is_active', operator: '=', values: [false] },
-  ],
+  filters: [{ field: 'is_active', operator: '=', values: [false] }],
 });
 ```
 
@@ -538,7 +535,7 @@ const vectorColumns = [
 // - Positions 2 and 4 are implicitly 0
 
 for (const vectorColumn of vectorColumns) {
-  await client.columns.create('users', vectorColumn);
+  await client.columns.create('vectors', vectorColumn);
 }
 ```
 
@@ -567,7 +564,6 @@ try {
     // Access error details
     console.log('Error code:', result.error.code);
     console.log('Error message:', result.error.message);
-    console.log('Error details:', result.error.details);
   } else {
     console.log('Success:', result.data);
   }
@@ -605,8 +601,6 @@ npm run build
 - `npm run build` - Build the project
 - `npm run dev` - Build in watch mode
 - `npm test` - Run tests
-- `npm run test:ui` - Run tests with UI
-- `npm run test:coverage` - Run tests with coverage
 - `npm run type-check` - Type check without compilation
 - `npm run lint` - Lint the codebase
 - `npm run format` - Format code with Prettier
@@ -623,7 +617,6 @@ These demos cover:
 - All column types and their properties
 - Advanced filtering and querying
 - Error handling patterns
-- Testing utilities usage
 - Vector operations
 - SQL operations and text-to-SQL conversion
 
