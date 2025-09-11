@@ -33,7 +33,7 @@ npx tsx create-client.ts
 
 The following columns are automatically added to all tables and cannot be modified or deleted:
 
-- **`id`**: Primary key field (text type, unique, not nullable)
+- **`id`**: Primary key field (uuid type, unique, not nullable)
 - **`created_at`**: Timestamp when the record was created
 - **`updated_at`**: Timestamp when the record was last updated
 
@@ -92,7 +92,7 @@ const tableResult = await client.tables.create({
 });
 
 // Note: The following columns are automatically added to all tables:
-// - 'id': Primary key (text, unique, not nullable)
+// - 'id': Primary key (uuid, unique, not nullable)
 // - 'created_at': Timestamp when record was created
 // - 'updated_at': Timestamp when record was last updated
 
@@ -478,7 +478,16 @@ if (result.error) {
   console.log('Query results:', resultRows);
   console.log('Row count:', metadata);
 }
+
+// When joining or comparing id fields with other columns, cast to text using ::text
+const joinQuery = await client.sql.executeSQL(`
+  SELECT u.name, p.title 
+  FROM "users" u
+  JOIN "posts" p ON u.id::text = p.user_id
+`);
 ```
+
+**Note:** When joining or comparing an `id` field with a different-typed column, you need to cast using `::text` (e.g., `u.id::text = p.user_id`) since `id` fields are UUID type.
 
 ### Query Refinement
 
@@ -499,6 +508,55 @@ for await (const chunk of refinedStream) {
 
 console.log('Refined SQL:', refinedSQL);
 ```
+
+### Working with UUID ID Fields in SQL
+
+**Important:** The `id` field in Boltic tables contains UUID values. When joining tables or comparing `id` fields with other column types, you must cast the `id` field to text using `::text`:
+
+```typescript
+// Cast UUID id to text for comparison
+const query = `
+  SELECT u.name, p.title 
+  FROM "users" u
+  JOIN "posts" p ON u.id::text = p.user_id
+`;
+
+const result = await client.sql.executeSQL(query);
+
+// More examples of UUID casting:
+
+// Filtering by UUID id
+const filterByIdQuery = `
+  SELECT * FROM "users" 
+  WHERE id::text = 'some-uuid-string'
+`;
+
+// Joining multiple tables with UUID references
+const complexJoinQuery = `
+  SELECT u.name, p.title, c.content
+  FROM "users" u
+  JOIN "posts" p ON u.id::text = p.user_id
+  JOIN "comments" c ON p.id::text = c.post_id
+  WHERE u.id::text IN ('uuid1', 'uuid2', 'uuid3')
+`;
+
+// Using UUID id in subqueries
+const subqueryExample = `
+  SELECT * FROM "users" u
+  WHERE u.id::text IN (
+    SELECT DISTINCT user_id 
+    FROM "posts" 
+    WHERE created_at > '2024-01-01'
+  )
+`;
+```
+
+**Why UUID Casting is Required:**
+
+- The `id` field uses PostgreSQL's UUID type internally
+- When comparing UUIDs with text columns (like foreign key references), PostgreSQL requires explicit type casting
+- The `::text` operator converts the UUID to its string representation for comparison
+- This applies to all system-generated `id` fields (`id`, and potentially foreign key references)
 
 ## Advanced Features
 
