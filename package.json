@@ -1,6 +1,6 @@
 {
     "name": "@boltic/sdk",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "TypeScript SDK for Boltic databases infrastructure",
     "main": "dist/sdk.js",
     "module": "dist/sdk.mjs",
@@ -33,7 +33,7 @@
     ],
     "repository": {
         "type": "git",
-        "url": "https://github.com/bolticio/@boltic/sdk.git"
+        "url": "https://github.com/bolticio/boltic-sdk.git"
     },
     "scripts": {
         "build": "vite build && node scripts/build.js",
