@@ -9,7 +9,7 @@ The Boltic Database SDK provides comprehensive database operations including tab
 ## Quick Start
 
 ```typescript
-import { createClient } from 'boltic-sdk';
+import { createClient } from '@boltic/sdk';
 
 // Initialize the client
 const client = createClient('your-api-key', {

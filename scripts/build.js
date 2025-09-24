@@ -34,7 +34,7 @@ files.forEach((file) => {
 
 // Create package.json for dist directory to ensure proper module resolution
 const distPackageJson = {
-  name: 'boltic-sdk',
+  name: '@boltic/sdk',
   version: '1.0.0',
   main: './sdk.js',
   module: './sdk.mjs',

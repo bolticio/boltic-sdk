@@ -26,13 +26,13 @@ Boltic SDK is an open-source TypeScript library, developed by Fynd, designed to 
 ## Installation
 
 ```bash
-npm install boltic-sdk
+npm install @boltic/sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { createClient } from 'boltic-sdk';
+import { createClient } from '@boltic/sdk';
 
 // Initialize the client
 const client = createClient('your-api-key', {
@@ -57,7 +57,7 @@ You can get your API key from [boltic.io](https://boltic.io).
 3. Generate and copy your API key
 
 ```typescript
-import { createClient } from 'boltic-sdk';
+import { createClient } from '@boltic/sdk';
 
 const client = createClient('your-api-key-here', {
   region: 'asia-south1',
@@ -68,7 +68,7 @@ const client = createClient('your-api-key-here', {
 
 ```typescript
 import dotenv from 'dotenv';
-import { createClient } from 'boltic-sdk';
+import { createClient } from '@boltic/sdk';
 
 dotenv.config();
 
@@ -844,19 +844,19 @@ The SDK supports both ES modules and CommonJS:
 ### ES Modules (Recommended)
 
 ```typescript
-import { createClient } from 'boltic-sdk';
+import { createClient } from '@boltic/sdk';
 ```
 
 ### CommonJS
 
 ```javascript
-const { createClient } = require('boltic-sdk');
+const { createClient } = require('@boltic/sdk');
 ```
 
 ### TypeScript
 
 ```typescript
-import { createClient, ClientOptions, BolticClient } from 'boltic-sdk';
+import { createClient, ClientOptions, BolticClient } from '@boltic/sdk';
 
 const options: ClientOptions = {
   region: 'asia-south1',
@@ -873,7 +873,7 @@ const client: BolticClient = createClient('your-api-key', options);
 ### JavaScript (.js)
 
 ```javascript
-const { createClient } = require('boltic-sdk');
+const { createClient } = require('@boltic/sdk');
 
 const client = createClient('your-api-key');
 
@@ -888,7 +888,7 @@ main().catch(console.error);
 ### TypeScript (.ts)
 
 ```typescript
-import { createClient, ClientOptions } from 'boltic-sdk';
+import { createClient, ClientOptions } from '@boltic/sdk';
 
 const options: ClientOptions = {
   region: 'asia-south1',
@@ -908,7 +908,7 @@ main().catch(console.error);
 ### ES Modules (.mjs)
 
 ```javascript
-import { createClient } from 'boltic-sdk';
+import { createClient } from '@boltic/sdk';
 
 const client = createClient('your-api-key');
 
