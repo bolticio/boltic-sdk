@@ -31,6 +31,7 @@ export class RecordResource {
     // Initialize the API client with the client's configuration
     this.apiClient = new RecordsApiClient(client.getConfig().apiKey, {
       environment: client.getConfig().environment,
+      region: client.getConfig().region,
       timeout: client.getConfig().timeout,
       debug: client.getConfig().debug,
     });
@@ -38,6 +39,7 @@ export class RecordResource {
     // Initialize the tables API client for getting table IDs
     this.tablesApiClient = new TablesApiClient(client.getConfig().apiKey, {
       environment: client.getConfig().environment,
+      region: client.getConfig().region,
       timeout: client.getConfig().timeout,
       debug: client.getConfig().debug,
     });

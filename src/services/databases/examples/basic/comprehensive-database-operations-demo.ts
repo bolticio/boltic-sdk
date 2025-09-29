@@ -26,7 +26,6 @@ dotenv.config({ path: '../.env' });
 
 // Configuration
 const DEMO_CONFIG = {
-  environment: 'sit' as const, // Change to 'prod' for production
   debug: true,
   timeout: 30000,
   tableName: 'comprehensive-demo-table',
@@ -235,7 +234,6 @@ class ComprehensiveDatabaseOperationsDemo {
     }
 
     this.client = new BolticClient(apiKey, {
-      environment: DEMO_CONFIG.environment,
       debug: DEMO_CONFIG.debug,
       timeout: DEMO_CONFIG.timeout,
     });

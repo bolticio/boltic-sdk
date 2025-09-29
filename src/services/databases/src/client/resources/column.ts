@@ -28,6 +28,7 @@ export class ColumnResource extends BaseResource {
     const config = client.getConfig();
     this.columnsApiClient = new ColumnsApiClient(config.apiKey, {
       environment: config.environment,
+      region: config.region,
       timeout: config.timeout,
       debug: config.debug,
       retryAttempts: config.retryAttempts,
@@ -37,6 +38,7 @@ export class ColumnResource extends BaseResource {
 
     this.tablesApiClient = new TablesApiClient(config.apiKey, {
       environment: config.environment,
+      region: config.region,
       timeout: config.timeout,
       debug: config.debug,
       retryAttempts: config.retryAttempts,
