@@ -1,4 +1,5 @@
 import { ColumnQueryOptions, ColumnUpdateRequest } from '../types/api/column';
+import { AddIndexRequest, ListIndexesQuery } from '../types/api/index';
 import {
   RecordData,
   RecordDeleteOptions,
@@ -18,6 +19,7 @@ import { AuthManager } from './core/auth-manager';
 import { BaseClient } from './core/base-client';
 import { ClientConfig, ConfigManager } from './core/config';
 import { ColumnResource } from './resources/column';
+import { IndexResource } from './resources/indexes';
 import { RecordResource } from './resources/record';
 import { createRecordBuilder, RecordBuilder } from './resources/record-builder';
 import { SqlResource } from './resources/sql';
@@ -44,6 +46,7 @@ export class BolticClient {
   private columnResource: ColumnResource;
   private recordResource: RecordResource;
   private sqlResource: SqlResource;
+  private indexResource: IndexResource;
   private currentDatabase: DatabaseContext | null = null;
   private clientOptions: ClientOptions;
 
@@ -80,6 +83,9 @@ export class BolticClient {
 
     // Initialize SQL operations
     this.sqlResource = new SqlResource(this.baseClient);
+
+    // Initialize Index operations
+    this.indexResource = new IndexResource(this.baseClient);
 
     // Set default database context
     this.currentDatabase = {
@@ -131,6 +137,18 @@ export class BolticClient {
       ) => this.columnResource.update(tableName, columnName, updates),
       delete: (tableName: string, columnName: string) =>
         this.columnResource.delete(tableName, columnName),
+    };
+  }
+
+  // Direct index operations
+  get indexes() {
+    return {
+      addIndex: (tableName: string, payload: AddIndexRequest) =>
+        this.indexResource.addIndex(tableName, payload),
+      listIndexes: (tableName: string, query: ListIndexesQuery) =>
+        this.indexResource.listIndexes(tableName, query),
+      deleteIndex: (indexName: string) =>
+        this.indexResource.deleteIndex(indexName),
     };
   }
 
@@ -187,6 +205,16 @@ export class BolticClient {
           tableName,
           recordResource: this.recordResource,
         }),
+
+      // Indexes - Method 2: Function chaining under from(tableName)
+      indexes: () => ({
+        addIndex: (payload: AddIndexRequest) =>
+          this.indexResource.addIndex(tableName, payload),
+        listIndexes: (query: ListIndexesQuery) =>
+          this.indexResource.listIndexes(tableName, query),
+        deleteIndex: (indexName: string) =>
+          this.indexResource.deleteIndex(indexName),
+      }),
     };
   }
 
@@ -342,6 +370,7 @@ export class BolticClient {
     this.columnResource = new ColumnResource(this.baseClient);
     this.recordResource = new RecordResource(this.baseClient);
     this.sqlResource = new SqlResource(this.baseClient);
+    this.indexResource = new IndexResource(this.baseClient);
   }
 
   // Security methods to prevent API key exposure

@@ -18,7 +18,13 @@
  */
 
 import * as dotenv from 'dotenv';
-import { BolticClient, FieldDefinition, isErrorResponse } from '../../src';
+import {
+  AddIndexRequest,
+  BolticClient,
+  FieldDefinition,
+  isErrorResponse,
+  ListIndexesQuery,
+} from '../../src';
 import { createFilter } from '../../src/utils/filters/filter-mapper';
 
 // Load environment variables
@@ -234,6 +240,7 @@ class ComprehensiveDatabaseOperationsDemo {
     }
 
     this.client = new BolticClient(apiKey, {
+      environment: 'uat',
       debug: DEMO_CONFIG.debug,
       timeout: DEMO_CONFIG.timeout,
     });
@@ -281,6 +288,8 @@ class ComprehensiveDatabaseOperationsDemo {
 
       // 10. List columns
       await this.demoListColumns();
+      // 10.5 Indexes demo (create/list/delete via both methods)
+      await this.demoIndexes();
 
       // 11. Get column by name
       await this.demoGetColumnByName();
@@ -658,6 +667,231 @@ class ComprehensiveDatabaseOperationsDemo {
     }
 
     console.log('✅ Step 10 completed');
+  }
+
+  /**
+   * 10.5. Indexes demo: add/list/delete using both Method 1 and Method 2
+   */
+  private async demoIndexes(): Promise<void> {
+    console.log('\n1️⃣0️⃣.5️⃣  Indexes: add/list/delete (both methods)');
+    console.log('-'.repeat(40));
+
+    // Payload covers supported methods from PRD (btree/hash/spgist/gin/brin)
+    const indexPayloads: AddIndexRequest[] = [
+      { field_names: ['text_field'], method: 'btree' },
+      { field_names: ['email_field'], method: 'hash' },
+      { field_names: ['half_vector_field'], method: 'gin' },
+    ];
+
+    // Method 1: Direct functions under sdk.indexes
+    console.log('\n🔹 Method 1: Direct functions via sdk.indexes');
+    for (const payload of indexPayloads) {
+      console.log(`📝 Add index (direct): ${JSON.stringify(payload)}`);
+      const addRes = await this.client.indexes.addIndex(
+        this.createdTableName,
+        payload
+      );
+      if (isErrorResponse(addRes)) {
+        console.error('❌ addIndex failed:', addRes.error);
+      } else {
+        console.log('📤 addIndex result:', addRes.data);
+      }
+    }
+
+    // List with filters and sorting
+    const listQuery: ListIndexesQuery = {
+      page: { page_no: 1, page_size: 100 },
+      filters: [
+        { field: 'schemaname', operator: '=', values: ['public'] },
+        { field: 'indexrelname', operator: 'ILIKE', values: ['%field%'] },
+      ],
+      sort: [{ field: 'indexrelname', direction: 'asc' }],
+    };
+    console.log('\n📝 List indexes (direct) with filters/sort');
+    const listRes = await this.client.indexes.listIndexes(
+      this.createdTableName,
+      listQuery
+    );
+    if (isErrorResponse(listRes)) {
+      console.error('❌ listIndexes failed:', listRes.error);
+    } else {
+      console.log('📤 listIndexes result:', listRes.data);
+    }
+
+    // Method 2: Chaining via sdk.from(table).indexes()
+    console.log('\n🔹 Method 2: Chaining via sdk.from(table).indexes()');
+    const chainPayload: AddIndexRequest = {
+      field_names: ['number_field'],
+      method: 'brin',
+    };
+    console.log(`📝 Add index (chained): ${JSON.stringify(chainPayload)}`);
+    const chainedAdd = await this.client
+      .from(this.createdTableName)
+      .indexes()
+      .addIndex(chainPayload);
+    if (isErrorResponse(chainedAdd)) {
+      console.error('❌ chained addIndex failed:', chainedAdd.error);
+    } else {
+      console.log('📤 chained addIndex result:', chainedAdd.data);
+    }
+
+    console.log('\n📝 List indexes (chained) with different sort');
+    const chainedList = await this.client
+      .from(this.createdTableName)
+      .indexes()
+      .listIndexes({
+        page: { page_no: 1, page_size: 50 },
+        sort: [{ field: 'indexrelname', direction: 'desc' }],
+      });
+    if (isErrorResponse(chainedList)) {
+      console.error('❌ chained listIndexes failed:', chainedList.error);
+    } else {
+      console.log('📤 chained listIndexes result:', chainedList.data);
+    }
+
+    // Filters and sorting coverage for required fields
+    console.log('\n🧪 Testing filters and sorting across index fields');
+    const filterTests: Array<{
+      name: string;
+      query: ListIndexesQuery;
+    }> = [
+      {
+        name: 'schemaname equals public',
+        query: {
+          page: { page_no: 1, page_size: 10 },
+          filters: [{ field: 'schemaname', operator: '=', values: ['public'] }],
+          sort: [{ field: 'schemaname', direction: 'asc' }],
+        },
+      },
+      {
+        name: 'relname equals table name',
+        query: {
+          page: { page_no: 1, page_size: 10 },
+          filters: [
+            {
+              field: 'relname',
+              operator: '=',
+              values: [this.createdTableName],
+            },
+          ],
+          sort: [{ field: 'relname', direction: 'desc' }],
+        },
+      },
+      {
+        name: 'indexrelname ILIKE %field%',
+        query: {
+          page: { page_no: 1, page_size: 10 },
+          filters: [
+            { field: 'indexrelname', operator: 'ILIKE', values: ['%field%'] },
+          ],
+          sort: [{ field: 'indexrelname', direction: 'asc' }],
+        },
+      },
+      {
+        name: 'idx_scan > 0 (number as string)',
+        query: {
+          page: { page_no: 1, page_size: 10 },
+          filters: [{ field: 'idx_scan', operator: '>', values: ['0'] }],
+          sort: [{ field: 'idx_scan', direction: 'desc' }],
+        },
+      },
+      {
+        name: 'idx_tup_read >= 0 (number as string)',
+        query: {
+          page: { page_no: 1, page_size: 10 },
+          filters: [{ field: 'idx_tup_read', operator: '>=', values: ['0'] }],
+          sort: [{ field: 'idx_tup_read', direction: 'asc' }],
+        },
+      },
+      {
+        name: 'idx_tup_fetch BETWEEN [0, 999999] (numbers as strings)',
+        query: {
+          page: { page_no: 1, page_size: 10 },
+          filters: [
+            {
+              field: 'idx_tup_fetch',
+              operator: 'BETWEEN',
+              values: ['0', '999999'],
+            },
+          ],
+          sort: [{ field: 'idx_tup_fetch', direction: 'desc' }],
+        },
+      },
+      {
+        name: 'method IN [btree, hash, gin, brin]',
+        query: {
+          page: { page_no: 1, page_size: 10 },
+          filters: [
+            {
+              field: 'method',
+              operator: 'IN',
+              values: ['btree', 'hash', 'gin', 'brin'],
+            },
+          ],
+          sort: [{ field: 'method', direction: 'asc' }],
+        },
+      },
+    ];
+
+    for (const test of filterTests) {
+      console.log(`\n📝 Filter Test: ${test.name}`);
+      const res = await this.client.indexes.listIndexes(
+        this.createdTableName,
+        test.query
+      );
+      if (isErrorResponse(res)) {
+        console.error('❌ listIndexes failed:', res.error);
+      } else {
+        const items = res.data?.items || [];
+        console.log(`📤 Found ${items.length} indexes`);
+        if (items.length > 0) {
+          const sample = items[0] as any;
+          console.log('   Sample:', {
+            schemaname: sample.schemaname,
+            relname: sample.relname,
+            indexrelname: sample.indexrelname,
+            method: sample.method,
+            idx_scan: sample.idx_scan,
+            idx_tup_read: sample.idx_tup_read,
+            idx_tup_fetch: sample.idx_tup_fetch,
+          });
+        }
+      }
+    }
+
+    // Delete indexes (clean up) - demonstrate both methods
+    console.log('\n🗑️  Deleting indexes (both methods)');
+    const toDelete = [
+      'comprehensive-demo-table_btree_text_field',
+      'comprehensive-demo-table_hash_email_field',
+      'comprehensive-demo-table_gin_half_vector_field',
+      'comprehensive-demo-table_brin_number_field',
+    ];
+
+    for (const indexName of toDelete) {
+      console.log(`📝 Delete (direct): ${indexName}`);
+      const delDirect = await this.client.indexes.deleteIndex(indexName);
+      if (isErrorResponse(delDirect)) {
+        console.error('❌ deleteIndex (direct) failed:', delDirect.error);
+      } else {
+        console.log('📤 deleteIndex (direct) result:', delDirect.data);
+      }
+    }
+
+    // Attempt chained delete for a non-existing or already-deleted index to show surfacing
+    const sampleDelete = 'comprehensive-demo-table_btree_text_field';
+    console.log(`\n📝 Delete (chained): ${sampleDelete}`);
+    const delChained = await this.client
+      .from(this.createdTableName)
+      .indexes()
+      .deleteIndex(sampleDelete);
+    if (isErrorResponse(delChained)) {
+      console.error('❌ deleteIndex (chained) failed:', delChained.error);
+    } else {
+      console.log('📤 deleteIndex (chained) result:', delChained.data);
+    }
+
+    console.log('✅ Step 10.5 completed - Indexes demo finished');
   }
 
   /**
