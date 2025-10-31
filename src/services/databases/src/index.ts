@@ -9,6 +9,14 @@ export type {
   ColumnUpdateRequest,
 } from './types/api/column';
 export type {
+  AddIndexRequest,
+  AddIndexResponse,
+  DeleteIndexRequest,
+  DeleteIndexResponse,
+  ListIndexesQuery,
+  ListIndexesResponse,
+} from './types/api/index';
+export type {
   RecordData,
   RecordDeleteOptions,
   RecordQueryOptions,
@@ -43,10 +51,10 @@ export { SchemaHelpers } from './utils/table/schema-helpers';
 
 // Filter utilities and constants
 export {
-  buildApiFilters,
-  createFilter,
   FILTER_OPERATORS,
   FilterBuilder,
+  buildApiFilters,
+  createFilter,
   mapFiltersToWhere,
   mapWhereToFilters,
   normalizeFilters,
@@ -61,11 +69,11 @@ export { createTableBuilder } from './client/resources/table-builder';
 // Error handling utilities
 export {
   ApiError,
+  ValidationError,
   createErrorWithContext,
   formatError,
   getHttpStatusCode,
   isNetworkError,
-  ValidationError,
 } from './errors/utils';
 export type { ValidationFailure } from './errors/utils';
 

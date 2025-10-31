@@ -21,6 +21,7 @@ const client = createClient('your-api-key', {
 const tables = client.tables;
 const columns = client.columns;
 const records = client.records;
+const indexes = client.indexes;
 ```
 
 Run your file to create client:
@@ -442,6 +443,179 @@ const deleteWithFilters = await client.records.delete('users', {
 });
 ```
 
+## Index Operations
+
+### Creating Indexes
+
+Create database indexes to optimize query performance:
+
+```typescript
+// Create different types of indexes
+const indexTypes = [
+  {
+    field_names: ['email'],
+    method: 'btree', // Best for equality and range queries
+  },
+  {
+    field_names: ['status'],
+    method: 'hash', // Best for exact equality matches
+  },
+  {
+    field_names: ['tags'],
+    method: 'gin', // Best for array fields and complex data types
+  },
+  {
+    field_names: ['created_at'],
+    method: 'brin', // Best for large tables with ordered data
+  },
+  {
+    field_names: ['coordinates'],
+    method: 'spgist', // Best for geometric and specialized data types
+  },
+];
+
+for (const indexData of indexTypes) {
+  const result = await client.indexes.addIndex('users', indexData);
+  if (result.error) {
+    console.error(`Failed to create ${indexData.method} index:`, result.error);
+  } else {
+    console.log(`Created ${indexData.method} index:`, result.data.index_name);
+  }
+}
+
+// Composite index for complex queries
+const compositeIndex = await client.indexes.addIndex('events', {
+  field_names: ['user_id', 'event_type', 'created_at'],
+  method: 'btree',
+});
+```
+
+### Listing and Filtering Indexes
+
+```typescript
+// List all indexes for a table
+const allIndexes = await client.indexes.listIndexes('users', {
+  page: { page_no: 1, page_size: 50 },
+});
+
+// Filter indexes by method
+const btreeIndexes = await client.indexes.listIndexes('users', {
+  filters: [{ field: 'method', operator: '=', values: ['btree'] }],
+});
+
+// Find unused indexes (candidates for cleanup)
+const unusedIndexes = await client.indexes.listIndexes('users', {
+  filters: [{ field: 'idx_scan', operator: '=', values: [0] }],
+});
+
+// Sort by usage statistics
+const sortedByUsage = await client.indexes.listIndexes('users', {
+  sort: [{ field: 'idx_scan', direction: 'desc' }],
+});
+```
+
+### Deleting Indexes
+
+```typescript
+// Delete a specific index
+const deleteResult = await client.indexes.deleteIndex(
+  'users',
+  'users_btree_email'
+);
+
+// Delete multiple indexes
+const indexNames = ['users_btree_email', 'users_hash_status', 'users_gin_tags'];
+
+for (const indexName of indexNames) {
+  const result = await client.indexes.deleteIndex('users', indexName);
+  if (result.error) {
+    console.error(`Failed to delete ${indexName}:`, result.error);
+  } else {
+    console.log(`Deleted ${indexName} successfully`);
+  }
+}
+
+// Clean up unused indexes
+async function cleanupUnusedIndexes(tableName: string) {
+  const { data: indexes } = await client.indexes.listIndexes(tableName, {
+    filters: [{ field: 'idx_scan', operator: '=', values: [0] }],
+  });
+
+  for (const index of indexes.items) {
+    await client.indexes.deleteIndex(tableName, index.indexrelname);
+    console.log(`Deleted unused index: ${index.indexrelname}`);
+  }
+}
+```
+
+### Index Performance Analysis
+
+```typescript
+// Analyze index usage and performance
+async function analyzeIndexPerformance(tableName: string) {
+  const { data: indexes } = await client.indexes.listIndexes(tableName, {
+    page: { page_no: 1, page_size: 1000 },
+  });
+
+  const analysis = {
+    total: indexes.items.length,
+    unused: 0,
+    lowEfficiency: 0,
+    heavilyUsed: 0,
+  };
+
+  indexes.items.forEach((index) => {
+    const scans = index.idx_scan || 0;
+    const tuplesRead = index.idx_tup_read || 0;
+    const tuplesFetched = index.idx_tup_fetch || 0;
+    const efficiency = tuplesRead > 0 ? (tuplesFetched / tuplesRead) * 100 : 0;
+
+    if (scans === 0) {
+      analysis.unused++;
+    } else if (efficiency < 30) {
+      analysis.lowEfficiency++;
+    } else if (scans > 1000) {
+      analysis.heavilyUsed++;
+    }
+
+    console.log(
+      `${index.indexrelname}: ${scans} scans, ${efficiency.toFixed(1)}% efficiency`
+    );
+  });
+
+  return analysis;
+}
+
+// Usage
+const performance = await analyzeIndexPerformance('users');
+console.log('Index Performance Analysis:', performance);
+```
+
+### Chained Access Pattern
+
+```typescript
+// Using chained access for index operations
+const { data: index } = await client
+  .from('users')
+  .indexes()
+  .addIndex({
+    field_names: ['email'],
+    method: 'btree',
+  });
+
+const { data: indexes } = await client
+  .from('users')
+  .indexes()
+  .listIndexes({
+    page: { page_no: 1, page_size: 50 },
+  });
+
+const { data: result } = await client
+  .from('users')
+  .indexes()
+  .deleteIndex('users_btree_email');
+```
+
 ## SQL Operations
 
 ### Text-to-SQL Conversion
@@ -704,6 +878,12 @@ For the complete API reference including all methods, parameters, and return typ
 - **`client.records.findAll(tableName, options?)`**: List records with optional filtering
 - **`client.records.update(tableName, options)`**: Update records by filters
 - **`client.records.delete(tableName, options)`**: Delete records by filters or IDs
+
+#### Indexes
+
+- **`client.indexes.addIndex(tableName, request)`**: Create a new index
+- **`client.indexes.listIndexes(tableName, query)`**: List indexes with filtering and pagination
+- **`client.indexes.deleteIndex(tableName, indexName)`**: Delete an index by name
 
 #### SQL Operations
 
