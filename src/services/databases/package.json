@@ -1,5 +1,5 @@
 {
-  "name": "@@boltic/sdk/databases",
+  "name": "@boltic/sdk-databases",
   "version": "1.0.0",
   "description": "Database service module for Boltic SDK",
   "main": "dist/cjs/index.js",
