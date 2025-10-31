@@ -518,13 +518,16 @@ const sortedByUsage = await client.indexes.listIndexes('users', {
 
 ```typescript
 // Delete a specific index
-const deleteResult = await client.indexes.deleteIndex('users_btree_email');
+const deleteResult = await client.indexes.deleteIndex(
+  'users',
+  'users_btree_email'
+);
 
 // Delete multiple indexes
 const indexNames = ['users_btree_email', 'users_hash_status', 'users_gin_tags'];
 
 for (const indexName of indexNames) {
-  const result = await client.indexes.deleteIndex(indexName);
+  const result = await client.indexes.deleteIndex('users', indexName);
   if (result.error) {
     console.error(`Failed to delete ${indexName}:`, result.error);
   } else {
@@ -539,7 +542,7 @@ async function cleanupUnusedIndexes(tableName: string) {
   });
 
   for (const index of indexes.items) {
-    await client.indexes.deleteIndex(index.indexrelname);
+    await client.indexes.deleteIndex(tableName, index.indexrelname);
     console.log(`Deleted unused index: ${index.indexrelname}`);
   }
 }
@@ -880,7 +883,7 @@ For the complete API reference including all methods, parameters, and return typ
 
 - **`client.indexes.addIndex(tableName, request)`**: Create a new index
 - **`client.indexes.listIndexes(tableName, query)`**: List indexes with filtering and pagination
-- **`client.indexes.deleteIndex(indexName)`**: Delete an index by name
+- **`client.indexes.deleteIndex(tableName, indexName)`**: Delete an index by name
 
 #### SQL Operations
 

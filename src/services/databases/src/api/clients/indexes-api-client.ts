@@ -115,11 +115,12 @@ export class IndexesApiClient {
   }
 
   async deleteIndex(
+    tableId: string,
     request: DeleteIndexRequest
   ): Promise<BolticSuccessResponse<DeleteIndexResponse> | BolticErrorResponse> {
     try {
       const endpoint = INDEX_ENDPOINTS.delete;
-      const url = `${this.baseURL}${buildIndexEndpointPath(endpoint)}`;
+      const url = `${this.baseURL}${buildIndexEndpointPath(endpoint, { table_id: tableId })}`;
 
       const response = await this.httpAdapter.request({
         url,

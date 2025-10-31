@@ -147,8 +147,8 @@ export class BolticClient {
         this.indexResource.addIndex(tableName, payload),
       listIndexes: (tableName: string, query: ListIndexesQuery) =>
         this.indexResource.listIndexes(tableName, query),
-      deleteIndex: (indexName: string) =>
-        this.indexResource.deleteIndex(indexName),
+      deleteIndex: (tableName: string, indexName: string) =>
+        this.indexResource.deleteIndex(tableName, indexName),
     };
   }
 
@@ -213,7 +213,7 @@ export class BolticClient {
         listIndexes: (query: ListIndexesQuery) =>
           this.indexResource.listIndexes(tableName, query),
         deleteIndex: (indexName: string) =>
-          this.indexResource.deleteIndex(indexName),
+          this.indexResource.deleteIndex(tableName, indexName),
       }),
     };
   }

@@ -80,11 +80,13 @@ export class IndexResource {
   }
 
   async deleteIndex(
+    tableName: string,
     indexName: string
   ): Promise<BolticSuccessResponse<DeleteIndexResponse> | BolticErrorResponse> {
     try {
+      const tableId = await this.resolveTableId(tableName);
       const request: DeleteIndexRequest = { index_name: indexName };
-      return await this.apiClient.deleteIndex(request);
+      return await this.apiClient.deleteIndex(tableId, request);
     } catch (error) {
       return {
         error: {

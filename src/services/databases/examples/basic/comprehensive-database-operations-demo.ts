@@ -870,7 +870,10 @@ class ComprehensiveDatabaseOperationsDemo {
 
     for (const indexName of toDelete) {
       console.log(`📝 Delete (direct): ${indexName}`);
-      const delDirect = await this.client.indexes.deleteIndex(indexName);
+      const delDirect = await this.client.indexes.deleteIndex(
+        this.createdTableName,
+        indexName
+      );
       if (isErrorResponse(delDirect)) {
         console.error('❌ deleteIndex (direct) failed:', delDirect.error);
       } else {

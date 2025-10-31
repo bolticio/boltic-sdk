@@ -26,7 +26,7 @@ export const INDEX_ENDPOINTS: IndexEndpoints = {
     authenticated: true,
   },
   delete: {
-    path: '/tables/indexes',
+    path: '/tables/indexes/{table_id}',
     method: 'DELETE',
     authenticated: true,
   },

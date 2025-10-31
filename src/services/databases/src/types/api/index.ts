@@ -42,5 +42,5 @@ export interface DeleteIndexRequest {
 }
 
 export interface DeleteIndexResponse {
-  success: boolean;
+  message?: string;
 }
