@@ -73,6 +73,53 @@ export class FetchAdapter implements HttpAdapter {
         headers[key] = value;
       });
 
+      // Check for non-2xx status codes
+      if (response.status < 200 || response.status >= 300) {
+        // Check if response is HTML error page
+        const isHtmlError =
+          typeof data === 'string' &&
+          (data.trim().startsWith('<!DOCTYPE') || data.includes('<html'));
+
+        if (isHtmlError) {
+          // Extract error message from HTML if possible
+          const htmlContent = data as string;
+          const preMatch = htmlContent.match(/<pre>(.*?)<\/pre>/s);
+          const errorMessage = preMatch
+            ? preMatch[1].trim()
+            : `HTTP ${response.status}: ${response.statusText}`;
+
+          throw createErrorWithContext(errorMessage, {
+            url: config.url,
+            method: config.method,
+            status: response.status,
+            statusText: response.statusText,
+            isHtmlError: true,
+          });
+        }
+
+        // If it's a JSON error response, let it through for the client to handle
+        if (data && typeof data === 'object' && 'error' in data) {
+          return {
+            data,
+            status: response.status,
+            statusText: response.statusText,
+            headers,
+          };
+        }
+
+        // For other non-2xx responses, throw an error
+        throw createErrorWithContext(
+          `HTTP ${response.status}: ${response.statusText}`,
+          {
+            url: config.url,
+            method: config.method,
+            status: response.status,
+            statusText: response.statusText,
+            responseData: data,
+          }
+        );
+      }
+
       const httpResponse: HttpResponse<T> = {
         data,
         status: response.status,
@@ -80,7 +127,6 @@ export class FetchAdapter implements HttpAdapter {
         headers,
       };
 
-      // For non-2xx responses, we still return the response but the caller can check status
       return httpResponse;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {

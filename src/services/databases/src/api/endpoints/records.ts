@@ -42,8 +42,8 @@ export const RECORD_ENDPOINTS: RecordEndpoints = {
     rateLimit: { requests: 200, window: 60000 },
   },
   update: {
-    path: '/tables/{table_id}/records',
-    method: 'PATCH',
+    path: '/tables/{table_id}/records/bulk-update',
+    method: 'PUT',
     authenticated: true,
   },
   updateById: {

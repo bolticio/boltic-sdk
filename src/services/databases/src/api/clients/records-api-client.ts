@@ -274,12 +274,24 @@ export class RecordsApiClient {
     request: RecordUpdateOptions & { table_id?: string }
   ): Promise<BolticListResponse<RecordWithId> | BolticErrorResponse> {
     try {
-      const { table_id, ...updateOptions } = request;
+      const { table_id, set, filters, fields, ...rest } = request;
 
       if (!table_id) {
         return this.formatErrorResponse(
           new Error('table_id is required for update operation')
         );
+      }
+
+      // Transform payload to use 'updates' instead of 'set' for API
+      const apiPayload: Record<string, unknown> = {
+        updates: set,
+        filters,
+        ...rest,
+      };
+
+      // Only include fields if specified
+      if (fields) {
+        apiPayload.fields = fields;
       }
 
       const endpoint = RECORD_ENDPOINTS.update;
@@ -289,16 +301,16 @@ export class RecordsApiClient {
         url,
         method: endpoint.method,
         headers: this.buildHeaders(),
-        data: updateOptions,
+        data: apiPayload,
         timeout: this.config.timeout,
       });
 
       // Apply field filtering if fields are specified in the request
       const responseData = response.data as BolticListResponse<RecordWithId>;
-      if (updateOptions.fields && responseData.data) {
+      if (fields && responseData.data) {
         responseData.data = filterArrayFields(
           responseData.data,
-          updateOptions.fields
+          fields
         ) as RecordWithId[];
       }
 
