@@ -43,6 +43,59 @@ export class AxiosAdapter implements HttpAdapter {
 
       const response = await this.axios(axiosConfig);
 
+      // Check for non-2xx status codes
+      if (response.status < 200 || response.status >= 300) {
+        // Check if response is HTML error page
+        const isHtmlError =
+          (typeof response.data === 'string' &&
+            response.data.trim().startsWith('<!DOCTYPE')) ||
+          (typeof response.data === 'string' &&
+            response.data.includes('<html'));
+
+        if (isHtmlError) {
+          // Extract error message from HTML if possible
+          const htmlContent = response.data as string;
+          const preMatch = htmlContent.match(/<pre>(.*?)<\/pre>/s);
+          const errorMessage = preMatch
+            ? preMatch[1].trim()
+            : `HTTP ${response.status}: ${response.statusText}`;
+
+          throw createErrorWithContext(errorMessage, {
+            url: config.url,
+            method: config.method,
+            status: response.status,
+            statusText: response.statusText,
+            isHtmlError: true,
+          });
+        }
+
+        // If it's a JSON error response, let it through for the client to handle
+        if (
+          response.data &&
+          typeof response.data === 'object' &&
+          'error' in response.data
+        ) {
+          return {
+            data: response.data as T,
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers || {},
+          };
+        }
+
+        // For other non-2xx responses, throw an error
+        throw createErrorWithContext(
+          `HTTP ${response.status}: ${response.statusText}`,
+          {
+            url: config.url,
+            method: config.method,
+            status: response.status,
+            statusText: response.statusText,
+            responseData: response.data,
+          }
+        );
+      }
+
       return {
         data: response.data as T,
         status: response.status,

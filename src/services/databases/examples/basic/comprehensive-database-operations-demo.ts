@@ -240,7 +240,6 @@ class ComprehensiveDatabaseOperationsDemo {
     }
 
     this.client = new BolticClient(apiKey, {
-      environment: 'uat',
       debug: DEMO_CONFIG.debug,
       timeout: DEMO_CONFIG.timeout,
     });
@@ -308,6 +307,9 @@ class ComprehensiveDatabaseOperationsDemo {
 
       // 14.5. Demo bulk insert (insertMany)
       await this.demoBulkInsertRecords();
+
+      // 14.6. Demo bulk update based on filters
+      await this.demoBulkUpdateRecords();
 
       // 15. Get row
       await this.demoGetRecord();
@@ -1320,6 +1322,453 @@ class ComprehensiveDatabaseOperationsDemo {
     }
 
     console.log('✅ Step 14.5 completed - Bulk insert demonstration');
+  }
+
+  /**
+   * 14.6. Demo bulk update based on filters
+   */
+  private async demoBulkUpdateRecords(): Promise<void> {
+    console.log('\n1️⃣4️⃣.6️⃣  Bulk Update Records Based on Filters');
+    console.log('-'.repeat(40));
+
+    console.log(
+      '📝 Input: Demonstrating bulk update operations using various filter types'
+    );
+    console.log(
+      '   This feature allows updating multiple records at once based on filter conditions'
+    );
+
+    // Demo 1: Simple equality filter - Update all records with a specific text value
+    console.log('\n🔹 Method 1: Update using simple equality filter');
+    console.log('   Updating all records where text_field starts with "Bulk"');
+
+    const simpleFilterUpdate = await this.client.records.update(
+      this.createdTableName,
+      {
+        filters: [
+          { field: 'text_field', operator: 'STARTS WITH', values: ['Bulk'] },
+        ],
+        set: {
+          checkbox_field: true,
+          long_text_field: 'Updated via bulk update operation - Simple filter',
+        },
+      }
+    );
+    if (isErrorResponse(simpleFilterUpdate)) {
+      console.error(
+        '❌ Failed simple filter bulk update:',
+        simpleFilterUpdate.error
+      );
+    } else {
+      const updatedRecords = Array.isArray(simpleFilterUpdate.data)
+        ? simpleFilterUpdate.data
+        : [];
+      console.log(
+        `📤 Output: Successfully updated ${updatedRecords.length} records`
+      );
+      console.log(`   Message: ${simpleFilterUpdate.message || 'Success'}`);
+      if (updatedRecords.length > 0) {
+        console.log('   Sample updated record:');
+        const sample = updatedRecords[0] as any;
+        console.log(`     - text_field: ${sample.text_field}`);
+        console.log(`     - checkbox_field: ${sample.checkbox_field}`);
+        console.log(
+          `     - long_text_field: ${sample.long_text_field?.substring(0, 50)}...`
+        );
+      }
+    }
+
+    // Demo 2: Numeric range filter - Update records within a number range
+    console.log('\n🔹 Method 2: Update using numeric range filter');
+    console.log('   Updating records where number_field is between 25 and 35');
+
+    const rangeFilterUpdate = await this.client.records.update(
+      this.createdTableName,
+      {
+        filters: [
+          { field: 'number_field', operator: 'BETWEEN', values: [25, 35] },
+        ],
+        set: {
+          currency_field: 70000,
+          long_text_field:
+            'Updated via bulk update - Numeric range filter (25-35)',
+        },
+      }
+    );
+
+    if (isErrorResponse(rangeFilterUpdate)) {
+      console.error(
+        '❌ Failed range filter bulk update:',
+        rangeFilterUpdate.error
+      );
+    } else {
+      const updatedRecords = Array.isArray(rangeFilterUpdate.data)
+        ? rangeFilterUpdate.data
+        : [];
+      console.log(
+        `📤 Output: Successfully updated ${updatedRecords.length} records`
+      );
+      if (updatedRecords.length > 0) {
+        console.log('   Updated records summary:');
+        updatedRecords.forEach((record: any, idx: number) => {
+          console.log(
+            `     ${idx + 1}. ${record.text_field} - number: ${record.number_field}, currency: ${record.currency_field}`
+          );
+        });
+      }
+    }
+
+    // Demo 3: Multiple conditions (AND logic) - Update with complex filters
+    console.log('\n🔹 Method 3: Update using multiple filter conditions (AND)');
+    console.log(
+      '   Updating records where checkbox_field = false AND currency_field > 60000'
+    );
+
+    const multiConditionUpdate = await this.client.records.update(
+      this.createdTableName,
+      {
+        filters: [
+          { field: 'checkbox_field', operator: '=', values: [false] },
+          { field: 'currency_field', operator: '>', values: [60000] },
+        ],
+        set: {
+          checkbox_field: true,
+          dropdown_field: ['Option 1'],
+          long_text_field:
+            'Updated via bulk update - Multiple conditions (checkbox=false AND currency>60000)',
+        },
+      }
+    );
+
+    if (isErrorResponse(multiConditionUpdate)) {
+      console.error(
+        '❌ Failed multi-condition bulk update:',
+        multiConditionUpdate.error
+      );
+    } else {
+      const updatedRecords = Array.isArray(multiConditionUpdate.data)
+        ? multiConditionUpdate.data
+        : [];
+      console.log(
+        `📤 Output: Successfully updated ${updatedRecords.length} records`
+      );
+      if (updatedRecords.length > 0) {
+        console.log('   Records that matched both conditions:');
+        updatedRecords.forEach((record: any, idx: number) => {
+          console.log(
+            `     ${idx + 1}. ${record.text_field} - checkbox now: ${record.checkbox_field}, dropdown: ${JSON.stringify(record.dropdown_field)}`
+          );
+        });
+      }
+    }
+
+    // Demo 4: Email pattern matching - Update based on email domain
+    console.log('\n🔹 Method 4: Update using email pattern matching');
+    console.log('   Updating records where email contains "@example.com"');
+
+    const emailPatternUpdate = await this.client.records.update(
+      this.createdTableName,
+      {
+        filters: [
+          {
+            field: 'email_field',
+            operator: 'ILIKE',
+            values: ['%@example.com'],
+          },
+        ],
+        set: {
+          phone_field: '+91 999 999 9999',
+          long_text_field:
+            'Updated via bulk update - Email pattern match (@example.com)',
+        },
+      }
+    );
+
+    if (isErrorResponse(emailPatternUpdate)) {
+      console.error(
+        '❌ Failed email pattern bulk update:',
+        emailPatternUpdate.error
+      );
+    } else {
+      const updatedRecords = Array.isArray(emailPatternUpdate.data)
+        ? emailPatternUpdate.data
+        : [];
+      console.log(
+        `📤 Output: Successfully updated ${updatedRecords.length} records`
+      );
+      if (updatedRecords.length > 0) {
+        console.log('   Records with @example.com emails:');
+        updatedRecords.slice(0, 3).forEach((record: any, idx: number) => {
+          console.log(
+            `     ${idx + 1}. ${record.text_field} (${record.email_field}) - phone: ${record.phone_field}`
+          );
+        });
+      }
+    }
+
+    // Demo 5: Date range filter - Update records within a date range
+    console.log('\n🔹 Method 5: Update using date range filter');
+    console.log(
+      '   Updating records where date_time_field is in Q1 2024 (Jan-Mar)'
+    );
+
+    const dateRangeUpdate = await this.client.records.update(
+      this.createdTableName,
+      {
+        filters: [
+          {
+            field: 'date_time_field',
+            operator: 'BETWEEN',
+            values: ['2024-01-01T00:00:00Z', '2024-03-31T23:59:59Z'],
+          },
+        ],
+        set: {
+          link_field: 'https://q1-2024-updated.example.com',
+          long_text_field:
+            'Updated via bulk update - Q1 2024 date range filter',
+        },
+      }
+    );
+
+    if (isErrorResponse(dateRangeUpdate)) {
+      console.error('❌ Failed date range bulk update:', dateRangeUpdate.error);
+    } else {
+      const updatedRecords = Array.isArray(dateRangeUpdate.data)
+        ? dateRangeUpdate.data
+        : [];
+      console.log(
+        `📤 Output: Successfully updated ${updatedRecords.length} records`
+      );
+      if (updatedRecords.length > 0) {
+        console.log('   Q1 2024 records updated:');
+        updatedRecords.forEach((record: any, idx: number) => {
+          console.log(
+            `     ${idx + 1}. ${record.text_field} - date: ${record.date_time_field}, link: ${record.link_field}`
+          );
+        });
+      }
+    }
+
+    // Demo 6: Array/Dropdown filter - Update based on dropdown selection
+    console.log('\n🔹 Method 6: Update using array/dropdown filter');
+    console.log('   Updating records where dropdown_field contains "Option 2"');
+
+    const arrayFilterUpdate = await this.client.records.update(
+      this.createdTableName,
+      {
+        filters: [
+          { field: 'dropdown_field', operator: 'ANY', values: ['Option 2'] },
+        ],
+        set: {
+          number_field: 99,
+          long_text_field:
+            'Updated via bulk update - Dropdown contains Option 2',
+        },
+      }
+    );
+
+    if (isErrorResponse(arrayFilterUpdate)) {
+      console.error(
+        '❌ Failed array filter bulk update:',
+        arrayFilterUpdate.error
+      );
+    } else {
+      const updatedRecords = Array.isArray(arrayFilterUpdate.data)
+        ? arrayFilterUpdate.data
+        : [];
+      console.log(
+        `📤 Output: Successfully updated ${updatedRecords.length} records`
+      );
+      if (updatedRecords.length > 0) {
+        console.log('   Records with Option 2 in dropdown:');
+        updatedRecords.forEach((record: any, idx: number) => {
+          console.log(
+            `     ${idx + 1}. ${record.text_field} - number: ${record.number_field}, dropdown: ${JSON.stringify(record.dropdown_field)}`
+          );
+        });
+      }
+    }
+
+    // Demo 7: IN operator - Update specific set of values
+    console.log('\n🔹 Method 7: Update using IN operator');
+    console.log(
+      '   Updating records where text_field is one of ["Alice", "Bob", "Charlie"]'
+    );
+
+    const inOperatorUpdate = await this.client.records.update(
+      this.createdTableName,
+      {
+        filters: [
+          {
+            field: 'text_field',
+            operator: 'IN',
+            values: ['Alice', 'Bob', 'Charlie'],
+          },
+        ],
+        set: {
+          checkbox_field: false,
+          currency_field: 85000,
+          long_text_field:
+            'Updated via bulk update - IN operator (Alice/Bob/Charlie)',
+        },
+      }
+    );
+
+    if (isErrorResponse(inOperatorUpdate)) {
+      console.error(
+        '❌ Failed IN operator bulk update:',
+        inOperatorUpdate.error
+      );
+    } else {
+      const updatedRecords = Array.isArray(inOperatorUpdate.data)
+        ? inOperatorUpdate.data
+        : [];
+      console.log(
+        `📤 Output: Successfully updated ${updatedRecords.length} records`
+      );
+      if (updatedRecords.length > 0) {
+        console.log('   Alice, Bob, or Charlie records:');
+        updatedRecords.forEach((record: any, idx: number) => {
+          console.log(
+            `     ${idx + 1}. ${record.text_field} - checkbox: ${record.checkbox_field}, currency: ${record.currency_field}`
+          );
+        });
+      }
+    }
+
+    // Demo 8: Using FilterBuilder for complex conditions
+    console.log('\n🔹 Method 8: Update using FilterBuilder (SDK helper)');
+    console.log(
+      '   Creating complex filter: number_field > 29 AND checkbox_field = true'
+    );
+
+    const complexFilters = createFilter()
+      .greaterThan('number_field', 29)
+      .equals('checkbox_field', true)
+      .build();
+
+    const filterBuilderUpdate = await this.client.records.update(
+      this.createdTableName,
+      {
+        filters: complexFilters,
+        set: {
+          link_field: 'https://premium-users.example.com',
+          currency_field: 95000,
+          long_text_field:
+            'Updated via bulk update - FilterBuilder (number>29 AND checkbox=true)',
+        },
+      }
+    );
+
+    if (isErrorResponse(filterBuilderUpdate)) {
+      console.error(
+        '❌ Failed FilterBuilder bulk update:',
+        filterBuilderUpdate.error
+      );
+    } else {
+      const updatedRecords = Array.isArray(filterBuilderUpdate.data)
+        ? filterBuilderUpdate.data
+        : [];
+      console.log(
+        `📤 Output: Successfully updated ${updatedRecords.length} records using FilterBuilder`
+      );
+      if (updatedRecords.length > 0) {
+        console.log('   Premium users (number>29, checkbox=true):');
+        updatedRecords.forEach((record: any, idx: number) => {
+          console.log(
+            `     ${idx + 1}. ${record.text_field} - number: ${record.number_field}, currency: ${record.currency_field}, link: ${record.link_field}`
+          );
+        });
+      }
+    }
+
+    // Demo 9: Update with field projection (only return specific fields)
+    console.log('\n🔹 Method 9: Update with field projection');
+    console.log(
+      '   Updating and returning only specific fields (text_field, email_field, number_field)'
+    );
+
+    const projectionUpdate = await this.client.records.update(
+      this.createdTableName,
+      {
+        filters: [{ field: 'number_field', operator: '<', values: [30] }],
+        set: {
+          checkbox_field: true,
+          long_text_field:
+            'Updated via bulk update - With field projection (number<30)',
+        },
+        fields: ['text_field', 'email_field', 'number_field', 'checkbox_field'],
+      }
+    );
+
+    if (isErrorResponse(projectionUpdate)) {
+      console.error(
+        '❌ Failed projection bulk update:',
+        projectionUpdate.error
+      );
+    } else {
+      const updatedRecords = Array.isArray(projectionUpdate.data)
+        ? projectionUpdate.data
+        : [];
+      console.log(
+        `📤 Output: Successfully updated ${updatedRecords.length} records with field projection`
+      );
+      if (updatedRecords.length > 0) {
+        console.log('   Returned only requested fields:');
+        updatedRecords.forEach((record: any, idx: number) => {
+          console.log(
+            `     ${idx + 1}. Fields: ${Object.keys(record).join(', ')}`
+          );
+          console.log(
+            `        text: ${record.text_field}, number: ${record.number_field}`
+          );
+        });
+      }
+    }
+
+    // Demo 10: Error handling - No matching records
+    console.log('\n🔹 Error Handling Demo: No matching records');
+    console.log('   Attempting update with filter that matches no records');
+
+    const noMatchUpdate = await this.client.records.update(
+      this.createdTableName,
+      {
+        filters: [
+          { field: 'text_field', operator: '=', values: ['NonExistentUser'] },
+        ],
+        set: {
+          number_field: 999,
+        },
+      }
+    );
+
+    if (isErrorResponse(noMatchUpdate)) {
+      console.log('📤 Output (error):', noMatchUpdate.error);
+    } else {
+      const updatedRecords = Array.isArray(noMatchUpdate.data)
+        ? noMatchUpdate.data
+        : [];
+      console.log(
+        `📤 Output: Updated ${updatedRecords.length} records (expected 0)`
+      );
+      console.log(
+        '✅ Correctly handled case where no records match the filter'
+      );
+    }
+
+    console.log('\n📋 Bulk Update Summary:');
+    console.log('   ✅ Simple equality and pattern matching filters');
+    console.log('   ✅ Numeric range filters (BETWEEN, >, <, >=, <=)');
+    console.log('   ✅ Multiple conditions with AND logic');
+    console.log('   ✅ Email and text pattern matching (LIKE, ILIKE)');
+    console.log('   ✅ Date range filters');
+    console.log('   ✅ Array/dropdown filters (ANY, @>)');
+    console.log('   ✅ IN operator for multiple specific values');
+    console.log('   ✅ FilterBuilder for complex filter construction');
+    console.log('   ✅ Field projection to return only needed fields');
+    console.log('   ✅ Proper error handling for edge cases');
+
+    console.log('✅ Step 14.6 completed - Bulk update demonstration');
   }
 
   /**
