@@ -4,7 +4,7 @@ Boltic SDK is an open-source TypeScript library, developed by Fynd, designed to 
 
 ## Documentation
 
-- **[Boltic SDK Documentation](https://docs.boltic.io/docs/category/sdk/)** - Complete SDK documentation
+- **[Boltic SDK Documentation](https://docs.boltic.io/sdk/intro)** - Complete SDK documentation
 
 ## Features
 
