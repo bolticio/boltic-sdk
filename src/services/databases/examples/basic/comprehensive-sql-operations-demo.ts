@@ -26,7 +26,6 @@ dotenv.config({ path: '../.env' });
 
 // Configuration
 const DEMO_CONFIG = {
-  environment: 'sit' as const, // Change to 'prod' for production
   debug: true,
   timeout: 30000,
   region: 'asia-south1' as const,

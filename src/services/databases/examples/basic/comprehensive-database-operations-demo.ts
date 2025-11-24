@@ -34,6 +34,7 @@ dotenv.config({ path: '../.env' });
 const DEMO_CONFIG = {
   debug: true,
   timeout: 30000,
+  region: 'asia-south1' as const,
   tableName: 'comprehensive-demo-table',
   backupTableName: 'comprehensive-demo-table-backup',
 };
@@ -242,6 +243,7 @@ class ComprehensiveDatabaseOperationsDemo {
     this.client = new BolticClient(apiKey, {
       debug: DEMO_CONFIG.debug,
       timeout: DEMO_CONFIG.timeout,
+      region: DEMO_CONFIG.region,
     });
 
     this.createdTableName = DEMO_CONFIG.tableName;
