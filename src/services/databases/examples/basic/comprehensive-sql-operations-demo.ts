@@ -31,6 +31,7 @@ const DEMO_CONFIG = {
   region: 'asia-south1' as const,
   maxRetries: 3,
   retryDelay: 1000,
+  environment: 'prod' as const,
 };
 
 // Test table configuration
