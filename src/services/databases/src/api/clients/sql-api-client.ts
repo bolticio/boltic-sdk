@@ -22,11 +22,16 @@ export class SqlApiClient extends BaseApiClient {
    * Convert natural language to SQL query (streaming)
    */
   async textToSQL(
-    request: TextToSQLApiRequest
+    request: TextToSQLApiRequest,
+    dbId?: string
   ): Promise<AsyncIterable<string> | BolticErrorResponse> {
     try {
       const endpoint = SQL_ENDPOINTS.textToSQL;
-      const url = `${this.baseURL}${buildSqlEndpointPath(endpoint)}`;
+      let url = `${this.baseURL}${buildSqlEndpointPath(endpoint)}`;
+
+      if (dbId) {
+        url += `?db_id=${encodeURIComponent(dbId)}`;
+      }
 
       // For now, make a regular request and simulate streaming
       // TODO: Implement proper streaming when backend supports it
@@ -60,11 +65,16 @@ export class SqlApiClient extends BaseApiClient {
    * Execute SQL query
    */
   async executeSQL(
-    request: ExecuteSQLApiRequest
+    request: ExecuteSQLApiRequest,
+    dbId?: string
   ): Promise<ExecuteSQLApiResponse | BolticErrorResponse> {
     try {
       const endpoint = SQL_ENDPOINTS.executeSQL;
-      const url = `${this.baseURL}${buildSqlEndpointPath(endpoint)}`;
+      let url = `${this.baseURL}${buildSqlEndpointPath(endpoint)}`;
+
+      if (dbId) {
+        url += `?db_id=${encodeURIComponent(dbId)}`;
+      }
 
       const response = await this.httpAdapter.request({
         url,

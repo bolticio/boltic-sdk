@@ -9,8 +9,14 @@
  * - Advanced filtering and querying with comprehensive filter system
  * - Unified delete operations supporting both record IDs and filters
  * - Enhanced filter capabilities (ApiFilter format, FilterBuilder, where clauses)
+ * - Database switching and multi-database support
+ * - Backward compatibility (works with default database if not specified)
  * - Error handling and cleanup
  * - Real API integration
+ *
+ * Usage:
+ * - Run without arguments to use the default database (backward compatible)
+ * - Run with --use-custom-db to create and use a custom database for all operations
  *
  * Prerequisites:
  * - Set BOLTIC_API_KEY environment variable
@@ -37,6 +43,7 @@ const DEMO_CONFIG = {
   region: 'asia-south1' as const,
   tableName: 'comprehensive-demo-table',
   backupTableName: 'comprehensive-demo-table-backup',
+  environment: 'uat',
 };
 
 // All supported column types with their properties
@@ -233,8 +240,12 @@ class ComprehensiveDatabaseOperationsDemo {
   private client: BolticClient;
   private createdTableName: string;
   private createdRecordIds: string[] = [];
+  private useCustomDatabase: boolean;
+  private customDatabaseName?: string;
+  private customDatabaseInternalName?: string;
+  private customDatabaseId?: string;
 
-  constructor() {
+  constructor(useCustomDatabase: boolean = false) {
     const apiKey = process.env.BOLTIC_API_KEY;
     if (!apiKey) {
       throw new Error('BOLTIC_API_KEY environment variable is required');
@@ -244,9 +255,11 @@ class ComprehensiveDatabaseOperationsDemo {
       debug: DEMO_CONFIG.debug,
       timeout: DEMO_CONFIG.timeout,
       region: DEMO_CONFIG.region,
+      environment: DEMO_CONFIG.environment,
     });
 
     this.createdTableName = DEMO_CONFIG.tableName;
+    this.useCustomDatabase = useCustomDatabase;
   }
 
   /**
@@ -259,6 +272,16 @@ class ComprehensiveDatabaseOperationsDemo {
     try {
       // Validate API key and connection
       await this.validateConnection();
+
+      // 0. Setup custom database if requested
+      if (this.useCustomDatabase) {
+        await this.setupCustomDatabase();
+      } else {
+        console.log('\n📋 Using default database (backward compatible mode)');
+        console.log(
+          "   All operations will use the account's default database"
+        );
+      }
 
       // 1. Create SDK client (already done in constructor)
       await this.demoClientCreation();
@@ -334,6 +357,11 @@ class ComprehensiveDatabaseOperationsDemo {
       //  21. Delete table
       await this.demoDeleteTable();
 
+      // 22. Delete custom database (if using one)
+      if (this.useCustomDatabase && this.customDatabaseId) {
+        await this.deleteCustomDatabase();
+      }
+
       console.log('\n🎉 Comprehensive demo completed successfully!');
     } catch (error) {
       console.error('\n❌ Demo failed with error:', error);
@@ -341,6 +369,53 @@ class ComprehensiveDatabaseOperationsDemo {
       await this.cleanup();
       throw error;
     }
+  }
+
+  /**
+   * 0. Setup custom database (if requested)
+   */
+  private async setupCustomDatabase(): Promise<void> {
+    console.log('\n0️⃣  Setting Up Custom Database');
+    console.log('-'.repeat(40));
+
+    this.customDatabaseName = `demo-custom-db-${Date.now()}`;
+
+    console.log(
+      `📝 Input: Creating custom database "${this.customDatabaseName}"`
+    );
+
+    const createResult = await this.client.databases.create({
+      db_name: this.customDatabaseName,
+      db_internal_name: this.customDatabaseName.replace(/-/g, '_'),
+      resource_id: 'boltic',
+    });
+
+    if (isErrorResponse(createResult)) {
+      console.error(
+        '❌ Failed to create custom database:',
+        createResult.error.message
+      );
+      throw new Error('Cannot proceed without custom database');
+    }
+
+    this.customDatabaseInternalName = createResult.data.db_internal_name;
+    this.customDatabaseId = createResult.data.id;
+    console.log('📤 Output: Custom database created successfully');
+    console.log(`   Database ID: ${createResult.data.id}`);
+    console.log(`   Database Name: ${createResult.data.db_name}`);
+    console.log(
+      `   Database Internal Name (slug): ${this.customDatabaseInternalName}`
+    );
+
+    // Switch to the custom database
+    console.log(`\n📝 Input: Switching to custom database`);
+    await this.client.useDatabase(this.customDatabaseInternalName);
+    console.log('📤 Output: Switched to custom database');
+    console.log(`   Current Database Slug: ${this.customDatabaseInternalName}`);
+
+    console.log(
+      '✅ Step 0 completed - All subsequent operations will use this custom database'
+    );
   }
 
   /**
@@ -355,6 +430,14 @@ class ComprehensiveDatabaseOperationsDemo {
     console.log(`   Environment: ${this.client.getConfig().environment}`);
     console.log(`   Region: ${this.client.getConfig().region}`);
     console.log(`   Debug: ${this.client.getConfig().debug}`);
+
+    if (this.customDatabaseInternalName) {
+      console.log(
+        `   Using Custom Database Slug: ${this.customDatabaseInternalName}`
+      );
+    } else {
+      console.log(`   Using Default Database (backward compatible)`);
+    }
 
     console.log('✅ Step 1 completed');
   }
@@ -2785,6 +2868,7 @@ class ComprehensiveDatabaseOperationsDemo {
    * - Records created during demo (tracked in this.createdRecordIds)
    * - Columns defined in ALL_COLUMN_TYPES for this demo table
    * - The specific demo table (this.createdTableName)
+   * - Custom database (if created)
    */
   public async cleanup(): Promise<void> {
     console.log('\n🧹 Starting cleanup...');
@@ -2854,8 +2938,46 @@ class ComprehensiveDatabaseOperationsDemo {
       } catch (error) {
         console.log(`   Warning: Error deleting table: ${error}`);
       }
+
+      // Delete custom database if it was created
+      if (this.customDatabaseId) {
+        await this.deleteCustomDatabase();
+      }
     } catch (error) {
       console.log(`   Warning: Cleanup exception: ${error}`);
+    }
+  }
+
+  /**
+   * Delete the custom database created for this demo
+   */
+  private async deleteCustomDatabase(): Promise<void> {
+    if (!this.customDatabaseId) return;
+
+    try {
+      console.log(
+        `🗑️  Deleting custom database: ${this.customDatabaseName} (${this.customDatabaseId})`
+      );
+      const deleteResult = await this.client.databases.delete(
+        this.customDatabaseId
+      );
+
+      if (isErrorResponse(deleteResult)) {
+        console.log(
+          `   Warning: Failed to delete custom database: ${deleteResult.error.message}`
+        );
+        return;
+      }
+
+      console.log(
+        `   ✅ Custom database deletion job started: ${deleteResult.data.job_id}`
+      );
+      console.log(`   Note: Use pollDeleteStatus to check completion status`);
+
+      // Clear reference so we don't try to delete twice
+      this.customDatabaseId = undefined;
+    } catch (error) {
+      console.log(`   Warning: Error deleting custom database: ${error}`);
     }
   }
 
@@ -2883,7 +3005,20 @@ class ComprehensiveDatabaseOperationsDemo {
  */
 async function main(): Promise<void> {
   try {
-    const demo = new ComprehensiveDatabaseOperationsDemo();
+    // Check for command line argument
+    const useCustomDb = process.argv.includes('--use-custom-db');
+
+    if (useCustomDb) {
+      console.log(
+        '📋 Running with custom database (demonstrating database switching)'
+      );
+    } else {
+      console.log(
+        '📋 Running with default database (backward compatible mode)'
+      );
+    }
+
+    const demo = new ComprehensiveDatabaseOperationsDemo(useCustomDb);
     await demo.runDemo();
   } catch (error) {
     console.error('❌ Demo execution failed:', error);
@@ -2898,7 +3033,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.error('❌ Demo failed:', error);
     // Try to run cleanup even if main demo fails
     try {
-      const demo = new ComprehensiveDatabaseOperationsDemo();
+      const useCustomDb = process.argv.includes('--use-custom-db');
+      const demo = new ComprehensiveDatabaseOperationsDemo(useCustomDb);
       await demo.cleanup();
     } catch (cleanupError) {
       console.error('❌ Cleanup also failed:', cleanupError);

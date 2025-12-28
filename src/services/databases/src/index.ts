@@ -9,6 +9,26 @@ export type {
   ColumnUpdateRequest,
 } from './types/api/column';
 export type {
+  DatabaseCreateRequest,
+  DatabaseDeletionJobResponse,
+  DatabaseDeletionStatusResponse,
+  DatabaseJobAction,
+  DatabaseJobListRequest,
+  DatabaseJobQueryOptions,
+  DatabaseJobRecord,
+  DatabaseJobStatus,
+  DatabaseListQueryParams,
+  DatabaseListRequest,
+  DatabaseQueryOptions,
+  DatabaseRecord,
+  DatabaseStatus,
+  DatabaseUpdateRequest,
+  FilterParams,
+  PaginationMetadata,
+  PaginationParams,
+  SortParams,
+} from './types/api/database';
+export type {
   AddIndexRequest,
   AddIndexResponse,
   DeleteIndexRequest,

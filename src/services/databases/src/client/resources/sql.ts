@@ -33,10 +33,11 @@ export class SqlResource {
    */
   async textToSQL(
     prompt: string,
-    options: TextToSQLOptions = {}
+    options: TextToSQLOptions = {},
+    dbId?: string
   ): Promise<AsyncIterable<string>> {
     const request = transformTextToSQLRequest(prompt, options);
-    const response = await this.sqlApiClient.textToSQL(request);
+    const response = await this.sqlApiClient.textToSQL(request, dbId);
 
     // Check if response is an error by checking for the error property
     if ('error' in response && response.error !== undefined) {
@@ -54,12 +55,13 @@ export class SqlResource {
    *
    */
   async executeSQL(
-    query: string
+    query: string,
+    dbId?: string
   ): Promise<
     | ExecuteSQLApiResponse
     | import('../../types/common/responses').BolticErrorResponse
   > {
-    const response = await this.sqlApiClient.executeSQL({ query });
+    const response = await this.sqlApiClient.executeSQL({ query }, dbId);
 
     if (isErrorResponse(response)) {
       return response; // Return error response for caller to handle

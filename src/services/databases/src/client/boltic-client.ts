@@ -1,4 +1,10 @@
 import { ColumnQueryOptions, ColumnUpdateRequest } from '../types/api/column';
+import {
+  DatabaseCreateRequest,
+  DatabaseJobQueryOptions,
+  DatabaseQueryOptions,
+  DatabaseUpdateRequest,
+} from '../types/api/database';
 import { AddIndexRequest, ListIndexesQuery } from '../types/api/index';
 import {
   RecordData,
@@ -12,6 +18,11 @@ import {
   TableQueryOptions,
   TableUpdateRequest,
 } from '../types/api/table';
+import {
+  BolticErrorResponse,
+  BolticSuccessResponse,
+  isErrorResponse,
+} from '../types/common/responses';
 import { Environment, EnvironmentConfig } from '../types/config/environment';
 import { TextToSQLOptions } from '../types/sql';
 import { HttpRequestConfig, HttpResponse } from '../utils/http/adapter';
@@ -19,6 +30,7 @@ import { AuthManager } from './core/auth-manager';
 import { BaseClient } from './core/base-client';
 import { ClientConfig, ConfigManager } from './core/config';
 import { ColumnResource } from './resources/column';
+import { DatabaseResource } from './resources/database';
 import { IndexResource } from './resources/indexes';
 import { RecordResource } from './resources/record';
 import { createRecordBuilder, RecordBuilder } from './resources/record-builder';
@@ -35,7 +47,8 @@ export interface ClientOptions extends Partial<EnvironmentConfig> {
 }
 
 interface DatabaseContext {
-  databaseName: string;
+  databaseId?: string;
+  dbInternalName?: string;
 }
 
 export class BolticClient {
@@ -47,6 +60,7 @@ export class BolticClient {
   private recordResource: RecordResource;
   private sqlResource: SqlResource;
   private indexResource: IndexResource;
+  private databaseResource: DatabaseResource;
   private currentDatabase: DatabaseContext | null = null;
   private clientOptions: ClientOptions;
 
@@ -87,33 +101,112 @@ export class BolticClient {
     // Initialize Index operations
     this.indexResource = new IndexResource(this.baseClient);
 
-    // Set default database context
-    this.currentDatabase = {
-      databaseName: 'Default',
-    };
+    // Initialize Database operations
+    this.databaseResource = new DatabaseResource(this.baseClient);
+
+    // Set default database context (will use default database in API if not specified)
+    this.currentDatabase = null;
   }
 
+  /**
+   * Get current database context
+   */
   getCurrentDatabase(): DatabaseContext | null {
     return this.currentDatabase;
   }
 
+  /**
+   * Switch to a different database using its internal name (slug).
+   * All subsequent operations will use this database.
+   *
+   * If no internal name is provided, the SDK will switch back to the default database.
+   *
+   * @param dbInternalName - Database internal name/slug to switch to. If omitted or empty, default DB is used.
+   *
+   * @example
+   * ```typescript
+   * // Switch to a specific database by slug
+   * await client.useDatabase('my_database_slug');
+   *
+   * // Switch back to default database
+   * await client.useDatabase();
+   * ```
+   */
+  async useDatabase(dbInternalName?: string): Promise<void> {
+    // Reset to default database if no slug is provided
+    if (!dbInternalName || dbInternalName === '') {
+      this.currentDatabase = null;
+      return;
+    }
+
+    // Look up the database by its internal name (slug) using the list API
+    const result: BolticSuccessResponse<unknown> | BolticErrorResponse =
+      await this.databaseResource.findOne({
+        filters: [
+          {
+            field: 'db_internal_name',
+            operator: '=',
+            values: [dbInternalName],
+          },
+        ],
+      } as DatabaseQueryOptions);
+
+    if (isErrorResponse(result)) {
+      throw new Error(
+        result.error.message ||
+          `Failed to switch database to internal name '${dbInternalName}'`
+      );
+    }
+
+    const db = result.data as { id: string; db_internal_name?: string };
+
+    this.currentDatabase = {
+      databaseId: db.id,
+      dbInternalName: db.db_internal_name || dbInternalName,
+    };
+  }
+
+  // Direct database operations
+  get databases() {
+    return {
+      create: (data: DatabaseCreateRequest) =>
+        this.databaseResource.create(data),
+      findAll: (options?: DatabaseQueryOptions) =>
+        this.databaseResource.findAll(options),
+      findById: (id: string, options?: { fields?: string[] }) =>
+        this.databaseResource.findById(id, options),
+      findOne: (options: DatabaseQueryOptions) =>
+        this.databaseResource.findOne(options),
+      getDefault: () => this.databaseResource.getDefault(),
+      update: (dbId: string, data: DatabaseUpdateRequest) =>
+        this.databaseResource.update(dbId, data),
+      delete: (dbId: string) => this.databaseResource.delete(dbId),
+      listJobs: (options?: DatabaseJobQueryOptions) =>
+        this.databaseResource.listJobs(options),
+      pollDeleteStatus: (jobId: string) =>
+        this.databaseResource.pollDeleteStatus(jobId),
+    };
+  }
+
   // Direct table operations
   get tables() {
+    const dbId = this.currentDatabase?.databaseId;
     return {
-      create: (data: TableCreateRequest) => this.tableResource.create(data),
+      create: (data: TableCreateRequest) =>
+        this.tableResource.create(data, dbId),
       findAll: (options?: TableQueryOptions) =>
-        this.tableResource.findAll(options),
-      findById: (id: string) => this.tableResource.findById(id),
-      findByName: (name: string) => this.tableResource.findByName(name),
+        this.tableResource.findAll(options, dbId),
+      findById: (id: string) => this.tableResource.findById(id, dbId),
+      findByName: (name: string) => this.tableResource.findByName(name, dbId),
       findOne: (options: TableQueryOptions) =>
-        this.tableResource.findOne(options),
+        this.tableResource.findOne(options, dbId),
       update: (name: string, data: TableUpdateRequest) =>
-        this.tableResource.update(name, data),
-      delete: (name: string) => this.tableResource.delete(name),
+        this.tableResource.update(name, data, dbId),
+      delete: (name: string) => this.tableResource.delete(name, dbId),
       rename: (oldName: string, newName: string) =>
-        this.tableResource.rename(oldName, newName),
+        this.tableResource.rename(oldName, newName, dbId),
       setAccess: (request: { table_name: string; is_shared: boolean }) =>
-        this.tableResource.setAccess(request),
+        this.tableResource.setAccess(request, dbId),
     };
   }
 
@@ -158,88 +251,64 @@ export class BolticClient {
     return tableBuilder;
   }
 
-  // Method 3: Table-scoped operations
+  // Table-scoped operations for method chaining
   from(tableName: string) {
+    const dbId = this.currentDatabase?.databaseId;
     return {
-      // Column operations for this table
-      columns: () => ({
-        create: (column: FieldDefinition) =>
-          this.columnResource.create(tableName, column),
-        findAll: (options?: ColumnQueryOptions) =>
-          this.columnResource.findAll(tableName, options),
-        get: (columnName: string) =>
-          this.columnResource.get(tableName, columnName),
-        update: (columnName: string, updates: ColumnUpdateRequest) =>
-          this.columnResource.update(tableName, columnName, updates),
-        delete: (columnName: string) =>
-          this.columnResource.delete(tableName, columnName),
+      // Index operations for this table
+      indexes: () => ({
+        addIndex: (payload: AddIndexRequest) =>
+          this.indexResource.addIndex(tableName, payload, dbId),
+        listIndexes: (query: ListIndexesQuery) =>
+          this.indexResource.listIndexes(tableName, query, dbId),
+        deleteIndex: (indexName: string) =>
+          this.indexResource.deleteIndex(tableName, indexName, dbId),
       }),
-
       // Record operations for this table
       records: () => ({
         insert: (data: RecordData) =>
-          this.recordResource.insert(tableName, data),
+          this.recordResource.insert(tableName, data, dbId),
         insertMany: (
           records: RecordData[],
           options?: { validation?: boolean }
-        ) => this.recordResource.insertMany(tableName, records, options),
+        ) => this.recordResource.insertMany(tableName, records, options, dbId),
         findOne: (recordId: string) =>
-          this.recordResource.get(tableName, recordId),
+          this.recordResource.get(tableName, recordId, dbId),
         update: (options: RecordUpdateOptions) =>
-          this.recordResource.update(tableName, options),
+          this.recordResource.update(tableName, options, dbId),
         updateById: (recordId: string, data: RecordData) =>
-          this.recordResource.updateById(tableName, recordId, data),
-
-        // Unified delete method
+          this.recordResource.updateById(tableName, recordId, data, dbId),
         delete: (options: RecordDeleteOptions) =>
-          this.recordResource.delete(tableName, options),
-
-        // Single record delete method
+          this.recordResource.delete(tableName, options, dbId),
         deleteById: (recordId: string) =>
-          this.recordResource.deleteById(tableName, recordId),
-      }),
-
-      // Fluent record builder for this table
-      record: () =>
-        createRecordBuilder({
-          tableName,
-          recordResource: this.recordResource,
-        }),
-
-      // Indexes - Method 2: Function chaining under from(tableName)
-      indexes: () => ({
-        addIndex: (payload: AddIndexRequest) =>
-          this.indexResource.addIndex(tableName, payload),
-        listIndexes: (query: ListIndexesQuery) =>
-          this.indexResource.listIndexes(tableName, query),
-        deleteIndex: (indexName: string) =>
-          this.indexResource.deleteIndex(tableName, indexName),
+          this.recordResource.deleteById(tableName, recordId, dbId),
       }),
     };
   }
 
   // Direct record operations
   get records() {
+    const dbId = this.currentDatabase?.databaseId;
     return {
       insert: (tableName: string, data: RecordData) =>
-        this.recordResource.insert(tableName, data),
+        this.recordResource.insert(tableName, data, dbId),
       insertMany: (
         tableName: string,
         records: RecordData[],
         options?: { validation?: boolean }
-      ) => this.recordResource.insertMany(tableName, records, options),
+      ) => this.recordResource.insertMany(tableName, records, options, dbId),
       findAll: (tableName: string, options?: RecordQueryOptions) =>
-        this.recordResource.list(tableName, options),
+        this.recordResource.list(tableName, options, dbId),
       findOne: (tableName: string, recordId: string) =>
-        this.recordResource.get(tableName, recordId),
+        this.recordResource.get(tableName, recordId, dbId),
       update: (tableName: string, options: RecordUpdateOptions) =>
-        this.recordResource.update(tableName, options),
+        this.recordResource.update(tableName, options, dbId),
       updateById: (tableName: string, recordId: string, data: RecordData) =>
-        this.recordResource.updateById(tableName, recordId, data),
+        this.recordResource.updateById(tableName, recordId, data, dbId),
       delete: (tableName: string, options: RecordDeleteOptions) =>
-        this.recordResource.delete(tableName, options),
+        this.recordResource.delete(tableName, options, dbId),
       deleteById: (tableName: string, recordId: string) =>
-        this.recordResource.deleteById(tableName, recordId),
+        this.recordResource.deleteById(tableName, recordId, dbId),
     };
   }
 
@@ -253,10 +322,11 @@ export class BolticClient {
 
   // Direct SQL operations
   get sql() {
+    const dbId = this.currentDatabase?.databaseId;
     return {
       textToSQL: (prompt: string, options?: TextToSQLOptions) =>
-        this.sqlResource.textToSQL(prompt, options),
-      executeSQL: (query: string) => this.sqlResource.executeSQL(query),
+        this.sqlResource.textToSQL(prompt, options, dbId),
+      executeSQL: (query: string) => this.sqlResource.executeSQL(query, dbId),
     };
   }
 
@@ -371,6 +441,7 @@ export class BolticClient {
     this.recordResource = new RecordResource(this.baseClient);
     this.sqlResource = new SqlResource(this.baseClient);
     this.indexResource = new IndexResource(this.baseClient);
+    this.databaseResource = new DatabaseResource(this.baseClient);
   }
 
   // Security methods to prevent API key exposure

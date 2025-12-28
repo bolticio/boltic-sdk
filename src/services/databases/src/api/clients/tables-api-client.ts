@@ -7,6 +7,7 @@ import {
 import type { Environment, Region } from '../../types/config/environment';
 import { REGION_CONFIGS } from '../../types/config/environment';
 import { filterArrayFields, filterObjectFields } from '../../utils/common';
+import { addDbIdToUrl } from '../../utils/database/db-context';
 import { createHttpAdapter } from '../../utils/http';
 import { HttpAdapter } from '../../utils/http/adapter';
 import { buildEndpointPath, TABLE_ENDPOINTS } from '../endpoints/tables';
@@ -26,12 +27,14 @@ export interface TablesApiClientConfig {
 export interface TableCreateOptions {
   is_ai_generated_schema?: boolean;
   is_template?: boolean;
+  db_id?: string;
 }
 
 export interface TableListOptions extends TableQueryOptions {
   page?: number;
   pageSize?: number;
   isShared?: boolean;
+  db_id?: string;
 }
 
 // Boltic API Response Structure interfaces
@@ -107,8 +110,9 @@ export class TablesApiClient {
   ): Promise<BolticSuccessResponse<TableCreateResponse> | BolticErrorResponse> {
     try {
       const endpoint = TABLE_ENDPOINTS.create;
-      const url = `${this.baseURL}${endpoint.path}`;
-
+      let url = `${this.baseURL}${endpoint.path}`;
+      // Add db_id query parameter if provided
+      url = addDbIdToUrl(url, options.db_id);
       // Transform the request to ensure proper formatting (e.g., selection_source for dropdowns)
       const transformedRequest = transformTableCreateRequest(request, options);
 
@@ -136,7 +140,10 @@ export class TablesApiClient {
   ): Promise<BolticListResponse<TableRecord> | BolticErrorResponse> {
     try {
       const endpoint = TABLE_ENDPOINTS.list;
-      const url = `${this.baseURL}${endpoint.path}`;
+      let url = `${this.baseURL}${endpoint.path}`;
+
+      // Add db_id query parameter if provided
+      url = addDbIdToUrl(url, options.db_id);
 
       const response = await this.httpAdapter.request({
         url,
@@ -166,11 +173,14 @@ export class TablesApiClient {
    */
   async getTable(
     tableId: string,
-    options: { fields?: Array<keyof TableRecord> } = {}
+    options: { fields?: Array<keyof TableRecord>; db_id?: string } = {}
   ): Promise<BolticSuccessResponse<TableRecord> | BolticErrorResponse> {
     try {
       const endpoint = TABLE_ENDPOINTS.get;
-      const url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
+      let url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
+
+      // Add db_id query parameter if provided
+      url = addDbIdToUrl(url, options.db_id);
 
       const response = await this.httpAdapter.request({
         url,
@@ -204,12 +214,16 @@ export class TablesApiClient {
       description?: string;
       is_shared?: boolean;
       fields?: Array<keyof TableRecord>;
+      db_id?: string;
     }
   ): Promise<BolticSuccessResponse<TableRecord> | BolticErrorResponse> {
     try {
-      const { fields, ...updateData } = updates;
+      const { fields, db_id, ...updateData } = updates;
       const endpoint = TABLE_ENDPOINTS.update;
-      const url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
+      let url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
+
+      // Add db_id query parameter if provided
+      url = addDbIdToUrl(url, db_id);
 
       const response = await this.httpAdapter.request({
         url,
@@ -238,11 +252,15 @@ export class TablesApiClient {
    * Delete a table
    */
   async deleteTable(
-    tableId: string
+    tableId: string,
+    options: { db_id?: string } = {}
   ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
       const endpoint = TABLE_ENDPOINTS.delete;
-      const url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
+      let url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}`;
+
+      // Add db_id query parameter if provided
+      url = addDbIdToUrl(url, options.db_id);
 
       const response = await this.httpAdapter.request({
         url,

@@ -10,6 +10,7 @@ import type { Environment, Region } from '../../types/config/environment';
 import { REGION_CONFIGS } from '../../types/config/environment';
 import { createHttpAdapter } from '../../utils/http';
 import { HttpAdapter } from '../../utils/http/adapter';
+import { addDbIdToUrl } from '../../utils/database/db-context';
 import { buildIndexEndpointPath, INDEX_ENDPOINTS } from '../endpoints/indexes';
 
 export interface IndexesApiClientConfig {
@@ -74,11 +75,13 @@ export class IndexesApiClient {
 
   async addIndex(
     tableId: string,
-    request: AddIndexRequest
+    request: AddIndexRequest,
+    dbId?: string
   ): Promise<BolticSuccessResponse<AddIndexResponse> | BolticErrorResponse> {
     try {
       const endpoint = INDEX_ENDPOINTS.create;
-      const url = `${this.baseURL}${buildIndexEndpointPath(endpoint, { table_id: tableId })}`;
+      let url = `${this.baseURL}${buildIndexEndpointPath(endpoint, { table_id: tableId })}`;
+      url = addDbIdToUrl(url, dbId);
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
@@ -94,11 +97,13 @@ export class IndexesApiClient {
 
   async listIndexes(
     tableId: string,
-    query: ListIndexesQuery
+    query: ListIndexesQuery,
+    dbId?: string
   ): Promise<BolticSuccessResponse<ListIndexesResponse> | BolticErrorResponse> {
     try {
       const endpoint = INDEX_ENDPOINTS.list;
-      const url = `${this.baseURL}${buildIndexEndpointPath(endpoint, { table_id: tableId })}`;
+      let url = `${this.baseURL}${buildIndexEndpointPath(endpoint, { table_id: tableId })}`;
+      url = addDbIdToUrl(url, dbId);
 
       const response = await this.httpAdapter.request({
         url,
@@ -116,11 +121,13 @@ export class IndexesApiClient {
 
   async deleteIndex(
     tableId: string,
-    request: DeleteIndexRequest
+    request: DeleteIndexRequest,
+    dbId?: string
   ): Promise<BolticSuccessResponse<DeleteIndexResponse> | BolticErrorResponse> {
     try {
       const endpoint = INDEX_ENDPOINTS.delete;
-      const url = `${this.baseURL}${buildIndexEndpointPath(endpoint, { table_id: tableId })}`;
+      let url = `${this.baseURL}${buildIndexEndpointPath(endpoint, { table_id: tableId })}`;
+      url = addDbIdToUrl(url, dbId);
 
       const response = await this.httpAdapter.request({
         url,

@@ -11,6 +11,7 @@ import {
 import type { Environment, Region } from '../../types/config/environment';
 import { REGION_CONFIGS } from '../../types/config/environment';
 import { filterArrayFields, filterObjectFields } from '../../utils/common';
+import { addDbIdToUrl } from '../../utils/database/db-context';
 import { createHttpAdapter } from '../../utils/http';
 import { HttpAdapter } from '../../utils/http/adapter';
 import {
@@ -98,7 +99,8 @@ export class RecordsApiClient {
    * Insert a single record
    */
   async insertRecord(
-    request: RecordData & { table_id?: string }
+    request: RecordData & { table_id?: string },
+    dbId?: string
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
       const { table_id, fields, ...recordData } = request;
@@ -110,7 +112,8 @@ export class RecordsApiClient {
       }
 
       const endpoint = RECORD_ENDPOINTS.insert;
-      const url = `${this.baseURL}${buildRecordEndpointPath(endpoint, { table_id })}`;
+      let url = `${this.baseURL}${buildRecordEndpointPath(endpoint, { table_id })}`;
+      url = addDbIdToUrl(url, dbId);
 
       const response = await this.httpAdapter.request({
         url,
@@ -141,7 +144,8 @@ export class RecordsApiClient {
   async insertManyRecords(
     records: RecordData[],
     tableId: string,
-    options: RecordBulkInsertOptions = { validation: true }
+    options: RecordBulkInsertOptions = { validation: true },
+    dbId?: string
   ): Promise<RecordBulkInsertResponse | BolticErrorResponse> {
     try {
       if (!tableId) {
@@ -168,6 +172,7 @@ export class RecordsApiClient {
       if (queryParams.toString()) {
         url += `?${queryParams.toString()}`;
       }
+      url = addDbIdToUrl(url, dbId);
 
       const response = await this.httpAdapter.request({
         url,
@@ -189,7 +194,8 @@ export class RecordsApiClient {
   async getRecord(
     recordId: string,
     tableId: string,
-    options: { fields?: string[] } = {}
+    options: { fields?: string[] } = {},
+    dbId?: string
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
       if (!tableId) {
@@ -199,10 +205,11 @@ export class RecordsApiClient {
       }
 
       const endpoint = RECORD_ENDPOINTS.get;
-      const url = `${this.baseURL}${buildRecordEndpointPath(endpoint, {
+      let url = `${this.baseURL}${buildRecordEndpointPath(endpoint, {
         table_id: tableId,
         record_id: recordId,
       })}`;
+      url = addDbIdToUrl(url, dbId);
 
       const response = await this.httpAdapter.request({
         url,
@@ -230,7 +237,8 @@ export class RecordsApiClient {
    * List records with filtering and pagination
    */
   async listRecords(
-    options: RecordQueryOptions & { table_id?: string } = {}
+    options: RecordQueryOptions & { table_id?: string } = {},
+    dbId?: string
   ): Promise<BolticListResponse<RecordWithId> | BolticErrorResponse> {
     try {
       const { table_id, ...queryOptions } = options;
@@ -242,7 +250,8 @@ export class RecordsApiClient {
       }
 
       const endpoint = RECORD_ENDPOINTS.list;
-      const url = `${this.baseURL}${buildRecordEndpointPath(endpoint, { table_id })}`;
+      let url = `${this.baseURL}${buildRecordEndpointPath(endpoint, { table_id })}`;
+      url = addDbIdToUrl(url, dbId);
 
       const response = await this.httpAdapter.request({
         url,
@@ -271,7 +280,8 @@ export class RecordsApiClient {
    * Update records by filters
    */
   async updateRecords(
-    request: RecordUpdateOptions & { table_id?: string }
+    request: RecordUpdateOptions & { table_id?: string },
+    dbId?: string
   ): Promise<BolticListResponse<RecordWithId> | BolticErrorResponse> {
     try {
       const { table_id, set, filters, fields, ...rest } = request;
@@ -295,7 +305,8 @@ export class RecordsApiClient {
       }
 
       const endpoint = RECORD_ENDPOINTS.update;
-      const url = `${this.baseURL}${buildRecordEndpointPath(endpoint, { table_id })}`;
+      let url = `${this.baseURL}${buildRecordEndpointPath(endpoint, { table_id })}`;
+      url = addDbIdToUrl(url, dbId);
 
       const response = await this.httpAdapter.request({
         url,
@@ -325,7 +336,8 @@ export class RecordsApiClient {
    */
   async updateRecordById(
     recordId: string,
-    request: RecordUpdateByIdOptions & { table_id?: string }
+    request: RecordUpdateByIdOptions & { table_id?: string },
+    dbId?: string
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
       const { table_id, ...updateOptions } = request;
@@ -337,10 +349,11 @@ export class RecordsApiClient {
       }
 
       const endpoint = RECORD_ENDPOINTS.updateById;
-      const url = `${this.baseURL}${buildRecordEndpointPath(endpoint, {
+      let url = `${this.baseURL}${buildRecordEndpointPath(endpoint, {
         record_id: recordId,
         table_id,
       })}`;
+      url = addDbIdToUrl(url, dbId);
 
       const response = await this.httpAdapter.request({
         url,
@@ -369,7 +382,8 @@ export class RecordsApiClient {
    * Unified delete records method that supports both record_ids and filters
    */
   async deleteRecords(
-    request: RecordDeleteOptions & { table_id?: string }
+    request: RecordDeleteOptions & { table_id?: string },
+    dbId?: string
   ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
       const { table_id } = request;
@@ -384,7 +398,8 @@ export class RecordsApiClient {
       const transformedRequest = transformDeleteRequest(request);
 
       const endpoint = RECORD_ENDPOINTS.delete;
-      const url = `${this.baseURL}${buildRecordEndpointPath(endpoint, { table_id })}`;
+      let url = `${this.baseURL}${buildRecordEndpointPath(endpoint, { table_id })}`;
+      url = addDbIdToUrl(url, dbId);
 
       const response = await this.httpAdapter.request({
         url,
@@ -406,13 +421,17 @@ export class RecordsApiClient {
    */
   async deleteRecordById(
     recordId: string,
-    request: { table_id?: string }
+    request: { table_id?: string },
+    dbId?: string
   ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     // Use deleteRecords with a single ID
-    return this.deleteRecords({
-      record_ids: [recordId],
-      table_id: request.table_id,
-    });
+    return this.deleteRecords(
+      {
+        record_ids: [recordId],
+        table_id: request.table_id,
+      },
+      dbId
+    );
   }
 
   private buildHeaders(): Record<string, string> {
