@@ -139,17 +139,9 @@ export class BolticClient {
       return;
     }
 
-    // Look up the database by its internal name (slug) using the list API
+    // Look up the database by its internal name (slug)
     const result: BolticSuccessResponse<unknown> | BolticErrorResponse =
-      await this.databaseResource.findOne({
-        filters: [
-          {
-            field: 'db_internal_name',
-            operator: '=',
-            values: [dbInternalName],
-          },
-        ],
-      } as DatabaseQueryOptions);
+      await this.databaseResource.findOne(dbInternalName);
 
     if (isErrorResponse(result)) {
       throw new Error(
@@ -173,14 +165,13 @@ export class BolticClient {
         this.databaseResource.create(data),
       findAll: (options?: DatabaseQueryOptions) =>
         this.databaseResource.findAll(options),
-      findById: (id: string, options?: { fields?: string[] }) =>
-        this.databaseResource.findById(id, options),
-      findOne: (options: DatabaseQueryOptions) =>
-        this.databaseResource.findOne(options),
+      findOne: (dbInternalName: string, options?: { fields?: string[] }) =>
+        this.databaseResource.findOne(dbInternalName, options),
       getDefault: () => this.databaseResource.getDefault(),
-      update: (dbId: string, data: DatabaseUpdateRequest) =>
-        this.databaseResource.update(dbId, data),
-      delete: (dbId: string) => this.databaseResource.delete(dbId),
+      update: (dbInternalName: string, data: DatabaseUpdateRequest) =>
+        this.databaseResource.update(dbInternalName, data),
+      delete: (dbInternalName: string) =>
+        this.databaseResource.delete(dbInternalName),
       listJobs: (options?: DatabaseJobQueryOptions) =>
         this.databaseResource.listJobs(options),
       pollDeleteStatus: (jobId: string) =>

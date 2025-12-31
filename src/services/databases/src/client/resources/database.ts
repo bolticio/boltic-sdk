@@ -33,7 +33,7 @@ export class DatabaseResource extends BaseResource {
   private apiClient: DatabasesApiClient;
 
   constructor(client: BaseClient) {
-    super(client);
+    super(client, '/v1/tables/databases');
 
     // Initialize the API client with the client's configuration
     this.apiClient = new DatabasesApiClient(client.getConfig().apiKey, {
@@ -62,7 +62,20 @@ export class DatabaseResource extends BaseResource {
   async create(
     request: DatabaseCreateRequest
   ): Promise<BolticSuccessResponse<DatabaseRecord> | BolticErrorResponse> {
-    return await this.apiClient.createDatabase(request);
+    const result = await this.apiClient.createDatabase(request);
+    if ('error' in result) {
+      return {
+        error: {
+          code:
+            typeof result.error.code === 'number'
+              ? String(result.error.code)
+              : result.error.code,
+          message: result.error.message,
+          meta: result.error.meta,
+        },
+      };
+    }
+    return result;
   }
 
   /**
@@ -101,21 +114,17 @@ export class DatabaseResource extends BaseResource {
       request.sort = options.sort;
     }
 
-    // By default, filter to show only active databases
-    // If filters are provided, check if status filter exists
-    // If no status filter exists, add ACTIVE filter
+    // Always filter to show only active databases
+    // Override any user-provided status filter with ACTIVE
     if (options?.filters) {
-      const hasStatusFilter = options.filters.some((f) => f.field === 'status');
-      if (hasStatusFilter) {
-        // User explicitly provided status filter, use filters as-is
-        request.filters = options.filters;
-      } else {
-        // No status filter provided, add ACTIVE filter
-        request.filters = [
-          ...options.filters,
-          { field: 'status', operator: '=', values: ['ACTIVE'] },
-        ];
-      }
+      // Remove any existing status filter and add ACTIVE filter
+      const filtersWithoutStatus = options.filters.filter(
+        (f) => f.field !== 'status'
+      );
+      request.filters = [
+        ...filtersWithoutStatus,
+        { field: 'status', operator: '=', values: ['ACTIVE'] },
+      ];
     } else {
       // Default filter: only show active databases
       request.filters = [
@@ -133,69 +142,68 @@ export class DatabaseResource extends BaseResource {
         : 'false';
     }
 
-    return await this.apiClient.listDatabases(request, queryParams, options);
+    const result = await this.apiClient.listDatabases(
+      request,
+      queryParams,
+      options
+    );
+    if ('error' in result) {
+      return {
+        error: {
+          code:
+            typeof result.error.code === 'number'
+              ? String(result.error.code)
+              : result.error.code,
+          message: result.error.message,
+          meta: result.error.meta,
+        },
+      };
+    }
+    // Normalize pagination structure if needed
+    if ('pagination' in result && result.pagination) {
+      const pagination = result.pagination;
+      return {
+        ...result,
+        pagination: {
+          total_count: pagination.total_count,
+          total_pages:
+            pagination.total_pages ??
+            Math.ceil(pagination.total_count / pagination.per_page),
+          current_page: pagination.current_page,
+          per_page: pagination.per_page,
+          type: 'page',
+        },
+      } as BolticListResponse<DatabaseRecord>;
+    }
+    return result as BolticListResponse<DatabaseRecord>;
   }
 
   /**
-   * Get a specific database by ID
+   * Get a specific database by internal name (slug)
    *
-   * @param dbId - Database ID
+   * @param dbInternalName - Database internal name (slug)
    * @param options - Query options (e.g., fields to return)
    * @returns Promise with database or error
    *
    * @example
    * ```typescript
-   * const result = await client.databases.findById('db-uuid');
-   * ```
-   */
-  async findById(
-    dbId: string,
-    options?: { fields?: string[] }
-  ): Promise<BolticSuccessResponse<DatabaseRecord> | BolticErrorResponse> {
-    // Get all databases and filter by ID
-    const result = await this.findAll({
-      filters: [{ field: 'id', operator: '=', values: [dbId] }],
-      fields: options?.fields,
-    });
-
-    if (isErrorResponse(result)) {
-      return result;
-    }
-
-    if (result.data.length === 0) {
-      return {
-        error: {
-          code: 'NOT_FOUND',
-          message: `Database with ID ${dbId} not found`,
-          meta: [],
-        },
-      };
-    }
-
-    return {
-      data: result.data[0],
-      message: 'Database found',
-    };
-  }
-
-  /**
-   * Find one database matching the given criteria
-   *
-   * @param options - Query options
-   * @returns Promise with database or error
-   *
-   * @example
-   * ```typescript
-   * const result = await client.databases.findOne({
-   *   filters: [{ field: 'db_name', operator: '=', values: ['My Database'] }]
-   * });
+   * const result = await client.databases.findOne('my_database_slug');
    * ```
    */
   async findOne(
-    options: DatabaseQueryOptions
+    dbInternalName: string,
+    options?: { fields?: string[] }
   ): Promise<BolticSuccessResponse<DatabaseRecord> | BolticErrorResponse> {
+    // Get all databases and filter by internal name
     const result = await this.findAll({
-      ...options,
+      filters: [
+        {
+          field: 'db_internal_name',
+          operator: '=',
+          values: [dbInternalName],
+        },
+      ],
+      fields: options?.fields,
       page: { page_no: 1, page_size: 1 },
     });
 
@@ -207,7 +215,7 @@ export class DatabaseResource extends BaseResource {
       return {
         error: {
           code: 'NOT_FOUND',
-          message: 'No database found matching the criteria',
+          message: `Database with internal name '${dbInternalName}' not found`,
           meta: [],
         },
       };
@@ -232,48 +240,96 @@ export class DatabaseResource extends BaseResource {
   async getDefault(): Promise<
     BolticSuccessResponse<DatabaseRecord> | BolticErrorResponse
   > {
-    return await this.findOne({
+    const result = await this.findAll({
       filters: [{ field: 'is_default', operator: '=', values: [true] }],
+      page: { page_no: 1, page_size: 1 },
     });
+
+    if (isErrorResponse(result)) {
+      return result;
+    }
+
+    if (result.data.length === 0) {
+      return {
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Default database not found',
+          meta: [],
+        },
+      };
+    }
+
+    return {
+      data: result.data[0],
+      message: 'Default database found',
+    };
   }
 
   /**
    * Update a database
    * Only allows updating the display name (db_name)
    *
-   * @param dbId - Database ID
+   * @param dbInternalName - Database internal name (slug)
    * @param request - Update request (only db_name is allowed)
    * @returns Promise with updated database or error
    *
    * @example
    * ```typescript
-   * const result = await client.databases.update('db-uuid', {
+   * const result = await client.databases.update('my_database_slug', {
    *   db_name: 'Updated Database Name'
    * });
    * ```
    */
   async update(
-    dbId: string,
+    dbInternalName: string,
     request: DatabaseUpdateRequest
   ): Promise<BolticSuccessResponse<DatabaseRecord> | BolticErrorResponse> {
+    // Resolve database internal name to dbId
+    const dbInfo = await this.findOne(dbInternalName);
+
+    if (isErrorResponse(dbInfo)) {
+      return {
+        error: {
+          code: 'DATABASE_NOT_FOUND',
+          message: `Database with internal name '${dbInternalName}' not found`,
+          meta: [],
+        },
+      };
+    }
+
+    const dbId = dbInfo.data.id;
+
     // Only allow updating db_name (display name)
     // Remove any other fields that might be present
     const updateRequest: DatabaseUpdateRequest = {
       db_name: request.db_name,
     };
 
-    return await this.apiClient.updateDatabase(dbId, updateRequest);
+    const result = await this.apiClient.updateDatabase(dbId, updateRequest);
+    if ('error' in result) {
+      return {
+        error: {
+          code:
+            typeof result.error.code === 'number'
+              ? String(result.error.code)
+              : result.error.code,
+          message: result.error.message,
+          meta: result.error.meta,
+        },
+      };
+    }
+    return result;
   }
 
   /**
    * Delete a database (initiates async deletion job)
    *
-   * @param dbId - Database ID
+   * @param dbInternalName - Database internal name (slug)
    * @returns Promise with job details or error
    *
    * @example
    * ```typescript
-   * const result = await client.databases.delete('db-uuid');
+   * const result = await client.databases.delete('my_database_slug');
    * if (!result.error) {
    *   console.log('Deletion job started:', result.data.job_id);
    *   // Poll for status
@@ -282,16 +338,24 @@ export class DatabaseResource extends BaseResource {
    * ```
    */
   async delete(
-    dbId: string
+    dbInternalName: string
   ): Promise<
     BolticSuccessResponse<DatabaseDeletionJobResponse> | BolticErrorResponse
   > {
-    // Check if this is the default database - prevent deletion
-    const dbInfo = await this.findById(dbId);
+    // Resolve database internal name to dbId
+    const dbInfo = await this.findOne(dbInternalName);
+
     if (isErrorResponse(dbInfo)) {
-      return dbInfo;
+      return {
+        error: {
+          code: 'DATABASE_NOT_FOUND',
+          message: `Database with internal name '${dbInternalName}' not found`,
+          meta: [],
+        },
+      };
     }
 
+    // Check if this is the default database - prevent deletion
     if (dbInfo.data.is_default) {
       return {
         error: {
@@ -302,7 +366,21 @@ export class DatabaseResource extends BaseResource {
       };
     }
 
-    return await this.apiClient.deleteDatabase(dbId);
+    const dbId = dbInfo.data.id;
+    const result = await this.apiClient.deleteDatabase(dbId);
+    if ('error' in result) {
+      return {
+        error: {
+          code:
+            typeof result.error.code === 'number'
+              ? String(result.error.code)
+              : result.error.code,
+          message: result.error.message,
+          meta: result.error.meta,
+        },
+      };
+    }
+    return result;
   }
 
   /**
@@ -343,7 +421,41 @@ export class DatabaseResource extends BaseResource {
       request.filters = options.filters;
     }
 
-    return await this.apiClient.listDatabaseJobs(request, options);
+    const result = await this.apiClient.listDatabaseJobs(request, options);
+    if ('error' in result) {
+      return {
+        error: {
+          code:
+            typeof result.error.code === 'number'
+              ? String(result.error.code)
+              : result.error.code,
+          message: result.error.message,
+          meta: result.error.meta,
+        },
+      };
+    }
+    // Normalize pagination structure if needed
+    if ('pagination' in result && result.pagination) {
+      const pagination = result.pagination;
+      const normalizedResult: BolticListResponse<DatabaseJobRecord> = {
+        ...result,
+        pagination: {
+          total_count: pagination.total_count,
+          total_pages:
+            pagination.total_pages ??
+            Math.ceil(pagination.total_count / pagination.per_page),
+          current_page: pagination.current_page,
+          per_page: pagination.per_page,
+          type: 'page',
+        },
+      };
+      return normalizedResult;
+    }
+    // If no pagination, ensure it's properly typed
+    const normalizedResult: BolticListResponse<DatabaseJobRecord> = {
+      ...result,
+    };
+    return normalizedResult;
   }
 
   /**
@@ -366,6 +478,19 @@ export class DatabaseResource extends BaseResource {
   ): Promise<
     BolticSuccessResponse<DatabaseDeletionStatusResponse> | BolticErrorResponse
   > {
-    return await this.apiClient.pollDeleteStatus(jobId);
+    const result = await this.apiClient.pollDeleteStatus(jobId);
+    if ('error' in result) {
+      return {
+        error: {
+          code:
+            typeof result.error.code === 'number'
+              ? String(result.error.code)
+              : result.error.code,
+          message: result.error.message,
+          meta: result.error.meta,
+        },
+      };
+    }
+    return result;
   }
 }

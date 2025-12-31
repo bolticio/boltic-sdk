@@ -25,11 +25,11 @@
 
 import * as dotenv from 'dotenv';
 import {
-  AddIndexRequest,
-  BolticClient,
-  FieldDefinition,
-  isErrorResponse,
-  ListIndexesQuery,
+    AddIndexRequest,
+    BolticClient,
+    FieldDefinition,
+    isErrorResponse,
+    ListIndexesQuery,
 } from '../../src';
 import { createFilter } from '../../src/utils/filters/filter-mapper';
 
@@ -2952,14 +2952,14 @@ class ComprehensiveDatabaseOperationsDemo {
    * Delete the custom database created for this demo
    */
   private async deleteCustomDatabase(): Promise<void> {
-    if (!this.customDatabaseId) return;
+    if (!this.customDatabaseInternalName) return;
 
     try {
       console.log(
-        `🗑️  Deleting custom database: ${this.customDatabaseName} (${this.customDatabaseId})`
+        `🗑️  Deleting custom database: ${this.customDatabaseName} (internal name: ${this.customDatabaseInternalName})`
       );
       const deleteResult = await this.client.databases.delete(
-        this.customDatabaseId
+        this.customDatabaseInternalName
       );
 
       if (isErrorResponse(deleteResult)) {

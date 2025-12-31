@@ -43,6 +43,7 @@ const DEMO_DATABASES = {
 class ComprehensiveDatabasesDemo {
   private client: BolticClient;
   private createdDatabaseIds: string[] = [];
+  private createdDatabaseInternalNames: string[] = [];
   private createdJobIds: string[] = [];
 
   constructor() {
@@ -83,8 +84,8 @@ class ComprehensiveDatabasesDemo {
       // 7. List databases with filtering
       await this.demoListDatabasesWithFiltering();
 
-      // 8. Get specific database by ID
-      await this.demoGetDatabaseById();
+      // 8. Get specific database by internal name
+      await this.demoGetDatabaseByName();
 
       // 9. Find one database by criteria
       await this.demoFindOneDatabase();
@@ -217,6 +218,7 @@ class ComprehensiveDatabasesDemo {
         console.log(`   Internal Name: ${result.data.db_internal_name}`);
         console.log(`   Status: ${result.data.status}`);
         this.createdDatabaseIds.push(result.data.id);
+        this.createdDatabaseInternalNames.push(result.data.db_internal_name);
       }
     }
 
@@ -308,10 +310,10 @@ class ComprehensiveDatabasesDemo {
 
     // Test 2: Filter by database name (db_name)
     console.log('\n📝 Input: Filter databases by db_name (display name)');
-    if (this.createdDatabaseIds.length > 0) {
+    if (this.createdDatabaseInternalNames.length > 0) {
       // Get first created database to test filtering
-      const dbInfo = await this.client.databases.findById(
-        this.createdDatabaseIds[0]
+      const dbInfo = await this.client.databases.findOne(
+        this.createdDatabaseInternalNames[0]
       );
       if (!isErrorResponse(dbInfo)) {
         const nameFilterResult = await this.client.databases.findAll({
@@ -359,9 +361,9 @@ class ComprehensiveDatabasesDemo {
 
     // Test 4: Filter by db_internal_name
     console.log('\n📝 Input: Filter databases by db_internal_name (slug)');
-    if (this.createdDatabaseIds.length > 0) {
-      const dbInfo = await this.client.databases.findById(
-        this.createdDatabaseIds[0]
+    if (this.createdDatabaseInternalNames.length > 0) {
+      const dbInfo = await this.client.databases.findOne(
+        this.createdDatabaseInternalNames[0]
       );
       if (!isErrorResponse(dbInfo)) {
         const slugFilterResult = await this.client.databases.findAll({
@@ -417,21 +419,23 @@ class ComprehensiveDatabasesDemo {
   }
 
   /**
-   * 8. Get specific database by ID
+   * 8. Get specific database by internal name
    */
-  private async demoGetDatabaseById(): Promise<void> {
-    console.log('\n8️⃣  Getting Database by ID');
+  private async demoGetDatabaseByName(): Promise<void> {
+    console.log('\n8️⃣  Getting Database by Internal Name');
     console.log('-'.repeat(40));
 
-    if (this.createdDatabaseIds.length === 0) {
+    if (this.createdDatabaseInternalNames.length === 0) {
       console.log('⚠️  No databases available to query');
       return;
     }
 
-    const dbId = this.createdDatabaseIds[0];
-    console.log(`📝 Input: Get database with ID "${dbId}"`);
+    const dbInternalName = this.createdDatabaseInternalNames[0];
+    console.log(
+      `📝 Input: Get database with internal name "${dbInternalName}"`
+    );
 
-    const result = await this.client.databases.findById(dbId);
+    const result = await this.client.databases.findOne(dbInternalName);
 
     if (isErrorResponse(result)) {
       console.error('❌ Failed to get database:', result.error.message);
@@ -447,27 +451,25 @@ class ComprehensiveDatabasesDemo {
   }
 
   /**
-   * 9. Find one database by criteria
+   * 9. Find one database by internal name
    */
   private async demoFindOneDatabase(): Promise<void> {
-    console.log('\n9️⃣  Finding One Database by Criteria');
+    console.log('\n9️⃣  Finding One Database by Internal Name');
     console.log('-'.repeat(40));
 
+    const dbInternalName = DEMO_DATABASES.primary.replace(/-/g, '_');
     console.log(
-      `📝 Input: Find database with name "${DEMO_DATABASES.primary}"`
+      `📝 Input: Find database with internal name "${dbInternalName}"`
     );
 
-    const result = await this.client.databases.findOne({
-      filters: [
-        { field: 'db_name', operator: '=', values: [DEMO_DATABASES.primary] },
-      ],
-    });
+    const result = await this.client.databases.findOne(dbInternalName);
 
     if (isErrorResponse(result)) {
       console.error('❌ Failed to find database:', result.error.message);
     } else {
       console.log('📤 Output: Database found');
       console.log(`   Name: ${result.data.db_name}`);
+      console.log(`   Internal Name: ${result.data.db_internal_name}`);
       console.log(`   ID: ${result.data.id}`);
     }
 
@@ -481,17 +483,19 @@ class ComprehensiveDatabasesDemo {
     console.log('\n1️⃣0️⃣  Updating Database');
     console.log('-'.repeat(40));
 
-    if (this.createdDatabaseIds.length === 0) {
+    if (this.createdDatabaseInternalNames.length === 0) {
       console.log('⚠️  No databases available to update');
       return;
     }
 
-    const dbId = this.createdDatabaseIds[0];
+    const dbInternalName = this.createdDatabaseInternalNames[0];
     const newName = `${DEMO_DATABASES.primary}-updated`;
 
-    console.log(`📝 Input: Update database name to "${newName}"`);
+    console.log(
+      `📝 Input: Update database name to "${newName}" using internal name "${dbInternalName}"`
+    );
 
-    const result = await this.client.databases.update(dbId, {
+    const result = await this.client.databases.update(dbInternalName, {
       db_name: newName,
     });
 
@@ -546,17 +550,22 @@ class ComprehensiveDatabasesDemo {
     console.log('\n1️⃣2️⃣  Deleting Database and Polling Status');
     console.log('-'.repeat(40));
 
-    if (this.createdDatabaseIds.length === 0) {
+    if (this.createdDatabaseInternalNames.length === 0) {
       console.log('⚠️  No databases available to delete');
       return;
     }
 
     // Use the last database for deletion demo
-    const dbId = this.createdDatabaseIds[this.createdDatabaseIds.length - 1];
+    const dbInternalName =
+      this.createdDatabaseInternalNames[
+        this.createdDatabaseInternalNames.length - 1
+      ];
 
-    console.log(`📝 Input: Initiate deletion for database ID "${dbId}"`);
+    console.log(
+      `📝 Input: Initiate deletion for database with internal name "${dbInternalName}"`
+    );
 
-    const deleteResult = await this.client.databases.delete(dbId);
+    const deleteResult = await this.client.databases.delete(dbInternalName);
 
     if (isErrorResponse(deleteResult)) {
       console.error(
@@ -596,9 +605,11 @@ class ComprehensiveDatabasesDemo {
     );
 
     // Remove from tracking
-    this.createdDatabaseIds = this.createdDatabaseIds.filter(
-      (id) => id !== dbId
-    );
+    const dbIndex = this.createdDatabaseInternalNames.indexOf(dbInternalName);
+    if (dbIndex !== -1) {
+      this.createdDatabaseIds.splice(dbIndex, 1);
+      this.createdDatabaseInternalNames.splice(dbIndex, 1);
+    }
 
     console.log('✅ Step 12 completed');
   }
@@ -643,12 +654,14 @@ class ComprehensiveDatabasesDemo {
    */
   public async cleanup(): Promise<void> {
     console.log('\n🧹 Starting cleanup...');
-    console.log(`   Databases to clean: ${this.createdDatabaseIds.length}`);
+    console.log(
+      `   Databases to clean: ${this.createdDatabaseInternalNames.length}`
+    );
 
-    for (const dbId of this.createdDatabaseIds) {
+    for (const dbInternalName of this.createdDatabaseInternalNames) {
       try {
-        console.log(`🗑️  Deleting database: ${dbId}`);
-        const result = await this.client.databases.delete(dbId);
+        console.log(`🗑️  Deleting database: ${dbInternalName}`);
+        const result = await this.client.databases.delete(dbInternalName);
 
         if (!isErrorResponse(result)) {
           console.log(`   ✅ Deletion job started: ${result.data.job_id}`);
@@ -657,7 +670,10 @@ class ComprehensiveDatabasesDemo {
           );
         }
       } catch (error) {
-        console.log(`   Warning: Error deleting database ${dbId}:`, error);
+        console.log(
+          `   Warning: Error deleting database ${dbInternalName}:`,
+          error
+        );
       }
     }
 
