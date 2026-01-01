@@ -78,5 +78,8 @@
         "axios": {
             "optional": true
         }
+    },
+    "dependencies": {
+        "dotenv": "^17.2.3"
     }
 }

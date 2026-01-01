@@ -328,33 +328,92 @@ export class DatabasesApiClient {
       console.error('[DatabasesApiClient] Error:', error);
     }
 
+    // Type guard for error with error property
+    const hasErrorProperty = (
+      err: unknown
+    ): err is { error: { code?: string | number; message?: string; meta?: string[] } } => {
+      return (
+        typeof err === 'object' &&
+        err !== null &&
+        'error' in err &&
+        typeof (err as { error: unknown }).error === 'object' &&
+        (err as { error: unknown }).error !== null
+      );
+    };
+
+    // Type guard for HTTP error with response
+    const hasResponseError = (
+      err: unknown
+    ): err is {
+      response: {
+        data: { error: { code?: string | number; message?: string; meta?: string[] } };
+      };
+    } => {
+      return (
+        typeof err === 'object' &&
+        err !== null &&
+        'response' in err &&
+        typeof (err as { response: unknown }).response === 'object' &&
+        (err as { response: unknown }).response !== null &&
+        'data' in (err as { response: { data?: unknown } }).response &&
+        typeof (err as { response: { data: unknown } }).response.data === 'object' &&
+        (err as { response: { data: unknown } }).response.data !== null &&
+        'error' in (err as { response: { data: { error?: unknown } } }).response.data
+      );
+    };
+
+    // Type guard for standard Error
+    const isStandardError = (err: unknown): err is Error & { code?: string } => {
+      return err instanceof Error;
+    };
+
     // If error already has the right structure, return it
-    if (error.error) {
+    if (hasErrorProperty(error)) {
+      const errorWithError = error;
       return {
         error: {
-          code: error.error.code,
-          message: error.error.message || 'An error occurred',
-          meta: error.error.meta,
+          code:
+            typeof errorWithError.error.code === 'number'
+              ? String(errorWithError.error.code)
+              : errorWithError.error.code || 'UNKNOWN_ERROR',
+          message: errorWithError.error.message || 'An error occurred',
+          meta: errorWithError.error.meta || [],
         },
       };
     }
 
     // If it's an HTTP error with response data
-    if (error.response?.data?.error) {
+    if (hasResponseError(error)) {
+      const errorWithResponse = error;
       return {
         error: {
-          code: error.response.data.error.code,
-          message: error.response.data.error.message || 'An error occurred',
-          meta: error.response.data.error.meta,
+          code:
+            typeof errorWithResponse.response.data.error.code === 'number'
+              ? String(errorWithResponse.response.data.error.code)
+              : errorWithResponse.response.data.error.code || 'UNKNOWN_ERROR',
+          message: errorWithResponse.response.data.error.message || 'An error occurred',
+          meta: errorWithResponse.response.data.error.meta || [],
         },
       };
     }
 
     // Default error format
+    if (isStandardError(error)) {
+      const standardError = error;
+      return {
+        error: {
+          code: standardError.code || 'UNKNOWN_ERROR',
+          message: standardError.message || 'An unexpected error occurred',
+          meta: [],
+        },
+      };
+    }
+
+    // Fallback for completely unknown error types
     return {
       error: {
-        code: error.code || 'UNKNOWN_ERROR',
-        message: error.message || 'An unexpected error occurred',
+        code: 'UNKNOWN_ERROR',
+        message: 'An unexpected error occurred',
         meta: [],
       },
     };

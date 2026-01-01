@@ -64,7 +64,7 @@ export class InterceptorManagerImpl implements InterceptorManager {
     config: HttpRequestConfig
   ): Promise<HttpRequestConfig> {
     let result = config;
-    for (const interceptor of this.requestInterceptors.values()) {
+    for (const interceptor of Array.from(this.requestInterceptors.values())) {
       result = await interceptor(result);
     }
     return result;
@@ -74,7 +74,7 @@ export class InterceptorManagerImpl implements InterceptorManager {
     response: HttpResponse
   ): Promise<HttpResponse> {
     let result = response;
-    for (const { fulfilled } of this.responseInterceptors.values()) {
+    for (const { fulfilled } of Array.from(this.responseInterceptors.values())) {
       if (fulfilled) {
         result = await fulfilled(result);
       }
@@ -84,7 +84,7 @@ export class InterceptorManagerImpl implements InterceptorManager {
 
   async executeErrorInterceptors(error: unknown): Promise<unknown> {
     let result = error;
-    for (const { rejected } of this.responseInterceptors.values()) {
+    for (const { rejected } of Array.from(this.responseInterceptors.values())) {
       if (rejected) {
         result = await rejected(result);
       }

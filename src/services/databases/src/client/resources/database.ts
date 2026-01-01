@@ -446,16 +446,16 @@ export class DatabaseResource extends BaseResource {
             Math.ceil(pagination.total_count / pagination.per_page),
           current_page: pagination.current_page,
           per_page: pagination.per_page,
-          type: 'page',
+          type: 'page' as const,
         },
       };
       return normalizedResult;
     }
-    // If no pagination, ensure it's properly typed
-    const normalizedResult: BolticListResponse<DatabaseJobRecord> = {
+    // If no pagination, return as list response without pagination
+    return {
       ...result,
-    };
-    return normalizedResult;
+      data: result.data || [],
+    } as BolticListResponse<DatabaseJobRecord>;
   }
 
   /**

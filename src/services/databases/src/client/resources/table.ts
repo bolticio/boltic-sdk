@@ -1,4 +1,4 @@
-import { TablesApiClient } from '../../api/clients/tables-api-client';
+import { TablesApiClient, TableListOptions } from '../../api/clients/tables-api-client';
 import { ApiError, ValidationError } from '../../errors';
 import {
   FieldDefinition,
@@ -121,7 +121,11 @@ export class TableResource extends BaseResource {
   /**
    * Transform SDK TableQueryOptions to API request format
    */
-  private transformTableQueryToApiRequest(options: TableQueryOptions): unknown {
+  private transformTableQueryToApiRequest(options: TableQueryOptions): {
+    page: { page_no: number; page_size: number };
+    filters: Array<{ field: string; operator: string; values: unknown[] }>;
+    sort: Array<{ field: string; direction: string }>;
+  } {
     const apiRequest: {
       page: { page_no: number; page_size: number };
       filters: Array<{ field: string; operator: string; values: unknown[] }>;
@@ -176,12 +180,16 @@ export class TableResource extends BaseResource {
       // Transform SDK format to API format
       const apiRequest = this.transformTableQueryToApiRequest(options);
 
-      const listOptions = {
-        ...apiRequest,
+      // Create request payload matching API format (not TableListOptions SDK format)
+      const requestPayload = {
+        page: apiRequest.page,
+        filters: apiRequest.filters,
+        sort: apiRequest.sort,
         ...(dbId && { db_id: dbId }),
-      };
+        ...(options.fields && { fields: options.fields }),
+      } as unknown as TableListOptions;
 
-      const result = await this.tablesApiClient.listTables(listOptions);
+      const result = await this.tablesApiClient.listTables(requestPayload);
 
       if (isErrorResponse(result)) {
         throw new ApiError(
@@ -252,12 +260,14 @@ export class TableResource extends BaseResource {
           sort: [],
         };
 
-        const listOptions = {
-          ...apiRequest,
+        const requestPayload = {
+          page: apiRequest.page,
+          filters: apiRequest.filters,
+          sort: apiRequest.sort,
           ...(dbId && { db_id: dbId }),
-        };
+        } as unknown as TableListOptions;
 
-        const listResult = await this.tablesApiClient.listTables(listOptions);
+        const listResult = await this.tablesApiClient.listTables(requestPayload);
 
         if (isErrorResponse(listResult)) {
           throw new ApiError(

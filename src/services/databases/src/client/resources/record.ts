@@ -175,6 +175,7 @@ export class RecordResource {
       const result = await this.apiClient.getRecord(
         recordId,
         tableInfo.id,
+        { fields: undefined },
         dbId
       );
 
