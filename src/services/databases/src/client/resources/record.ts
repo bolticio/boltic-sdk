@@ -50,11 +50,12 @@ export class RecordResource {
    */
   async insert(
     tableName: string,
-    data: RecordData
+    data: RecordData,
+    dbId?: string
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -78,7 +79,7 @@ export class RecordResource {
         ...(completeDataResult as RecordData),
         table_id: tableInfo.id,
       };
-      const result = await this.apiClient.insertRecord(requestData);
+      const result = await this.apiClient.insertRecord(requestData, dbId);
 
       if (isErrorResponse(result)) {
         return result;
@@ -102,7 +103,8 @@ export class RecordResource {
   async insertMany(
     tableName: string,
     records: RecordData[],
-    options: RecordBulkInsertOptions = { validation: true }
+    options: RecordBulkInsertOptions = { validation: true },
+    dbId?: string
   ): Promise<RecordBulkInsertResponse | BolticErrorResponse> {
     try {
       // Validate input
@@ -116,7 +118,7 @@ export class RecordResource {
       }
 
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -130,7 +132,8 @@ export class RecordResource {
       const result = await this.apiClient.insertManyRecords(
         records,
         tableInfo.id,
-        options
+        options,
+        dbId
       );
 
       if (isErrorResponse(result)) {
@@ -154,11 +157,12 @@ export class RecordResource {
    */
   async get(
     tableName: string,
-    recordId: string
+    recordId: string,
+    dbId?: string
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -168,7 +172,12 @@ export class RecordResource {
         };
       }
 
-      const result = await this.apiClient.getRecord(recordId, tableInfo.id);
+      const result = await this.apiClient.getRecord(
+        recordId,
+        tableInfo.id,
+        { fields: undefined },
+        dbId
+      );
 
       if (isErrorResponse(result)) {
         return result;
@@ -191,11 +200,12 @@ export class RecordResource {
    */
   async list(
     tableName: string,
-    options: RecordQueryOptions = {}
+    options: RecordQueryOptions = {},
+    dbId?: string
   ): Promise<BolticListResponse<RecordWithId> | BolticErrorResponse> {
     try {
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -207,7 +217,7 @@ export class RecordResource {
 
       // Include table_id in the request payload
       const requestOptions = { ...options, table_id: tableInfo.id };
-      const result = await this.apiClient.listRecords(requestOptions);
+      const result = await this.apiClient.listRecords(requestOptions, dbId);
 
       if (isErrorResponse(result)) {
         return result;
@@ -230,11 +240,12 @@ export class RecordResource {
    */
   async update(
     tableName: string,
-    options: RecordUpdateOptions
+    options: RecordUpdateOptions,
+    dbId?: string
   ): Promise<BolticListResponse<RecordWithId> | BolticErrorResponse> {
     try {
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -246,7 +257,7 @@ export class RecordResource {
 
       // Include table_id in the request payload
       const requestOptions = { ...options, table_id: tableInfo.id };
-      const result = await this.apiClient.updateRecords(requestOptions);
+      const result = await this.apiClient.updateRecords(requestOptions, dbId);
 
       if (isErrorResponse(result)) {
         return result;
@@ -270,11 +281,12 @@ export class RecordResource {
   async updateById(
     tableName: string,
     recordId: string,
-    data: RecordData
+    data: RecordData,
+    dbId?: string
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -292,7 +304,8 @@ export class RecordResource {
       };
       const result = await this.apiClient.updateRecordById(
         recordId,
-        requestOptions
+        requestOptions,
+        dbId
       );
 
       if (isErrorResponse(result)) {
@@ -316,11 +329,12 @@ export class RecordResource {
    */
   async delete(
     tableName: string,
-    options: RecordDeleteOptions
+    options: RecordDeleteOptions,
+    dbId?: string
   ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -332,7 +346,7 @@ export class RecordResource {
 
       // Include table_id in the request payload
       const requestOptions = { ...options, table_id: tableInfo.id };
-      const result = await this.apiClient.deleteRecords(requestOptions);
+      const result = await this.apiClient.deleteRecords(requestOptions, dbId);
 
       if (isErrorResponse(result)) {
         return result;
@@ -355,11 +369,12 @@ export class RecordResource {
    */
   async deleteById(
     tableName: string,
-    recordId: string
+    recordId: string,
+    dbId?: string
   ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -369,9 +384,13 @@ export class RecordResource {
         };
       }
 
-      const result = await this.apiClient.deleteRecordById(recordId, {
-        table_id: tableInfo.id,
-      });
+      const result = await this.apiClient.deleteRecordById(
+        recordId,
+        {
+          table_id: tableInfo.id,
+        },
+        dbId
+      );
 
       if (isErrorResponse(result)) {
         return result;
@@ -393,12 +412,13 @@ export class RecordResource {
    * Helper method to get table information by name
    */
   private async getTableInfo(
-    tableName: string
+    tableName: string,
+    dbId?: string
   ): Promise<{ id: string; snapshot_url?: string } | null> {
     try {
       // Use the table resource to find the table by name
       const tableResource = new TableResource(this.client);
-      const tableResult = await tableResource.findByName(tableName);
+      const tableResult = await tableResource.findByName(tableName, dbId);
 
       if (tableResult.data) {
         return {

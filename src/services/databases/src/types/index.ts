@@ -7,7 +7,7 @@ export * from './common/operations';
 export * from './common/responses';
 
 // API types
-// export * from './api/database';
+export * from './api/database';
 export * from './api/record';
 export * from './api/sql';
 

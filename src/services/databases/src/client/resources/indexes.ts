@@ -37,19 +37,23 @@ export class IndexResource {
     this.tableResource = new TableResource(client);
   }
 
-  private async resolveTableId(tableName: string): Promise<string> {
-    const tableResult = await this.tableResource.findByName(tableName);
+  private async resolveTableId(
+    tableName: string,
+    dbId?: string
+  ): Promise<string> {
+    const tableResult = await this.tableResource.findByName(tableName, dbId);
     if (!tableResult.data) throw new Error(`Table not found: ${tableName}`);
     return tableResult.data.id;
   }
 
   async addIndex(
     tableName: string,
-    request: AddIndexRequest
+    request: AddIndexRequest,
+    dbId?: string
   ): Promise<BolticSuccessResponse<AddIndexResponse> | BolticErrorResponse> {
     try {
-      const tableId = await this.resolveTableId(tableName);
-      return await this.apiClient.addIndex(tableId, request);
+      const tableId = await this.resolveTableId(tableName, dbId);
+      return await this.apiClient.addIndex(tableId, request, dbId);
     } catch (error) {
       return {
         error: {
@@ -63,11 +67,12 @@ export class IndexResource {
 
   async listIndexes(
     tableName: string,
-    query: ListIndexesQuery
+    query: ListIndexesQuery,
+    dbId?: string
   ): Promise<BolticSuccessResponse<ListIndexesResponse> | BolticErrorResponse> {
     try {
-      const tableId = await this.resolveTableId(tableName);
-      return await this.apiClient.listIndexes(tableId, query);
+      const tableId = await this.resolveTableId(tableName, dbId);
+      return await this.apiClient.listIndexes(tableId, query, dbId);
     } catch (error) {
       return {
         error: {
@@ -81,12 +86,13 @@ export class IndexResource {
 
   async deleteIndex(
     tableName: string,
-    indexName: string
+    indexName: string,
+    dbId?: string
   ): Promise<BolticSuccessResponse<DeleteIndexResponse> | BolticErrorResponse> {
     try {
-      const tableId = await this.resolveTableId(tableName);
+      const tableId = await this.resolveTableId(tableName, dbId);
       const request: DeleteIndexRequest = { index_name: indexName };
-      return await this.apiClient.deleteIndex(tableId, request);
+      return await this.apiClient.deleteIndex(tableId, request, dbId);
     } catch (error) {
       return {
         error: {

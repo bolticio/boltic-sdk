@@ -1,4 +1,7 @@
-import { TablesApiClient } from '../../api/clients/tables-api-client';
+import {
+  TablesApiClient,
+  TableListOptions,
+} from '../../api/clients/tables-api-client';
 import { ApiError, ValidationError } from '../../errors';
 import {
   FieldDefinition,
@@ -40,7 +43,8 @@ export class TableResource extends BaseResource {
    * Create a new table
    */
   async create(
-    data: TableCreateRequest
+    data: TableCreateRequest,
+    dbId?: string
   ): Promise<BolticSuccessResponse<TableCreateResponse>> {
     try {
       // Process fields with defaults if any are provided
@@ -49,7 +53,10 @@ export class TableResource extends BaseResource {
         processedData.fields = await this.processFieldsDefaults(data.fields);
       }
 
-      const result = await this.tablesApiClient.createTable(processedData);
+      const result = await this.tablesApiClient.createTable(
+        processedData,
+        dbId ? { db_id: dbId } : {}
+      );
 
       if (isErrorResponse(result)) {
         throw new ApiError(
@@ -117,7 +124,11 @@ export class TableResource extends BaseResource {
   /**
    * Transform SDK TableQueryOptions to API request format
    */
-  private transformTableQueryToApiRequest(options: TableQueryOptions): unknown {
+  private transformTableQueryToApiRequest(options: TableQueryOptions): {
+    page: { page_no: number; page_size: number };
+    filters: Array<{ field: string; operator: string; values: unknown[] }>;
+    sort: Array<{ field: string; direction: string }>;
+  } {
     const apiRequest: {
       page: { page_no: number; page_size: number };
       filters: Array<{ field: string; operator: string; values: unknown[] }>;
@@ -165,15 +176,23 @@ export class TableResource extends BaseResource {
    * Find all tables with optional filtering
    */
   async findAll(
-    options: TableQueryOptions = {}
+    options: TableQueryOptions = {},
+    dbId?: string
   ): Promise<ApiResponse<TableRecord>> {
     try {
       // Transform SDK format to API format
       const apiRequest = this.transformTableQueryToApiRequest(options);
 
-      const result = await this.tablesApiClient.listTables(
-        apiRequest as unknown as TableQueryOptions
-      );
+      // Create request payload matching API format (not TableListOptions SDK format)
+      const requestPayload = {
+        page: apiRequest.page,
+        filters: apiRequest.filters,
+        sort: apiRequest.sort,
+        ...(dbId && { db_id: dbId }),
+        ...(options.fields && { fields: options.fields }),
+      } as unknown as TableListOptions;
+
+      const result = await this.tablesApiClient.listTables(requestPayload);
 
       if (isErrorResponse(result)) {
         throw new ApiError(
@@ -195,7 +214,8 @@ export class TableResource extends BaseResource {
    * Find a single table by ID or name
    */
   async findOne(
-    options: TableQueryOptions
+    options: TableQueryOptions,
+    dbId?: string
   ): Promise<
     | BolticSuccessResponse<TableRecord | null>
     | import('../../types/common/responses').BolticErrorResponse
@@ -210,7 +230,8 @@ export class TableResource extends BaseResource {
       if (options.where?.id) {
         // Find by ID
         const result = await this.tablesApiClient.getTable(
-          options.where.id as string
+          options.where.id as string,
+          dbId ? { db_id: dbId } : {}
         );
 
         if (isErrorResponse(result)) {
@@ -242,9 +263,15 @@ export class TableResource extends BaseResource {
           sort: [],
         };
 
-        const listResult = await this.tablesApiClient.listTables(
-          apiRequest as unknown as TableQueryOptions
-        );
+        const requestPayload = {
+          page: apiRequest.page,
+          filters: apiRequest.filters,
+          sort: apiRequest.sort,
+          ...(dbId && { db_id: dbId }),
+        } as unknown as TableListOptions;
+
+        const listResult =
+          await this.tablesApiClient.listTables(requestPayload);
 
         if (isErrorResponse(listResult)) {
           throw new ApiError(
@@ -273,24 +300,26 @@ export class TableResource extends BaseResource {
    * Find a single table by name
    */
   async findByName(
-    name: string
+    name: string,
+    dbId?: string
   ): Promise<
     | BolticSuccessResponse<TableRecord | null>
     | import('../../types/common/responses').BolticErrorResponse
   > {
-    return this.findOne({ where: { name } });
+    return this.findOne({ where: { name } }, dbId);
   }
 
   /**
    * Find a single table by ID
    */
   async findById(
-    id: string
+    id: string,
+    dbId?: string
   ): Promise<
     | BolticSuccessResponse<TableRecord | null>
     | import('../../types/common/responses').BolticErrorResponse
   > {
-    return this.findOne({ where: { id } });
+    return this.findOne({ where: { id } }, dbId);
   }
 
   /**
@@ -298,14 +327,15 @@ export class TableResource extends BaseResource {
    */
   async update(
     name: string,
-    data: TableUpdateRequest
+    data: TableUpdateRequest,
+    dbId?: string
   ): Promise<
     | BolticSuccessResponse<TableRecord>
     | import('../../types/common/responses').BolticErrorResponse
   > {
     try {
       // First find the table to get its ID
-      const tableResult = await this.findByName(name);
+      const tableResult = await this.findByName(name, dbId);
 
       if (!tableResult.data) {
         throw new ApiError(`Table '${name}' not found`, 404);
@@ -321,7 +351,7 @@ export class TableResource extends BaseResource {
 
       const result = await this.tablesApiClient.updateTable(
         tableResult.data.id,
-        data
+        dbId ? { ...data, db_id: dbId } : data
       );
 
       if (isErrorResponse(result)) {
@@ -344,14 +374,15 @@ export class TableResource extends BaseResource {
    * Delete a table by name
    */
   async delete(
-    name: string
+    name: string,
+    dbId?: string
   ): Promise<
     | BolticSuccessResponse<{ message: string }>
     | import('../../types/common/responses').BolticErrorResponse
   > {
     try {
       // First find the table to get its ID
-      const tableResult = await this.findByName(name);
+      const tableResult = await this.findByName(name, dbId);
 
       if (!tableResult.data) {
         throw new ApiError(`Table '${name}' not found`, 404);
@@ -366,7 +397,8 @@ export class TableResource extends BaseResource {
       }
 
       const result = await this.tablesApiClient.deleteTable(
-        tableResult.data.id
+        tableResult.data.id,
+        dbId ? { db_id: dbId } : {}
       );
 
       if (isErrorResponse(result)) {
@@ -390,12 +422,17 @@ export class TableResource extends BaseResource {
    */
   async rename(
     oldName: string,
-    newName: string
+    newName: string,
+    dbId?: string
   ): Promise<BolticSuccessResponse<TableRecord>> {
     try {
-      const result = await this.update(oldName, {
-        name: newName,
-      });
+      const result = await this.update(
+        oldName,
+        {
+          name: newName,
+        },
+        dbId
+      );
       // update throws on error, so cast to success
       return result as BolticSuccessResponse<TableRecord>;
     } catch (error) {
@@ -408,15 +445,22 @@ export class TableResource extends BaseResource {
   /**
    * Set table access permissions
    */
-  async setAccess(request: {
-    table_name: string;
-    is_shared: boolean;
-  }): Promise<BolticSuccessResponse<TableRecord>> {
+  async setAccess(
+    request: {
+      table_name: string;
+      is_shared: boolean;
+    },
+    dbId?: string
+  ): Promise<BolticSuccessResponse<TableRecord>> {
     try {
       // Update the table with the new access settings
-      const result = await this.update(request.table_name, {
-        is_shared: request.is_shared,
-      });
+      const result = await this.update(
+        request.table_name,
+        {
+          is_shared: request.is_shared,
+        },
+        dbId
+      );
       // update throws on error, so cast to success
       return result as BolticSuccessResponse<TableRecord>;
     } catch (error) {

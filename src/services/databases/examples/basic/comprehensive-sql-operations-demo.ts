@@ -11,13 +11,17 @@
  * - Real API integration with comprehensive examples
  * - Table creation and cleanup
  *
+ * Usage:
+ * - Run without arguments to use the default database (backward compatible)
+ * - Run with --use-custom-db to create and use a custom database for all operations
+ *
  * Prerequisites:
  * - Set BOLTIC_API_KEY environment variable
  * - Ensure you have proper API access
  */
 
 import * as dotenv from 'dotenv';
-import { BolticClient, FieldDefinition } from '../../src';
+import { BolticClient, FieldDefinition, isErrorResponse  } from '../../src';
 import { SqlTestClient } from '../../src/testing/sql-test-client';
 import { StreamingUtils } from '../../src/utils/streaming/async-iterable';
 
@@ -351,7 +355,6 @@ async function createTestTables(client: BolticClient) {
         await client.columns.create(tableConfig.name, column);
         console.log(`   ✅ Column "${column.name}" added`);
       }
-
       return table;
     }, `Creating table ${tableConfig.name}`);
 
@@ -848,9 +851,73 @@ async function runPerformanceBenchmark(client: BolticClient) {
   }
 }
 
+// Custom database state
+let customDatabaseName: string | undefined;
+let customDatabaseInternalName: string | undefined;
+let customDatabaseId: string | undefined;
+
+async function setupCustomDatabase(client: BolticClient): Promise<void> {
+  separator('SETTING UP CUSTOM DATABASE');
+  
+  customDatabaseName = `sql-demo-custom-db-${Date.now()}`;
+  
+  colorLog('yellow', `📝 Creating custom database "${customDatabaseName}"`);
+  
+  const createResult = await client.databases.create({
+    db_name: customDatabaseName,
+    db_internal_name: customDatabaseName.replace(/-/g, '_'),
+    resource_id: 'boltic',
+  });
+  
+  if (isErrorResponse(createResult)) {
+    colorLog('red', `❌ Failed to create custom database: ${createResult.error.message}`);
+    throw new Error('Cannot proceed without custom database');
+  }
+  
+  customDatabaseInternalName = createResult.data.db_internal_name;
+  customDatabaseId = createResult.data.id;
+  
+  colorLog('green', '✅ Custom database created successfully');
+  console.log(`   Database ID: ${createResult.data.id}`);
+  console.log(`   Database Name: ${createResult.data.db_name}`);
+  console.log(`   Database Internal Name (slug): ${customDatabaseInternalName}`);
+  
+  // Switch to the custom database
+  colorLog('yellow', `📝 Switching to custom database`);
+  await client.useDatabase(customDatabaseInternalName);
+  colorLog('green', '✅ Switched to custom database');
+  console.log(`   Current Database Slug: ${customDatabaseInternalName}`);
+}
+
+async function deleteCustomDatabase(client: BolticClient): Promise<void> {
+  if (!customDatabaseInternalName) return;
+  
+  try {
+    colorLog('yellow', `🗑️  Deleting custom database: ${customDatabaseName} (internal name: ${customDatabaseInternalName})`);
+    const deleteResult = await client.databases.delete(customDatabaseInternalName);
+    
+    if (isErrorResponse(deleteResult)) {
+      colorLog('yellow', `   Warning: Failed to delete custom database: ${deleteResult.error.message}`);
+      return;
+    }
+    
+    colorLog('green', '✅ Custom database deleted successfully');
+    
+    // Clear references
+    customDatabaseId = undefined;
+    customDatabaseInternalName = undefined;
+    customDatabaseName = undefined;
+  } catch (error) {
+    colorLog('yellow', `   Warning: Error deleting custom database: ${(error as Error).message}`);
+  }
+}
+
 async function runComprehensiveSQLDemo() {
   colorLog('bright', '🚀 BOLTIC SQL SDK - COMPREHENSIVE DEMO');
   colorLog('bright', '=====================================');
+
+  // Check for command line argument
+  const useCustomDb = process.argv.includes('--use-custom-db');
 
   // Validate environment
   const apiKey = process.env.BOLTIC_API_KEY;
@@ -875,7 +942,7 @@ async function runComprehensiveSQLDemo() {
     testClient = new SqlTestClient(client.getSqlResource());
 
     colorLog('green', '✅ Boltic SQL client initialized successfully');
-    colorLog('blue', `🌍 Connected to ${DEMO_CONFIG.environment} environment`);
+    colorLog('blue', `🌍 Connected to ${client.getEnvironment()} environment`);
   } catch (error) {
     colorLog(
       'red',
@@ -885,6 +952,15 @@ async function runComprehensiveSQLDemo() {
   }
 
   try {
+    // Setup custom database if requested
+    if (useCustomDb) {
+      await setupCustomDatabase(client);
+      colorLog('cyan', '\n📋 All subsequent operations will use the custom database');
+    } else {
+      colorLog('cyan', '\n📋 Using default database (backward compatible mode)');
+      console.log("   All operations will use the account's default database");
+    }
+
     // Setup test environment
     await createTestTables(client);
     await populateTestData(client);
@@ -917,13 +993,34 @@ async function runComprehensiveSQLDemo() {
   } finally {
     // Always cleanup, even if demo fails
     await cleanupTestTables(client);
+    
+    // Delete custom database if it was created
+    if (useCustomDb && customDatabaseId) {
+      await deleteCustomDatabase(client);
+    }
   }
 }
 
 // Run the demo
 if (require.main === module) {
-  runComprehensiveSQLDemo().catch((error) => {
+  const useCustomDb = process.argv.includes('--use-custom-db');
+  
+  if (useCustomDb) {
+    console.log('📋 Running with custom database (demonstrating database switching)');
+  }
+  
+  runComprehensiveSQLDemo().catch(async (error) => {
     colorLog('red', `💥 Unhandled error: ${error.message}`);
+    // Try to run cleanup even if main demo fails
+    try {
+      const apiKey = process.env.BOLTIC_API_KEY;
+      if (apiKey && useCustomDb) {
+        const client = new BolticClient(apiKey, DEMO_CONFIG);
+        await deleteCustomDatabase(client);
+      }
+    } catch (cleanupError) {
+      colorLog('yellow', `   Warning: Cleanup also failed: ${(cleanupError as Error).message}`);
+    }
     process.exit(1);
   });
 }

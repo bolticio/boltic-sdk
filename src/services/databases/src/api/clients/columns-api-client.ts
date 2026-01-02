@@ -9,6 +9,7 @@ import { FieldDefinition } from '../../types/api/table';
 import type { Environment, Region } from '../../types/config/environment';
 import { REGION_CONFIGS } from '../../types/config/environment';
 import { filterArrayFields, filterObjectFields } from '../../utils/common';
+import { addDbIdToUrl } from '../../utils/database/db-context';
 import { createHttpAdapter } from '../../utils/http';
 import { HttpAdapter } from '../../utils/http/adapter';
 import { buildEndpointPath, COLUMN_ENDPOINTS } from '../endpoints/columns';
@@ -31,6 +32,7 @@ export interface ColumnsApiClientConfig {
 export interface ColumnListOptions extends ColumnQueryOptions {
   page?: number;
   pageSize?: number;
+  db_id?: string;
 }
 
 // API request format interfaces
@@ -203,7 +205,10 @@ export class ColumnsApiClient {
   ): Promise<BolticListResponse<ColumnDetails> | BolticErrorResponse> {
     try {
       const endpoint = COLUMN_ENDPOINTS.list;
-      const url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}?no_cache=true`;
+      let url = `${this.baseURL}${buildEndpointPath(endpoint, { table_id: tableId })}?no_cache=true`;
+
+      // Add db_id query parameter if provided on options
+      url = addDbIdToUrl(url, options.db_id);
 
       const response = await this.httpAdapter.request({
         url,
