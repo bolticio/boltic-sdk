@@ -331,7 +331,9 @@ export class DatabasesApiClient {
     // Type guard for error with error property
     const hasErrorProperty = (
       err: unknown
-    ): err is { error: { code?: string | number; message?: string; meta?: string[] } } => {
+    ): err is {
+      error: { code?: string | number; message?: string; meta?: string[] };
+    } => {
       return (
         typeof err === 'object' &&
         err !== null &&
@@ -346,7 +348,9 @@ export class DatabasesApiClient {
       err: unknown
     ): err is {
       response: {
-        data: { error: { code?: string | number; message?: string; meta?: string[] } };
+        data: {
+          error: { code?: string | number; message?: string; meta?: string[] };
+        };
       };
     } => {
       return (
@@ -356,14 +360,18 @@ export class DatabasesApiClient {
         typeof (err as { response: unknown }).response === 'object' &&
         (err as { response: unknown }).response !== null &&
         'data' in (err as { response: { data?: unknown } }).response &&
-        typeof (err as { response: { data: unknown } }).response.data === 'object' &&
+        typeof (err as { response: { data: unknown } }).response.data ===
+          'object' &&
         (err as { response: { data: unknown } }).response.data !== null &&
-        'error' in (err as { response: { data: { error?: unknown } } }).response.data
+        'error' in
+          (err as { response: { data: { error?: unknown } } }).response.data
       );
     };
 
     // Type guard for standard Error
-    const isStandardError = (err: unknown): err is Error & { code?: string } => {
+    const isStandardError = (
+      err: unknown
+    ): err is Error & { code?: string } => {
       return err instanceof Error;
     };
 
@@ -391,7 +399,9 @@ export class DatabasesApiClient {
             typeof errorWithResponse.response.data.error.code === 'number'
               ? String(errorWithResponse.response.data.error.code)
               : errorWithResponse.response.data.error.code || 'UNKNOWN_ERROR',
-          message: errorWithResponse.response.data.error.message || 'An error occurred',
+          message:
+            errorWithResponse.response.data.error.message ||
+            'An error occurred',
           meta: errorWithResponse.response.data.error.meta || [],
         },
       };

@@ -30,6 +30,7 @@ import {
     FieldDefinition,
     isErrorResponse,
     ListIndexesQuery,
+    type Environment,
 } from '../../src';
 import { createFilter } from '../../src/utils/filters/filter-mapper';
 
@@ -43,7 +44,7 @@ const DEMO_CONFIG = {
   region: 'asia-south1' as const,
   tableName: 'comprehensive-demo-table',
   backupTableName: 'comprehensive-demo-table-backup',
-  environment: 'uat',
+  environment: 'uat' as Environment,
 };
 
 // All supported column types with their properties
@@ -3027,8 +3028,25 @@ async function main(): Promise<void> {
 }
 
 // Run the demo if this file is executed directly
-// Check if this is the main module (ES module equivalent of require.main === module)
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Check if this is the main module (supports both CommonJS and ES modules)
+let isMainModule = false;
+if (typeof require !== 'undefined' && require.main === module) {
+  isMainModule = true;
+} else if (typeof process !== 'undefined' && process.argv[1]) {
+  // ES module check - compare file paths
+  try {
+    // @ts-ignore - import.meta may not be available in all contexts
+    const currentUrl = typeof import.meta !== 'undefined' ? import.meta.url : '';
+    if (currentUrl && currentUrl.endsWith(process.argv[1])) {
+      isMainModule = true;
+    }
+  } catch {
+    // Fallback: if we can't check, assume it's the main module
+    isMainModule = true;
+  }
+}
+
+if (isMainModule) {
   main().catch(async (error) => {
     console.error('❌ Demo failed:', error);
     // Try to run cleanup even if main demo fails

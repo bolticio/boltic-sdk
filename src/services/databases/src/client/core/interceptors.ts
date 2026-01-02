@@ -74,7 +74,9 @@ export class InterceptorManagerImpl implements InterceptorManager {
     response: HttpResponse
   ): Promise<HttpResponse> {
     let result = response;
-    for (const { fulfilled } of Array.from(this.responseInterceptors.values())) {
+    for (const { fulfilled } of Array.from(
+      this.responseInterceptors.values()
+    )) {
       if (fulfilled) {
         result = await fulfilled(result);
       }

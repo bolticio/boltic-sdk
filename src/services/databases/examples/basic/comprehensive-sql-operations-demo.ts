@@ -21,7 +21,7 @@
  */
 
 import * as dotenv from 'dotenv';
-import { BolticClient, FieldDefinition, isErrorResponse } from '../../src';
+import { BolticClient, FieldDefinition, isErrorResponse, type Environment } from '../../src';
 import { SqlTestClient } from '../../src/testing/sql-test-client';
 import { StreamingUtils } from '../../src/utils/streaming/async-iterable';
 
@@ -35,7 +35,7 @@ const DEMO_CONFIG = {
   region: 'asia-south1' as const,
   maxRetries: 3,
   retryDelay: 1000,
-  environment: 'uat',
+  environment: 'uat' as Environment,
 };
 
 // Test table configuration

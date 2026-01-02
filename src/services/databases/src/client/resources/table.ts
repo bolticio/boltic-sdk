@@ -1,4 +1,7 @@
-import { TablesApiClient, TableListOptions } from '../../api/clients/tables-api-client';
+import {
+  TablesApiClient,
+  TableListOptions,
+} from '../../api/clients/tables-api-client';
 import { ApiError, ValidationError } from '../../errors';
 import {
   FieldDefinition,
@@ -267,7 +270,8 @@ export class TableResource extends BaseResource {
           ...(dbId && { db_id: dbId }),
         } as unknown as TableListOptions;
 
-        const listResult = await this.tablesApiClient.listTables(requestPayload);
+        const listResult =
+          await this.tablesApiClient.listTables(requestPayload);
 
         if (isErrorResponse(listResult)) {
           throw new ApiError(
