@@ -116,6 +116,99 @@ const currentDb = client.getCurrentDatabase();
 console.log('Current database:', currentDb);
 ```
 
+## Custom Databases
+
+By default, all `tables`, `columns`, `records`, `indexes`, and `sql` operations run against your **default Boltic Cloud database**. You can create additional databases and switch between them using `client.databases` + `client.useDatabase()`.
+
+### Creating a Database
+
+```typescript
+const { data: database, error } = await client.databases.create({
+  db_name: 'My Custom Database',
+  // db_internal_name: 'my_custom_db', // optional; auto-derived if omitted
+  // resource_id: 'boltic' // optional (default). For custom resources, use a connector id starting with 'btb-'
+});
+
+if (error) {
+  console.error('Failed to create database:', error.message);
+} else {
+  console.log('Created database:', database.db_internal_name);
+}
+```
+
+### Listing Databases
+
+```typescript
+const { data: databases, error } = await client.databases.findAll({
+  page: { page_no: 1, page_size: 10 },
+  sort: [{ field: 'db_name', direction: 'asc' }],
+  // connector_id: 'btb-abc123xyz', // optional: list databases for a custom resource
+});
+
+if (!error) {
+  databases.forEach((db) =>
+    console.log(`${db.db_name} (${db.db_internal_name})`)
+  );
+}
+```
+
+### Getting a Database (or Default Database)
+
+```typescript
+const { data: db, error } = await client.databases.findOne('my_custom_db');
+const { data: defaultDb } = await client.databases.getDefault();
+```
+
+### Updating a Database (Display Name)
+
+```typescript
+const result = await client.databases.update('my_custom_db', {
+  db_name: 'Updated Database Name',
+});
+```
+
+### Deleting a Database (Async) + Polling Status
+
+```typescript
+const { data: job, error } = await client.databases.delete('old_db_slug');
+
+if (error) {
+  console.error('Failed to delete database:', error.message);
+} else {
+  console.log('Deletion job started:', job.job_id);
+
+  const { data: status } = await client.databases.pollDeleteStatus(job.job_id);
+  console.log('Deletion status:', status.status, '-', status.message);
+}
+```
+
+### Listing Database Jobs
+
+```typescript
+const { data: jobs } = await client.databases.listJobs({
+  deleted_by_me: true,
+  page: { page_no: 1, page_size: 20 },
+  sort: [{ field: 'created_at', direction: 'desc' }],
+});
+```
+
+### Switching Database Context
+
+```typescript
+// Switch to a custom database (by internal name / slug)
+await client.useDatabase('my_custom_db');
+
+// All subsequent operations target this database
+await client.tables.findAll();
+await client.records.findAll('users');
+
+// Inspect current context (null means default database)
+console.log(client.getCurrentDatabase());
+
+// Switch back to default database
+await client.useDatabase();
+```
+
 ## Table Operations
 
 ### Reserved Columns
@@ -925,6 +1018,19 @@ main().catch(console.error);
 ### Core Client
 
 - **`createClient(apiKey: string, options?: ClientOptions)`**: Initialize the Boltic client
+- **`client.useDatabase(dbInternalName?: string)`**: Switch the active database context (omit/reset to use default database)
+- **`client.getCurrentDatabase()`**: Get the current database context (`null` means default database)
+
+### Databases (Custom Databases)
+
+- **`client.databases.create(data)`**: Create a new database
+- **`client.databases.findAll(options?)`**: List active databases with optional pagination/sorting/filtering
+- **`client.databases.findOne(dbInternalName, options?)`**: Get a database by internal name (slug)
+- **`client.databases.getDefault()`**: Get the default database
+- **`client.databases.update(dbInternalName, data)`**: Update database display name
+- **`client.databases.delete(dbInternalName)`**: Delete a database (starts an async job; default database cannot be deleted)
+- **`client.databases.listJobs(options?)`**: List database jobs (primarily deletion jobs)
+- **`client.databases.pollDeleteStatus(jobId)`**: Poll status of an async deletion job
 
 ### Tables
 
