@@ -30,7 +30,6 @@ const DEMO_CONFIG = {
   debug: true,
   timeout: 30000,
   region: 'asia-south1' as const,
-  environment: 'uat' as const,
 };
 
 // Demo database names

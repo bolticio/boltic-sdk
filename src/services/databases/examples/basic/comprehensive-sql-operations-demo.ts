@@ -21,7 +21,7 @@
  */
 
 import * as dotenv from 'dotenv';
-import { BolticClient, FieldDefinition, isErrorResponse, type Environment } from '../../src';
+import { BolticClient, FieldDefinition, isErrorResponse  } from '../../src';
 import { SqlTestClient } from '../../src/testing/sql-test-client';
 import { StreamingUtils } from '../../src/utils/streaming/async-iterable';
 
@@ -35,7 +35,6 @@ const DEMO_CONFIG = {
   region: 'asia-south1' as const,
   maxRetries: 3,
   retryDelay: 1000,
-  environment: 'uat' as Environment,
 };
 
 // Test table configuration
@@ -943,7 +942,7 @@ async function runComprehensiveSQLDemo() {
     testClient = new SqlTestClient(client.getSqlResource());
 
     colorLog('green', '✅ Boltic SQL client initialized successfully');
-    colorLog('blue', `🌍 Connected to ${DEMO_CONFIG.environment} environment`);
+    colorLog('blue', `🌍 Connected to ${client.getEnvironment()} environment`);
   } catch (error) {
     colorLog(
       'red',

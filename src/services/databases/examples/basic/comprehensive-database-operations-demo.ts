@@ -30,7 +30,6 @@ import {
     FieldDefinition,
     isErrorResponse,
     ListIndexesQuery,
-    type Environment,
 } from '../../src';
 import { createFilter } from '../../src/utils/filters/filter-mapper';
 
@@ -43,8 +42,7 @@ const DEMO_CONFIG = {
   timeout: 30000,
   region: 'asia-south1' as const,
   tableName: 'comprehensive-demo-table',
-  backupTableName: 'comprehensive-demo-table-backup',
-  environment: 'uat' as Environment,
+  backupTableName: 'comprehensive-demo-table-backup'
 };
 
 // All supported column types with their properties
@@ -255,8 +253,7 @@ class ComprehensiveDatabaseOperationsDemo {
     this.client = new BolticClient(apiKey, {
       debug: DEMO_CONFIG.debug,
       timeout: DEMO_CONFIG.timeout,
-      region: DEMO_CONFIG.region,
-      environment: DEMO_CONFIG.environment,
+      region: DEMO_CONFIG.region
     });
 
     this.createdTableName = DEMO_CONFIG.tableName;
