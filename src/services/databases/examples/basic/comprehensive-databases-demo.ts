@@ -529,6 +529,20 @@ class ComprehensiveDatabasesDemo {
     await this.client.useDatabase(primarySlug);
     console.log(`📤 Current database slug: ${primarySlug}`);
 
+    // Verify we can create a table with encrypted columns in this database
+    console.log('\n📝 Input: Creating a table with encrypted columns in switched database');
+    const tableRes = await this.client.tables.create({
+      name: 'database_switch_test',
+      fields: [
+        { name: 'sensitive_info', type: 'encrypted', show_decrypted: false }
+      ]
+    });
+    if (!isErrorResponse(tableRes)) {
+      console.log('✅ Successfully created table with encrypted column across DB switch');
+      // cleanup
+      await this.client.tables.delete('database_switch_test');
+    }
+
     console.log(
       '\n📝 Input: Switch to second database by internal name (slug)'
     );
@@ -557,7 +571,7 @@ class ComprehensiveDatabasesDemo {
     // Use the last database for deletion demo
     const dbInternalName =
       this.createdDatabaseInternalNames[
-        this.createdDatabaseInternalNames.length - 1
+      this.createdDatabaseInternalNames.length - 1
       ];
 
     console.log(

@@ -194,7 +194,7 @@ export class RecordsApiClient {
   async getRecord(
     recordId: string,
     tableId: string,
-    options: { fields?: string[] } = {},
+    options: { fields?: string[]; show_decrypted?: boolean } = {},
     dbId?: string
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
@@ -209,6 +209,16 @@ export class RecordsApiClient {
         table_id: tableId,
         record_id: recordId,
       })}`;
+
+      const queryParams = new URLSearchParams();
+      if (options.show_decrypted) {
+        queryParams.append('show_decrypted', 'true');
+      }
+
+      if (queryParams.toString()) {
+        url += `?${queryParams.toString()}`;
+      }
+
       url = addDbIdToUrl(url, dbId);
 
       const response = await this.httpAdapter.request({
@@ -284,7 +294,8 @@ export class RecordsApiClient {
     dbId?: string
   ): Promise<BolticListResponse<RecordWithId> | BolticErrorResponse> {
     try {
-      const { table_id, set, filters, fields, ...rest } = request;
+      const { table_id, set, filters, fields, show_decrypted, ...rest } =
+        request;
 
       if (!table_id) {
         return this.formatErrorResponse(
@@ -306,6 +317,16 @@ export class RecordsApiClient {
 
       const endpoint = RECORD_ENDPOINTS.update;
       let url = `${this.baseURL}${buildRecordEndpointPath(endpoint, { table_id })}`;
+
+      const queryParams = new URLSearchParams();
+      if (show_decrypted) {
+        queryParams.append('show_decrypted', 'true');
+      }
+
+      if (queryParams.toString()) {
+        url += `?${queryParams.toString()}`;
+      }
+
       url = addDbIdToUrl(url, dbId);
 
       const response = await this.httpAdapter.request({
@@ -340,7 +361,7 @@ export class RecordsApiClient {
     dbId?: string
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
-      const { table_id, ...updateOptions } = request;
+      const { table_id, show_decrypted, ...updateOptions } = request;
 
       if (!table_id) {
         return this.formatErrorResponse(
@@ -353,6 +374,16 @@ export class RecordsApiClient {
         record_id: recordId,
         table_id,
       })}`;
+
+      const queryParams = new URLSearchParams();
+      if (show_decrypted) {
+        queryParams.append('show_decrypted', 'true');
+      }
+
+      if (queryParams.toString()) {
+        url += `?${queryParams.toString()}`;
+      }
+
       url = addDbIdToUrl(url, dbId);
 
       const response = await this.httpAdapter.request({

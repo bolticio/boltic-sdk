@@ -60,6 +60,7 @@ export enum FieldTypeEnum {
   VECTOR = 'vector',
   SPARSEVECTOR = 'sparsevec',
   HALFVECTOR = 'halfvec',
+  ENCRYPTED = 'encrypted',
 }
 
 // Allowed field type conversions
@@ -77,6 +78,7 @@ export const ALLOWED_FIELD_TYPE_CONVERSIONS = {
     FieldTypeEnum.VECTOR,
     FieldTypeEnum.SPARSEVECTOR,
     FieldTypeEnum.HALFVECTOR,
+    FieldTypeEnum.ENCRYPTED,
   ],
   [FieldTypeEnum.EMAIL]: [
     FieldTypeEnum.TEXT,
@@ -201,6 +203,7 @@ export const ALLOWED_FIELD_TYPE_CONVERSIONS = {
     FieldTypeEnum.SPARSEVECTOR,
     FieldTypeEnum.HALFVECTOR,
   ],
+  [FieldTypeEnum.ENCRYPTED]: [],
 };
 
 // Field-specific validation keys map
@@ -223,6 +226,7 @@ export const FIELD_SPECIFIC_KEYS_MAP = {
   [FieldTypeEnum.VECTOR]: ['vector_dimension'],
   [FieldTypeEnum.SPARSEVECTOR]: ['vector_dimension'],
   [FieldTypeEnum.HALFVECTOR]: ['vector_dimension'],
+  [FieldTypeEnum.ENCRYPTED]: ['show_decrypted', 'is_deterministic'],
 };
 
 export interface ColumnCreateRequest {
@@ -256,6 +260,8 @@ export interface ColumnUpdateRequest {
   time_format?: keyof typeof TimeFormatEnum;
   timezone?: string;
   vector_dimension?: number;
+  show_decrypted?: boolean;
+  is_deterministic?: boolean; // Cannot be changed once set
 }
 
 export interface ColumnRecord {
@@ -292,6 +298,8 @@ export interface ColumnDetails {
   multiple_selections?: boolean;
   phone_format?: string;
   vector_dimension?: number;
+  show_decrypted?: boolean;
+  is_deterministic?: boolean;
 }
 
 export interface ColumnQueryOptions {

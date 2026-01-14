@@ -34,6 +34,8 @@ export class ColumnHelpers {
       time_format: field.time_format as keyof typeof TimeFormatEnum,
       timezone: field.timezone,
       vector_dimension: field.vector_dimension,
+      show_decrypted: field.show_decrypted,
+      is_deterministic: field.is_deterministic,
     };
   }
 
@@ -95,6 +97,7 @@ export class ColumnHelpers {
       vector: 'Vector',
       halfvec: 'Half Vector',
       sparsevec: 'Sparse Vector',
+      encrypted: 'Encrypted',
     };
 
     return typeNames[type] || type;

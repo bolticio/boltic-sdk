@@ -9,6 +9,7 @@ export * from './common/responses';
 // API types
 export * from './api/database';
 export * from './api/record';
+export * from './api/column';
 export * from './api/sql';
 
 // SQL types

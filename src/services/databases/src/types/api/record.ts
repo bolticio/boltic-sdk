@@ -64,12 +64,14 @@ export interface RecordUpdateOptions {
   set: RecordData;
   filters: ApiFilter[] | Record<string, unknown>[];
   fields?: string[];
+  show_decrypted?: boolean;
 }
 
 export interface RecordUpdateByIdOptions {
   id: string;
   set: RecordData;
   fields?: string[];
+  show_decrypted?: boolean;
 }
 
 // Unified delete options interface that supports both record_ids and filters

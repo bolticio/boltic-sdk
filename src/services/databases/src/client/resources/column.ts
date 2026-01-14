@@ -116,6 +116,22 @@ export class ColumnResource extends BaseResource {
       processedColumn.is_indexed = false;
     }
 
+    // Set defaults for encrypted columns
+    if (processedColumn.type === 'encrypted') {
+      if (processedColumn.show_decrypted === undefined) {
+        processedColumn.show_decrypted = false;
+      }
+      if (processedColumn.is_deterministic === undefined) {
+        processedColumn.is_deterministic = false;
+      }
+      if (
+        processedColumn.default_value !== undefined &&
+        processedColumn.default_value !== null
+      ) {
+        throw new Error('Encrypted columns do not accept a default value');
+      }
+    }
+
     // Auto-generate field_order if not provided
     if (processedColumn.field_order === undefined) {
       processedColumn.field_order = await this.generateFieldOrder(tableId);

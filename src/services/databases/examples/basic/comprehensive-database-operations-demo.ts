@@ -25,11 +25,11 @@
 
 import * as dotenv from 'dotenv';
 import {
-    AddIndexRequest,
-    BolticClient,
-    FieldDefinition,
-    isErrorResponse,
-    ListIndexesQuery,
+  AddIndexRequest,
+  BolticClient,
+  FieldDefinition,
+  isErrorResponse,
+  ListIndexesQuery,
 } from '../../src';
 import { createFilter } from '../../src/utils/filters/filter-mapper';
 
@@ -187,6 +187,22 @@ const ALL_COLUMN_TYPES = [
     vector_dimension: 5,
     default_value: '{1:1,3:2,5:3}/5',
   },
+  {
+    name: 'secret_ssn',
+    type: 'encrypted' as const,
+    description: 'Sensitive SSN (masked by default)',
+    is_nullable: true,
+    show_decrypted: false,
+    is_deterministic: false,
+  },
+  {
+    name: 'secret_email',
+    type: 'encrypted' as const,
+    description: 'Encrypted email (deterministic for search)',
+    is_nullable: true,
+    show_decrypted: true,
+    is_deterministic: true,
+  },
 ];
 
 // Sample record data for each column type
@@ -204,6 +220,8 @@ const SAMPLE_RECORDS = [
     link_field: 'https://johndoe.com',
     date_time_field: '2024-01-15T10:30:00Z',
     half_vector_field: [0.1, 0.2, 0.3, 0.4, 0.5],
+    secret_ssn: '123-456-7890',
+    secret_email: 'john.doe.enc@example.com',
   },
   {
     text_field: 'Jane Smith',
@@ -218,6 +236,8 @@ const SAMPLE_RECORDS = [
     link_field: 'https://janesmith.dev',
     date_time_field: '2024-02-20T14:45:00Z',
     half_vector_field: [0.2, 0.3, 0.4, 0.5, 0.6],
+    secret_ssn: '234-567-8901',
+    secret_email: 'jane.smith.enc@example.com',
   },
   {
     text_field: 'Bob Johnson',
@@ -232,6 +252,8 @@ const SAMPLE_RECORDS = [
     link_field: 'https://bobjohnson.org',
     date_time_field: '2024-03-10T09:15:00Z',
     half_vector_field: [0.3, 0.4, 0.5, 0.6, 0.7],
+    secret_ssn: '345-678-9012',
+    secret_email: 'bob.johnson.enc@example.com',
   },
 ];
 
@@ -253,7 +275,7 @@ class ComprehensiveDatabaseOperationsDemo {
     this.client = new BolticClient(apiKey, {
       debug: DEMO_CONFIG.debug,
       timeout: DEMO_CONFIG.timeout,
-      region: DEMO_CONFIG.region
+      region: DEMO_CONFIG.region,
     });
 
     this.createdTableName = DEMO_CONFIG.tableName;
@@ -668,6 +690,9 @@ class ComprehensiveDatabaseOperationsDemo {
           updateData.date_format = 'MM-DD-YYYY';
           updateData.time_format = 'HH:mm:ss AM/PM';
           break;
+        case 'encrypted':
+          updateData.show_decrypted = true;
+          break;
       }
 
       const updateColumnResult = await this.client.columns.update(
@@ -744,8 +769,7 @@ class ComprehensiveDatabaseOperationsDemo {
       console.log(`📤 Output: Found ${columns.length} columns`);
       columns.forEach((column: any, index: number) => {
         console.log(
-          `   ${index + 1}. ${column.name} (${column.type}) - ${
-            column.description
+          `   ${index + 1}. ${column.name} (${column.type}) - ${column.description
           }`
         );
       });
@@ -840,83 +864,83 @@ class ComprehensiveDatabaseOperationsDemo {
       name: string;
       query: ListIndexesQuery;
     }> = [
-      {
-        name: 'schemaname equals public',
-        query: {
-          page: { page_no: 1, page_size: 10 },
-          filters: [{ field: 'schemaname', operator: '=', values: ['public'] }],
-          sort: [{ field: 'schemaname', direction: 'asc' }],
+        {
+          name: 'schemaname equals public',
+          query: {
+            page: { page_no: 1, page_size: 10 },
+            filters: [{ field: 'schemaname', operator: '=', values: ['public'] }],
+            sort: [{ field: 'schemaname', direction: 'asc' }],
+          },
         },
-      },
-      {
-        name: 'relname equals table name',
-        query: {
-          page: { page_no: 1, page_size: 10 },
-          filters: [
-            {
-              field: 'relname',
-              operator: '=',
-              values: [this.createdTableName],
-            },
-          ],
-          sort: [{ field: 'relname', direction: 'desc' }],
+        {
+          name: 'relname equals table name',
+          query: {
+            page: { page_no: 1, page_size: 10 },
+            filters: [
+              {
+                field: 'relname',
+                operator: '=',
+                values: [this.createdTableName],
+              },
+            ],
+            sort: [{ field: 'relname', direction: 'desc' }],
+          },
         },
-      },
-      {
-        name: 'indexrelname ILIKE %field%',
-        query: {
-          page: { page_no: 1, page_size: 10 },
-          filters: [
-            { field: 'indexrelname', operator: 'ILIKE', values: ['%field%'] },
-          ],
-          sort: [{ field: 'indexrelname', direction: 'asc' }],
+        {
+          name: 'indexrelname ILIKE %field%',
+          query: {
+            page: { page_no: 1, page_size: 10 },
+            filters: [
+              { field: 'indexrelname', operator: 'ILIKE', values: ['%field%'] },
+            ],
+            sort: [{ field: 'indexrelname', direction: 'asc' }],
+          },
         },
-      },
-      {
-        name: 'idx_scan > 0 (number as string)',
-        query: {
-          page: { page_no: 1, page_size: 10 },
-          filters: [{ field: 'idx_scan', operator: '>', values: ['0'] }],
-          sort: [{ field: 'idx_scan', direction: 'desc' }],
+        {
+          name: 'idx_scan > 0 (number as string)',
+          query: {
+            page: { page_no: 1, page_size: 10 },
+            filters: [{ field: 'idx_scan', operator: '>', values: ['0'] }],
+            sort: [{ field: 'idx_scan', direction: 'desc' }],
+          },
         },
-      },
-      {
-        name: 'idx_tup_read >= 0 (number as string)',
-        query: {
-          page: { page_no: 1, page_size: 10 },
-          filters: [{ field: 'idx_tup_read', operator: '>=', values: ['0'] }],
-          sort: [{ field: 'idx_tup_read', direction: 'asc' }],
+        {
+          name: 'idx_tup_read >= 0 (number as string)',
+          query: {
+            page: { page_no: 1, page_size: 10 },
+            filters: [{ field: 'idx_tup_read', operator: '>=', values: ['0'] }],
+            sort: [{ field: 'idx_tup_read', direction: 'asc' }],
+          },
         },
-      },
-      {
-        name: 'idx_tup_fetch BETWEEN [0, 999999] (numbers as strings)',
-        query: {
-          page: { page_no: 1, page_size: 10 },
-          filters: [
-            {
-              field: 'idx_tup_fetch',
-              operator: 'BETWEEN',
-              values: ['0', '999999'],
-            },
-          ],
-          sort: [{ field: 'idx_tup_fetch', direction: 'desc' }],
+        {
+          name: 'idx_tup_fetch BETWEEN [0, 999999] (numbers as strings)',
+          query: {
+            page: { page_no: 1, page_size: 10 },
+            filters: [
+              {
+                field: 'idx_tup_fetch',
+                operator: 'BETWEEN',
+                values: ['0', '999999'],
+              },
+            ],
+            sort: [{ field: 'idx_tup_fetch', direction: 'desc' }],
+          },
         },
-      },
-      {
-        name: 'method IN [btree, hash, gin, brin]',
-        query: {
-          page: { page_no: 1, page_size: 10 },
-          filters: [
-            {
-              field: 'method',
-              operator: 'IN',
-              values: ['btree', 'hash', 'gin', 'brin'],
-            },
-          ],
-          sort: [{ field: 'method', direction: 'asc' }],
+        {
+          name: 'method IN [btree, hash, gin, brin]',
+          query: {
+            page: { page_no: 1, page_size: 10 },
+            filters: [
+              {
+                field: 'method',
+                operator: 'IN',
+                values: ['btree', 'hash', 'gin', 'brin'],
+              },
+            ],
+            sort: [{ field: 'method', direction: 'asc' }],
+          },
         },
-      },
-    ];
+      ];
 
     for (const test of filterTests) {
       console.log(`\n📝 Filter Test: ${test.name}`);
@@ -1878,6 +1902,21 @@ class ComprehensiveDatabaseOperationsDemo {
       console.error('❌ Failed to get record:', getRecordResult.error);
     } else {
       console.log('📤 Output:', getRecordResult.data);
+
+      // Demonstrate decryption override
+      console.log('\n📝 Input: Get record with show_decrypted: true (decryption override)');
+      const decryptedResult = await this.client.records.findOne(
+        this.createdTableName,
+        recordId,
+        { show_decrypted: true }
+      );
+
+      if (isErrorResponse(decryptedResult)) {
+        console.error('❌ Failed to get decrypted record:', decryptedResult.error);
+      } else {
+        console.log('   Secret SSN (decrypted):', decryptedResult.data.secret_ssn);
+        console.log('   Secret Email (decrypted):', decryptedResult.data.secret_email);
+      }
     }
 
     console.log('✅ Step 15 completed');
