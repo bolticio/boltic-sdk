@@ -12,7 +12,8 @@ export type FieldType =
   | 'date-time'
   | 'vector'
   | 'halfvec'
-  | 'sparsevec';
+  | 'sparsevec'
+  | 'encrypted';
 
 export type AlignmentType = 'left' | 'right' | 'center';
 
@@ -42,6 +43,10 @@ export interface FieldDefinition {
   phone_format?: string;
 
   vector_dimension?: number;
+
+  // Encrypted type properties
+  show_decrypted?: boolean;
+  is_deterministic?: boolean;
 }
 
 export interface TableCreateRequest {

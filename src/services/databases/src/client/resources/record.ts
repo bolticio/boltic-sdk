@@ -158,11 +158,22 @@ export class RecordResource {
   async get(
     tableName: string,
     recordId: string,
+    optionsOrDbId?: { show_decrypted?: boolean; dbId?: string } | string,
     dbId?: string
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
+      let showDecrypted = false;
+      let databaseId = dbId;
+
+      if (typeof optionsOrDbId === 'string') {
+        databaseId = optionsOrDbId;
+      } else if (typeof optionsOrDbId === 'object') {
+        showDecrypted = optionsOrDbId.show_decrypted || false;
+        databaseId = optionsOrDbId.dbId || dbId;
+      }
+
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName, dbId);
+      const tableInfo = await this.getTableInfo(tableName, databaseId);
       if (!tableInfo) {
         return {
           error: {
@@ -175,8 +186,8 @@ export class RecordResource {
       const result = await this.apiClient.getRecord(
         recordId,
         tableInfo.id,
-        { fields: undefined },
-        dbId
+        { fields: undefined, show_decrypted: showDecrypted },
+        databaseId
       );
 
       if (isErrorResponse(result)) {
@@ -282,11 +293,22 @@ export class RecordResource {
     tableName: string,
     recordId: string,
     data: RecordData,
+    optionsOrDbId?: { show_decrypted?: boolean; dbId?: string } | string,
     dbId?: string
   ): Promise<BolticSuccessResponse<RecordWithId> | BolticErrorResponse> {
     try {
+      let showDecrypted = false;
+      let databaseId = dbId;
+
+      if (typeof optionsOrDbId === 'string') {
+        databaseId = optionsOrDbId;
+      } else if (typeof optionsOrDbId === 'object') {
+        showDecrypted = optionsOrDbId.show_decrypted || false;
+        databaseId = optionsOrDbId.dbId || dbId;
+      }
+
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName, dbId);
+      const tableInfo = await this.getTableInfo(tableName, databaseId);
       if (!tableInfo) {
         return {
           error: {
@@ -301,11 +323,12 @@ export class RecordResource {
         id: recordId,
         set: data,
         table_id: tableInfo.id,
+        show_decrypted: showDecrypted,
       };
       const result = await this.apiClient.updateRecordById(
         recordId,
         requestOptions,
-        dbId
+        databaseId
       );
 
       if (isErrorResponse(result)) {

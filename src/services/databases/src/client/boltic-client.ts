@@ -290,12 +290,26 @@ export class BolticClient {
       ) => this.recordResource.insertMany(tableName, records, options, dbId),
       findAll: (tableName: string, options?: RecordQueryOptions) =>
         this.recordResource.list(tableName, options, dbId),
-      findOne: (tableName: string, recordId: string) =>
-        this.recordResource.get(tableName, recordId, dbId),
+      findOne: (
+        tableName: string,
+        recordId: string,
+        options?: { show_decrypted?: boolean }
+      ) => this.recordResource.get(tableName, recordId, options, dbId),
       update: (tableName: string, options: RecordUpdateOptions) =>
         this.recordResource.update(tableName, options, dbId),
-      updateById: (tableName: string, recordId: string, data: RecordData) =>
-        this.recordResource.updateById(tableName, recordId, data, dbId),
+      updateById: (
+        tableName: string,
+        recordId: string,
+        data: RecordData,
+        options?: { show_decrypted?: boolean }
+      ) =>
+        this.recordResource.updateById(
+          tableName,
+          recordId,
+          data,
+          options,
+          dbId
+        ),
       delete: (tableName: string, options: RecordDeleteOptions) =>
         this.recordResource.delete(tableName, options, dbId),
       deleteById: (tableName: string, recordId: string) =>

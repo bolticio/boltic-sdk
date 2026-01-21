@@ -771,6 +771,52 @@ for (const vectorColumn of vectorColumns) {
 }
 ```
 
+### Encrypted Columns
+
+Support for storing sensitive data using encrypted columns:
+
+```typescript
+// Create encrypted columns
+await client.columns.create('users', {
+  name: 'ssn',
+  type: 'encrypted',
+  show_decrypted: false, // Default: false. If false, value is masked primarily.
+  is_deterministic: false, // Default: false. If true, allows equality filtering.
+});
+
+// Note: Encrypted columns do not accept a `default_value`.
+```
+
+**Key Features:**
+
+- **Masking**: Values are masked (`********`) if `show_decrypted` is false on the column or not requested.
+- **Decryption**: Pass `{ show_decrypted: true }` to `get` or `update` operations to retrieve or echo back decrypted values.
+- **Deterministic**: Only `is_deterministic: true` columns support filtering (equality matches only).
+
+**Usage:**
+
+```typescript
+// Get record with decrypted value
+const record = await client.records.get('users', 'record-id', {
+  show_decrypted: true,
+});
+
+// Update record and see decrypted value in response
+const updated = await client.records.updateById(
+  'users',
+  'record-id',
+  { ssn: 'new-val' },
+  { show_decrypted: true }
+);
+
+// Filter by deterministic encrypted column
+const results = await client.records.findAll('users', {
+  filters: [
+    { field: 'email_enc', operator: '=', values: ['test@example.com'] },
+  ],
+});
+```
+
 ## Error Handling
 
 The SDK provides comprehensive error handling with detailed error objects:

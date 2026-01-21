@@ -49,6 +49,8 @@ export interface ColumnUpdateApiRequest {
   time_format?: string;
   timezone?: string;
   vector_dimension?: number;
+  show_decrypted?: boolean;
+  is_deterministic?: boolean;
 }
 
 export interface ColumnApiResponse {
@@ -81,6 +83,8 @@ export interface ColumnApiResponse {
     multiple_selections?: boolean;
     phone_format?: string;
     vector_dimension?: number;
+    show_decrypted?: boolean;
+    is_deterministic?: boolean;
   };
 }
 
@@ -148,6 +152,8 @@ function transformFieldDefinition(field: FieldDefinition): FieldDefinition {
     vector_dimension: field.vector_dimension ?? undefined,
     description: field.description ?? undefined,
     default_value: field.default_value ?? undefined,
+    show_decrypted: field.show_decrypted ?? undefined,
+    is_deterministic: field.is_deterministic ?? undefined,
   };
 }
 
@@ -227,6 +233,10 @@ export function transformColumnUpdateRequest(
     apiRequest.default_value = updates.default_value;
   if (updates.field_order !== undefined)
     apiRequest.field_order = updates.field_order;
+  if (updates.show_decrypted !== undefined)
+    apiRequest.show_decrypted = updates.show_decrypted;
+  if (updates.is_deterministic !== undefined)
+    apiRequest.is_deterministic = updates.is_deterministic;
 
   // Type-specific fields
   if (updates.alignment !== undefined) apiRequest.alignment = updates.alignment;
@@ -305,6 +315,8 @@ export function transformColumnResponse(
     multiple_selections: response.data.multiple_selections,
     phone_format: response.data.phone_format,
     vector_dimension: response.data.vector_dimension,
+    show_decrypted: response.data.show_decrypted,
+    is_deterministic: response.data.is_deterministic,
   };
 }
 

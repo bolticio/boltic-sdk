@@ -14,10 +14,8 @@ export interface ExecuteSQLApiRequest {
 }
 
 export interface ExecuteSQLApiResponse {
-  data: [
-    Record<string, unknown>[], // Query result rows
-    unknown, // Can be anything: number, object, list, etc. depending on SQL operation
-  ];
+  data: Record<string, unknown>[]; // Query result rows
+  count?: number; // Total number of rows returned
   pagination?: {
     total_count: number;
     total_pages: number;

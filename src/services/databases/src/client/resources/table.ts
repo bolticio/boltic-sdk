@@ -100,6 +100,22 @@ export class TableResource extends BaseResource {
         processedField.is_indexed = false;
       }
 
+      // Set defaults for encrypted columns
+      if (processedField.type === 'encrypted') {
+        if (processedField.show_decrypted === undefined) {
+          processedField.show_decrypted = false;
+        }
+        if (processedField.is_deterministic === undefined) {
+          processedField.is_deterministic = false;
+        }
+        if (
+          processedField.default_value !== undefined &&
+          processedField.default_value !== null
+        ) {
+          throw new Error('Encrypted columns do not accept a default value');
+        }
+      }
+
       // Auto-generate field_order if not provided (sequential for table creation)
       if (processedField.field_order === undefined) {
         processedField.field_order = i + 1;

@@ -21,7 +21,7 @@
  */
 
 import * as dotenv from 'dotenv';
-import { BolticClient, FieldDefinition, isErrorResponse  } from '../../src';
+import { BolticClient, FieldDefinition, isErrorResponse } from '../../src';
 import { SqlTestClient } from '../../src/testing/sql-test-client';
 import { StreamingUtils } from '../../src/utils/streaming/async-iterable';
 
@@ -69,6 +69,14 @@ const TEST_TABLES = {
         is_indexed: false,
         is_visible: true,
         default_value: true,
+      },
+      {
+        name: 'ssn_enc',
+        type: 'encrypted' as const,
+        description: 'Encrypted SSN',
+        is_nullable: true,
+        show_decrypted: false,
+        is_deterministic: true,
       },
     ] as FieldDefinition[],
   },
@@ -149,6 +157,7 @@ const TEST_QUERIES = {
     `SELECT * FROM "${TEST_TABLES.users.name}" LIMIT 5`,
     `SELECT COUNT(*) FROM "${TEST_TABLES.orders.name}" WHERE 'completed' = ANY("status")`,
     `SELECT "name", "email" FROM "${TEST_TABLES.users.name}" WHERE "created_at" > '2024-01-01'`,
+    `SELECT "name", boltic_decrypt("ssn_enc") FROM "${TEST_TABLES.users.name}"`,
   ],
   complex: [
     `SELECT u."name", COUNT(o."id") as order_count FROM "${TEST_TABLES.users.name}" u LEFT JOIN "${TEST_TABLES.orders.name}" o ON u."id" = o."user_id"::uuid GROUP BY u."id", u."name" ORDER BY order_count DESC LIMIT 10`,
@@ -170,16 +179,19 @@ const SAMPLE_DATA = {
       name: 'John Doe',
       email: 'john.doe@example.com',
       active: true,
+      ssn_enc: "boltic_encrypt('123-456-7890')",
     },
     {
       name: 'Jane Smith',
       email: 'jane.smith@example.com',
       active: true,
+      ssn_enc: "boltic_encrypt('234-567-8901')",
     },
     {
       name: 'Bob Johnson',
       email: 'bob.johnson@example.com',
       active: false,
+      ssn_enc: "boltic_encrypt('345-678-9012')",
     },
     {
       name: 'Alice Brown',
@@ -400,7 +412,7 @@ async function populateTestData(client: BolticClient) {
   }, 'Fetching user UUIDs for orders');
 
   if (usersResult && !('error' in usersResult)) {
-    const [userRows] = usersResult.data;
+    const userRows = usersResult.data;
 
     if (userRows && userRows.length >= 3) {
       // Create multiple sample orders using the actual UUIDs
@@ -528,18 +540,11 @@ async function executeSQLQuery(client: BolticClient): Promise<void> {
 
   console.log('Query Results:');
   // Extract data from Boltic API Response Structure
-  const [resultRows, metadata] = (result as any).data;
+  const resultRows = (result as any).data;
   console.log('Data:', resultRows);
 
-  // Extract count from metadata
-  let count: number;
-  if (typeof metadata === 'number') {
-    count = metadata;
-  } else if (metadata && typeof metadata === 'object' && 'count' in metadata) {
-    count = (metadata as any).count;
-  } else {
-    count = resultRows?.length || 0;
-  }
+  // Extract count from response
+  const count = (result as any).count || resultRows?.length || 0;
   console.log('Row count:', count);
 
   if ((result as any).pagination) {
@@ -551,8 +556,8 @@ async function executeMultipleQueries(client: BolticClient): Promise<void> {
   subsection('Execute Multiple Queries Example');
 
   const result = await client.sql.executeSQL(`
-      INSERT INTO "${TEST_TABLES.users.name}" ("name", "email", "active") 
-      VALUES ('Temp User', 'temp@example.com', true);
+      INSERT INTO "${TEST_TABLES.users.name}" ("name", "email", "active", "ssn_enc") 
+      VALUES ('Temp User', 'temp@example.com', true, boltic_encrypt('999-999-9999'));
       UPDATE "${TEST_TABLES.users.name}" SET "active" = false WHERE "name" = 'Temp User';
       SELECT * FROM "${TEST_TABLES.users.name}" WHERE "name" = 'Temp User';
     `);
@@ -676,25 +681,11 @@ async function demonstrateSQLExecution(client: BolticClient) {
         const successResponse =
           apiResponse as import('../../src/types/api/sql').ExecuteSQLApiResponse;
 
-        // Extract data from Boltic API Response Structure
-        const [resultRows, metadata] = successResponse.data;
-
-        // Extract count from metadata
-        let count: number;
-        if (typeof metadata === 'number') {
-          count = metadata;
-        } else if (
-          metadata &&
-          typeof metadata === 'object' &&
-          'count' in metadata
-        ) {
-          count = (metadata as any).count;
-        } else {
-          count = resultRows?.length || 0;
-        }
+        // Extract data and count from Boltic API Response Structure
+        const resultRows = successResponse.data;
+        const count = successResponse.count || resultRows?.length || 0;
 
         console.log(`   📈 Rows returned: ${count}`);
-        console.log(`   🔧 Metadata:`, metadata);
 
         if (resultRows && resultRows.length > 0) {
           console.log('   🎯 Sample data:');
@@ -772,19 +763,8 @@ async function demonstrateAdvancedFeatures(
         result as import('../../src/types/api/sql').ExecuteSQLApiResponse;
 
       // Extract count from Boltic API Response Structure
-      const [resultRows, metadata] = success.data;
-      let count: number;
-      if (typeof metadata === 'number') {
-        count = metadata;
-      } else if (
-        metadata &&
-        typeof metadata === 'object' &&
-        'count' in metadata
-      ) {
-        count = (metadata as any).count;
-      } else {
-        count = resultRows?.length || 0;
-      }
+      const resultRows = success.data;
+      const count = success.count || resultRows?.length || 0;
 
       console.log(`   ✅ Batch ${index + 1}: ${count} rows`);
       return success;
@@ -858,30 +838,35 @@ let customDatabaseId: string | undefined;
 
 async function setupCustomDatabase(client: BolticClient): Promise<void> {
   separator('SETTING UP CUSTOM DATABASE');
-  
+
   customDatabaseName = `sql-demo-custom-db-${Date.now()}`;
-  
+
   colorLog('yellow', `📝 Creating custom database "${customDatabaseName}"`);
-  
+
   const createResult = await client.databases.create({
     db_name: customDatabaseName,
     db_internal_name: customDatabaseName.replace(/-/g, '_'),
     resource_id: 'boltic',
   });
-  
+
   if (isErrorResponse(createResult)) {
-    colorLog('red', `❌ Failed to create custom database: ${createResult.error.message}`);
+    colorLog(
+      'red',
+      `❌ Failed to create custom database: ${createResult.error.message}`
+    );
     throw new Error('Cannot proceed without custom database');
   }
-  
+
   customDatabaseInternalName = createResult.data.db_internal_name;
   customDatabaseId = createResult.data.id;
-  
+
   colorLog('green', '✅ Custom database created successfully');
   console.log(`   Database ID: ${createResult.data.id}`);
   console.log(`   Database Name: ${createResult.data.db_name}`);
-  console.log(`   Database Internal Name (slug): ${customDatabaseInternalName}`);
-  
+  console.log(
+    `   Database Internal Name (slug): ${customDatabaseInternalName}`
+  );
+
   // Switch to the custom database
   colorLog('yellow', `📝 Switching to custom database`);
   await client.useDatabase(customDatabaseInternalName);
@@ -891,24 +876,35 @@ async function setupCustomDatabase(client: BolticClient): Promise<void> {
 
 async function deleteCustomDatabase(client: BolticClient): Promise<void> {
   if (!customDatabaseInternalName) return;
-  
+
   try {
-    colorLog('yellow', `🗑️  Deleting custom database: ${customDatabaseName} (internal name: ${customDatabaseInternalName})`);
-    const deleteResult = await client.databases.delete(customDatabaseInternalName);
-    
+    colorLog(
+      'yellow',
+      `🗑️  Deleting custom database: ${customDatabaseName} (internal name: ${customDatabaseInternalName})`
+    );
+    const deleteResult = await client.databases.delete(
+      customDatabaseInternalName
+    );
+
     if (isErrorResponse(deleteResult)) {
-      colorLog('yellow', `   Warning: Failed to delete custom database: ${deleteResult.error.message}`);
+      colorLog(
+        'yellow',
+        `   Warning: Failed to delete custom database: ${deleteResult.error.message}`
+      );
       return;
     }
-    
+
     colorLog('green', '✅ Custom database deleted successfully');
-    
+
     // Clear references
     customDatabaseId = undefined;
     customDatabaseInternalName = undefined;
     customDatabaseName = undefined;
   } catch (error) {
-    colorLog('yellow', `   Warning: Error deleting custom database: ${(error as Error).message}`);
+    colorLog(
+      'yellow',
+      `   Warning: Error deleting custom database: ${(error as Error).message}`
+    );
   }
 }
 
@@ -955,9 +951,15 @@ async function runComprehensiveSQLDemo() {
     // Setup custom database if requested
     if (useCustomDb) {
       await setupCustomDatabase(client);
-      colorLog('cyan', '\n📋 All subsequent operations will use the custom database');
+      colorLog(
+        'cyan',
+        '\n📋 All subsequent operations will use the custom database'
+      );
     } else {
-      colorLog('cyan', '\n📋 Using default database (backward compatible mode)');
+      colorLog(
+        'cyan',
+        '\n📋 Using default database (backward compatible mode)'
+      );
       console.log("   All operations will use the account's default database");
     }
 
@@ -993,7 +995,7 @@ async function runComprehensiveSQLDemo() {
   } finally {
     // Always cleanup, even if demo fails
     await cleanupTestTables(client);
-    
+
     // Delete custom database if it was created
     if (useCustomDb && customDatabaseId) {
       await deleteCustomDatabase(client);
@@ -1004,11 +1006,13 @@ async function runComprehensiveSQLDemo() {
 // Run the demo
 if (require.main === module) {
   const useCustomDb = process.argv.includes('--use-custom-db');
-  
+
   if (useCustomDb) {
-    console.log('📋 Running with custom database (demonstrating database switching)');
+    console.log(
+      '📋 Running with custom database (demonstrating database switching)'
+    );
   }
-  
+
   runComprehensiveSQLDemo().catch(async (error) => {
     colorLog('red', `💥 Unhandled error: ${error.message}`);
     // Try to run cleanup even if main demo fails
@@ -1019,7 +1023,10 @@ if (require.main === module) {
         await deleteCustomDatabase(client);
       }
     } catch (cleanupError) {
-      colorLog('yellow', `   Warning: Cleanup also failed: ${(cleanupError as Error).message}`);
+      colorLog(
+        'yellow',
+        `   Warning: Cleanup also failed: ${(cleanupError as Error).message}`
+      );
     }
     process.exit(1);
   });
