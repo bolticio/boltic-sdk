@@ -97,6 +97,7 @@ export interface TableQueryOptions {
     id?: string;
     name?: string;
     db_id?: string;
+    resource_id?: string;
     is_public?: boolean;
     created_by?: string;
     created_at?: {
