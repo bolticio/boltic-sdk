@@ -1,6 +1,6 @@
 {
   "name": "@boltic/sdk-databases",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Database service module for Boltic SDK",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",

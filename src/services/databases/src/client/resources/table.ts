@@ -199,12 +199,31 @@ export class TableResource extends BaseResource {
       // Transform SDK format to API format
       const apiRequest = this.transformTableQueryToApiRequest(options);
 
+      // Add db_id and resource_id as filters (not query params or top-level fields)
+      const filters = [...apiRequest.filters];
+
+      // Only add db_id filter if explicitly provided (backend uses default DB if not specified)
+      if (dbId) {
+        filters.push({
+          field: 'db_id',
+          operator: '=',
+          values: [dbId],
+        });
+      }
+
+      // Add resource_id filter: use from options if specified, otherwise default to 'boltic'
+      const resourceId = options.where?.resource_id || 'boltic';
+      filters.push({
+        field: 'resource_id',
+        operator: '=',
+        values: [resourceId],
+      });
+
       // Create request payload matching API format (not TableListOptions SDK format)
       const requestPayload = {
         page: apiRequest.page,
-        filters: apiRequest.filters,
+        filters,
         sort: apiRequest.sort,
-        ...(dbId && { db_id: dbId }),
         ...(options.fields && { fields: options.fields }),
       } as unknown as TableListOptions;
 
@@ -267,23 +286,36 @@ export class TableResource extends BaseResource {
         return result as BolticSuccessResponse<TableRecord>;
       } else {
         // Find by name - transform to API format
-        const apiRequest = {
-          page: { page_no: 1, page_size: 1 },
-          filters: [
-            {
-              field: 'name',
-              operator: '=',
-              values: [options.where!.name],
-            },
-          ],
-          sort: [],
-        };
+        const filters = [
+          {
+            field: 'name',
+            operator: '=',
+            values: [options.where!.name],
+          },
+        ];
+
+        // Add db_id and resource_id as filters (not query params or top-level fields)
+        // Only add db_id filter if explicitly provided (backend uses default DB if not specified)
+        if (dbId) {
+          filters.push({
+            field: 'db_id',
+            operator: '=',
+            values: [dbId],
+          });
+        }
+
+        // Add resource_id filter: use from options if specified, otherwise default to 'boltic'
+        const resourceId = options.where?.resource_id || 'boltic';
+        filters.push({
+          field: 'resource_id',
+          operator: '=',
+          values: [resourceId],
+        });
 
         const requestPayload = {
-          page: apiRequest.page,
-          filters: apiRequest.filters,
-          sort: apiRequest.sort,
-          ...(dbId && { db_id: dbId }),
+          page: { page_no: 1, page_size: 1 },
+          filters,
+          sort: [],
         } as unknown as TableListOptions;
 
         const listResult =
