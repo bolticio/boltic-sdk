@@ -134,6 +134,7 @@ export class BolticClient {
    */
   async useDatabase(dbInternalName?: string): Promise<void> {
     // Reset to default database if no slug is provided
+    console.log(`Database internal name:${dbInternalName}`);
     if (!dbInternalName || dbInternalName === '') {
       this.currentDatabase = null;
       return;
@@ -142,8 +143,9 @@ export class BolticClient {
     // Look up the database by its internal name (slug)
     const result: BolticSuccessResponse<unknown> | BolticErrorResponse =
       await this.databaseResource.findOne(dbInternalName);
-
+    console.log(`Result:${JSON.stringify(result, null, 2)}`);
     if (isErrorResponse(result)) {
+      console.log(`Error:${result.error.message}`);
       throw new Error(
         result.error.message ||
           `Failed to switch database to internal name '${dbInternalName}'`
