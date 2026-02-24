@@ -198,8 +198,6 @@ export class BolticClient {
       delete: (name: string) => this.tableResource.delete(name, dbId),
       rename: (oldName: string, newName: string) =>
         this.tableResource.rename(oldName, newName, dbId),
-      setAccess: (request: { table_name: string; is_shared: boolean }) =>
-        this.tableResource.setAccess(request, dbId),
     };
   }
 

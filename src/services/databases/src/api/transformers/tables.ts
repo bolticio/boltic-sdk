@@ -24,13 +24,11 @@ export interface TableListApiRequest {
     direction: 'asc' | 'desc';
   }>;
   filters?: ApiFilter[];
-  is_shared?: boolean;
 }
 
 export interface TableUpdateApiRequest {
   name?: string;
   description?: string;
-  is_shared?: boolean;
 }
 
 export interface TableListApiResponse {
@@ -103,7 +101,6 @@ export function transformTableListRequest(
   options: TableQueryOptions & {
     page?: number;
     pageSize?: number;
-    isShared?: boolean;
   } = {}
 ): TableListApiRequest {
   const request: TableListApiRequest = {};
@@ -135,11 +132,6 @@ export function transformTableListRequest(
     request.filters = filters;
   }
 
-  // Add shared filter
-  if (options.isShared !== undefined) {
-    request.is_shared = options.isShared;
-  }
-
   return request;
 }
 
@@ -149,7 +141,6 @@ export function transformTableListRequest(
 export function transformTableUpdateRequest(updates: {
   name?: string;
   description?: string;
-  is_shared?: boolean;
 }): TableUpdateApiRequest {
   const request: TableUpdateApiRequest = {};
 
@@ -159,10 +150,6 @@ export function transformTableUpdateRequest(updates: {
 
   if (updates.description !== undefined) {
     request.description = updates.description;
-  }
-
-  if (updates.is_shared !== undefined) {
-    request.is_shared = updates.is_shared;
   }
 
   return request;
