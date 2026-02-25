@@ -17,7 +17,6 @@ export type {
   AlignmentType,
   FieldDefinition,
   FieldType,
-  TableAccessRequest,
   TableCreateRequest,
   TableCreateResponse,
   TableDeleteOptions,

@@ -33,7 +33,6 @@ export interface TableCreateOptions {
 export interface TableListOptions extends TableQueryOptions {
   page?: number;
   pageSize?: number;
-  isShared?: boolean;
   db_id?: string;
 }
 
@@ -212,7 +211,6 @@ export class TablesApiClient {
     updates: {
       name?: string;
       description?: string;
-      is_shared?: boolean;
       fields?: Array<keyof TableRecord>;
       db_id?: string;
     }

@@ -61,7 +61,6 @@ export interface TableCreateRequest {
 export interface TableUpdateRequest {
   name?: string;
   description?: string;
-  is_shared?: boolean;
   fields?: Array<keyof TableRecord>;
 }
 
@@ -82,6 +81,7 @@ export interface TableRecord {
   type?: string;
   parent_table_id?: string;
   is_deleted: boolean;
+  /** @deprecated All tables are now public by default. This field is always true and ineffective. */
   is_public: boolean;
   created_by: string;
   created_at: string;
@@ -98,7 +98,6 @@ export interface TableQueryOptions {
     name?: string;
     db_id?: string;
     resource_id?: string;
-    is_public?: boolean;
     created_by?: string;
     created_at?: {
       $gte?: string;
@@ -132,9 +131,4 @@ export interface PaginationInfo {
 export interface TableListResponse {
   tables: TableRecord[];
   pagination: PaginationInfo;
-}
-
-export interface TableAccessRequest {
-  table_name: string;
-  is_shared: boolean;
 }

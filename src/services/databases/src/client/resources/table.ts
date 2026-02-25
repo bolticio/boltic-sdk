@@ -474,41 +474,7 @@ export class TableResource extends BaseResource {
     dbId?: string
   ): Promise<BolticSuccessResponse<TableRecord>> {
     try {
-      const result = await this.update(
-        oldName,
-        {
-          name: newName,
-        },
-        dbId
-      );
-      // update throws on error, so cast to success
-      return result as BolticSuccessResponse<TableRecord>;
-    } catch (error) {
-      throw error instanceof ApiError
-        ? error
-        : new ApiError(this.formatError(error), 500);
-    }
-  }
-
-  /**
-   * Set table access permissions
-   */
-  async setAccess(
-    request: {
-      table_name: string;
-      is_shared: boolean;
-    },
-    dbId?: string
-  ): Promise<BolticSuccessResponse<TableRecord>> {
-    try {
-      // Update the table with the new access settings
-      const result = await this.update(
-        request.table_name,
-        {
-          is_shared: request.is_shared,
-        },
-        dbId
-      );
+      const result = await this.update(oldName, { name: newName }, dbId);
       // update throws on error, so cast to success
       return result as BolticSuccessResponse<TableRecord>;
     } catch (error) {

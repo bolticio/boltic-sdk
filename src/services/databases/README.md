@@ -130,17 +130,11 @@ const tableByName = await client.tables.findByName('users');
 // Update table properties
 const updateResult = await client.tables.update('users', {
   name: 'updated_users',
-  is_shared: true,
+  description: 'Updated description',
 });
 
 // Rename table
 const renameResult = await client.tables.rename('users', 'new_users');
-
-// Set table access
-const accessResult = await client.tables.setAccess({
-  table_name: 'new_users',
-  is_shared: true,
-});
 ```
 
 ### Deleting Tables

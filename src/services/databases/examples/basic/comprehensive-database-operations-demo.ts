@@ -318,66 +318,63 @@ class ComprehensiveDatabaseOperationsDemo {
       // 5. Get table by name
       await this.demoGetTableByName();
 
-      // 6. Change table access to public
-      await this.demoChangeTableAccess();
-
-      // 7. Rename table
+      // 6. Rename table
       await this.demoRenameTable();
 
-      // 8. Add all types of columns with all properties
+      // 7. Add all types of columns with all properties
       await this.demoAddAllColumnTypes();
 
-      // 9. Update each type of column
+      // 8. Update each type of column
       await this.demoUpdateColumns();
 
-      // 10. List columns
+      // 9. List columns
       await this.demoListColumns();
-      // 10.5 Indexes demo (create/list/delete via both methods)
+      // 9.5 Indexes demo (create/list/delete via both methods)
       await this.demoIndexes();
 
-      // 11. Get column by name
+      // 10. Get column by name
       await this.demoGetColumnByName();
 
-      // 11.5. Get column by ID using direct GET endpoint
+      // 10.5. Get column by ID using direct GET endpoint
       await this.demoGetColumnById();
 
-      //  12. Update column by name (add/remove constraints)
+      // 11. Update column by name (add/remove constraints)
       await this.demoUpdateColumnConstraints();
 
-      // 13. Delete columns
+      // 12. Delete columns
       await this.demoDeleteColumns();
 
-      // 14. Add rows in table (with/without null)
+      // 13. Add rows in table (with/without null)
       await this.demoAddRecords();
 
-      // 14.5. Demo bulk insert (insertMany)
+      // 13.5. Demo bulk insert (insertMany)
       await this.demoBulkInsertRecords();
 
-      // 14.6. Demo bulk update based on filters
+      // 13.6. Demo bulk update based on filters
       await this.demoBulkUpdateRecords();
 
-      // 15. Get row
+      // 14. Get row
       await this.demoGetRecord();
 
-      // 16. List rows (with pagination)
+      // 15. List rows (with pagination)
       await this.demoListRecordsWithPagination();
 
-      // 17. Update values in rows for each data type
+      // 16. Update values in rows for each data type
       await this.demoUpdateRecords();
 
-      // 18. Delete rows
+      // 17. Delete rows
       await this.demoDeleteRecords();
 
-      // 19. Bonus: Show working of all types of filters
+      // 18. Bonus: Show working of all types of filters
       await this.demoAllFilterTypes();
 
-      // 20. Demo snapshot protection
+      // 19. Demo snapshot protection
       await this.demoSnapshotProtection();
 
-      //  21. Delete table
+      // 20. Delete table
       await this.demoDeleteTable();
 
-      // 22. Delete custom database (if using one)
+      // 21. Delete custom database (if using one)
       if (this.useCustomDatabase && this.customDatabaseId) {
         await this.deleteCustomDatabase();
       }
@@ -562,32 +559,10 @@ class ComprehensiveDatabaseOperationsDemo {
   }
 
   /**
-   * 6. Change table access to public
-   */
-  private async demoChangeTableAccess(): Promise<void> {
-    console.log('\n6️⃣  Changing Table Access to Public');
-    console.log('-'.repeat(40));
-
-    console.log('📝 Input: Set table access to public (shared)');
-    const accessResult = await this.client.tables.setAccess({
-      table_name: this.createdTableName,
-      is_shared: true,
-    });
-
-    if (accessResult.error) {
-      console.error('❌ Failed to change table access:', accessResult.error);
-    } else {
-      console.log('📤 Output:', accessResult.data);
-    }
-
-    console.log('✅ Step 6 completed');
-  }
-
-  /**
-   * 7. Rename table
+   * 6. Rename table
    */
   private async demoRenameTable(): Promise<void> {
-    console.log('\n7️⃣  Renaming Table');
+    console.log('\n6️⃣  Renaming Table');
     console.log('-'.repeat(40));
 
     const newTableName = DEMO_CONFIG.backupTableName;
@@ -608,14 +583,14 @@ class ComprehensiveDatabaseOperationsDemo {
       this.createdTableName = newTableName;
     }
 
-    console.log('✅ Step 7 completed');
+    console.log('✅ Step 6 completed');
   }
 
   /**
-   * 8. Add all types of columns with all properties
+   * 7. Add all types of columns with all properties
    */
   private async demoAddAllColumnTypes(): Promise<void> {
-    console.log('\n8️⃣  Adding All Types of Columns with All Properties');
+    console.log('\n7️⃣  Adding All Types of Columns with All Properties');
     console.log('-'.repeat(40));
 
     for (const columnData of ALL_COLUMN_TYPES) {
@@ -638,14 +613,14 @@ class ComprehensiveDatabaseOperationsDemo {
       }
     }
 
-    console.log('✅ Step 8 completed');
+    console.log('✅ Step 7 completed');
   }
 
   /**
-   * 9. Update each type of column
+   * 8. Update each type of column
    */
   private async demoUpdateColumns(): Promise<void> {
-    console.log('\n9️⃣  Updating Each Type of Column');
+    console.log('\n8️⃣  Updating Each Type of Column');
     console.log('-'.repeat(40));
 
     for (const columnData of ALL_COLUMN_TYPES) {
@@ -745,14 +720,14 @@ class ComprehensiveDatabaseOperationsDemo {
       }
     }
 
-    console.log('✅ Step 9 completed');
+    console.log('✅ Step 8 completed');
   }
 
   /**
-   * 10. List columns
+   * 9. List columns
    */
   private async demoListColumns(): Promise<void> {
-    console.log('\n🔟  Listing Columns');
+    console.log('\n9️⃣  Listing Columns');
     console.log('-'.repeat(40));
 
     console.log('📝 Input: List all columns in table');
@@ -775,11 +750,11 @@ class ComprehensiveDatabaseOperationsDemo {
       });
     }
 
-    console.log('✅ Step 10 completed');
+    console.log('✅ Step 9 completed');
   }
 
   /**
-   * 10.5. Indexes demo: add/list/delete using both Method 1 and Method 2
+   * 9.5. Indexes demo: add/list/delete using both Method 1 and Method 2
    */
   private async demoIndexes(): Promise<void> {
     console.log('\n1️⃣0️⃣.5️⃣  Indexes: add/list/delete (both methods)');
@@ -1003,14 +978,14 @@ class ComprehensiveDatabaseOperationsDemo {
       console.log('📤 deleteIndex (chained) result:', delChained.data);
     }
 
-    console.log('✅ Step 10.5 completed - Indexes demo finished');
+    console.log('✅ Step 9.5 completed - Indexes demo finished');
   }
 
   /**
-   * 11. Get column by name
+   * 10. Get column by name
    */
   private async demoGetColumnByName(): Promise<void> {
-    console.log('\n1️⃣1️⃣  Getting Column by Name');
+    console.log('\n1️⃣0️⃣  Getting Column by Name');
     console.log('-'.repeat(40));
 
     const columnName = 'text_field';
@@ -1027,14 +1002,14 @@ class ComprehensiveDatabaseOperationsDemo {
       console.log('📤 Output:', getColumnResult.data);
     }
 
-    console.log('✅ Step 11 completed');
+    console.log('✅ Step 10 completed');
   }
 
   /**
-   * 11.5. Get column by ID using direct GET endpoint
+   * 10.5. Get column by ID using direct GET endpoint
    */
   private async demoGetColumnById(): Promise<void> {
-    console.log('\n1️⃣1️⃣.5️⃣  Getting Column by ID (Direct GET API)');
+    console.log('\n1️⃣0️⃣.5️⃣  Getting Column by ID (Direct GET API)');
     console.log('-'.repeat(40));
 
     // First, get the list of columns to extract an ID
@@ -1107,14 +1082,14 @@ class ComprehensiveDatabaseOperationsDemo {
       }
     }
 
-    console.log('✅ Step 11.5 completed - Direct GET endpoint tested');
+    console.log('✅ Step 10.5 completed - Direct GET endpoint tested');
   }
 
   /**
-   * 12. Update column by name (add/remove constraints)
+   * 11. Update column by name (add/remove constraints)
    */
   private async demoUpdateColumnConstraints(): Promise<void> {
-    console.log('\n1️⃣2️⃣  Updating Column Constraints');
+    console.log('\n1️⃣1️⃣  Updating Column Constraints');
     console.log('-'.repeat(40));
 
     const columnName = 'email_field';
@@ -1163,14 +1138,14 @@ class ComprehensiveDatabaseOperationsDemo {
       );
     }
 
-    console.log('✅ Step 12 completed');
+    console.log('✅ Step 11 completed');
   }
 
   /**
-   * 13. Delete columns
+   * 12. Delete columns
    */
   private async demoDeleteColumns(): Promise<void> {
-    console.log('\n1️⃣3️⃣  Deleting Columns');
+    console.log('\n1️⃣2️⃣  Deleting Columns');
     console.log('-'.repeat(40));
 
     // Delete a few columns as demonstration
@@ -1201,14 +1176,14 @@ class ComprehensiveDatabaseOperationsDemo {
       }
     }
 
-    console.log('✅ Step 13 completed');
+    console.log('✅ Step 12 completed');
   }
 
   /**
-   * 14. Add rows in table (with/without null)
+   * 13. Add rows in table (with/without null)
    */
   private async demoAddRecords(): Promise<void> {
-    console.log('\n1️⃣4️⃣  Adding Records to Table');
+    console.log('\n1️⃣3️⃣  Adding Records to Table');
     console.log('-'.repeat(40));
 
     for (let i = 0; i < SAMPLE_RECORDS.length; i++) {
@@ -1275,14 +1250,14 @@ class ComprehensiveDatabaseOperationsDemo {
       }
     }
 
-    console.log('✅ Step 14 completed');
+    console.log('✅ Step 13 completed');
   }
 
   /**
-   * 14.5. Demo bulk insert (insertMany)
+   * 13.5. Demo bulk insert (insertMany)
    */
   private async demoBulkInsertRecords(): Promise<void> {
-    console.log('\n1️⃣4️⃣.5️⃣  Bulk Insert Multiple Records (insertMany)');
+    console.log('\n1️⃣3️⃣.5️⃣  Bulk Insert Multiple Records (insertMany)');
     console.log('-'.repeat(40));
 
     // Prepare multiple records for bulk insertion
@@ -1428,14 +1403,14 @@ class ComprehensiveDatabaseOperationsDemo {
       console.log('❌ Empty array should have returned an error');
     }
 
-    console.log('✅ Step 14.5 completed - Bulk insert demonstration');
+    console.log('✅ Step 13.5 completed - Bulk insert demonstration');
   }
 
   /**
-   * 14.6. Demo bulk update based on filters
+   * 13.6. Demo bulk update based on filters
    */
   private async demoBulkUpdateRecords(): Promise<void> {
-    console.log('\n1️⃣4️⃣.6️⃣  Bulk Update Records Based on Filters');
+    console.log('\n1️⃣3️⃣.6️⃣  Bulk Update Records Based on Filters');
     console.log('-'.repeat(40));
 
     console.log(
@@ -1875,14 +1850,14 @@ class ComprehensiveDatabaseOperationsDemo {
     console.log('   ✅ Field projection to return only needed fields');
     console.log('   ✅ Proper error handling for edge cases');
 
-    console.log('✅ Step 14.6 completed - Bulk update demonstration');
+    console.log('✅ Step 13.6 completed - Bulk update demonstration');
   }
 
   /**
-   * 15. Get row
+   * 14. Get row
    */
   private async demoGetRecord(): Promise<void> {
-    console.log('\n1️⃣5️⃣  Getting a Specific Record');
+    console.log('\n1️⃣4️⃣  Getting a Specific Record');
     console.log('-'.repeat(40));
 
     if (this.createdRecordIds.length === 0) {
@@ -1919,14 +1894,14 @@ class ComprehensiveDatabaseOperationsDemo {
       }
     }
 
-    console.log('✅ Step 15 completed');
+    console.log('✅ Step 14 completed');
   }
 
   /**
-   * 16. List rows (with pagination)
+   * 15. List rows (with pagination)
    */
   private async demoListRecordsWithPagination(): Promise<void> {
-    console.log('\n1️⃣6️⃣  Listing Records with Pagination');
+    console.log('\n1️⃣5️⃣  Listing Records with Pagination');
     console.log('-'.repeat(40));
 
     // First page
@@ -1983,14 +1958,14 @@ class ComprehensiveDatabaseOperationsDemo {
       }
     }
 
-    console.log('✅ Step 16 completed');
+    console.log('✅ Step 15 completed');
   }
 
   /**
-   * 17. Update values in rows for each data type
+   * 16. Update values in rows for each data type
    */
   private async demoUpdateRecords(): Promise<void> {
-    console.log('\n1️⃣7️⃣  Updating Records for Each Data Type');
+    console.log('\n1️⃣6️⃣  Updating Records for Each Data Type');
     console.log('-'.repeat(40));
 
     if (this.createdRecordIds.length === 0) {
@@ -2028,14 +2003,14 @@ class ComprehensiveDatabaseOperationsDemo {
       console.log('📤 Output (updated record):', updateResult.data);
     }
 
-    console.log('✅ Step 17 completed');
+    console.log('✅ Step 16 completed');
   }
 
   /**
-   * 18. Delete rows
+   * 17. Delete rows
    */
   private async demoDeleteRecords(): Promise<void> {
-    console.log('\n1️⃣8️⃣  Deleting Records');
+    console.log('\n1️⃣7️⃣  Deleting Records');
     console.log('-'.repeat(40));
 
     if (this.createdRecordIds.length === 0) {
@@ -2162,15 +2137,15 @@ class ComprehensiveDatabaseOperationsDemo {
     }
 
     console.log(
-      '✅ Step 18 completed - Demonstrated unified delete with multiple filter formats'
+      '✅ Step 17 completed - Demonstrated unified delete with multiple filter formats'
     );
   }
 
   /**
-   * 19. Bonus: Show working of all types of filters
+   * 18. Bonus: Show working of all types of filters
    */
   private async demoAllFilterTypes(): Promise<void> {
-    console.log('\n1️⃣9️⃣  Demonstrating All Types of Filters');
+    console.log('\n1️⃣8️⃣  Demonstrating All Types of Filters');
     console.log('-'.repeat(40));
 
     // First, let's add some test records for filtering
@@ -2664,15 +2639,15 @@ class ComprehensiveDatabaseOperationsDemo {
     }
 
     console.log(
-      '✅ Step 19 completed - Demonstrated comprehensive filter system'
+      '✅ Step 18 completed - Demonstrated comprehensive filter system'
     );
   }
 
   /**
-   * 20. Demo snapshot protection
+   * 19. Demo snapshot protection
    */
   private async demoSnapshotProtection(): Promise<void> {
-    console.log('\n2️⃣0️⃣  Demo Snapshot Protection');
+    console.log('\n1️⃣9️⃣  Demo Snapshot Protection');
     console.log('-'.repeat(40));
 
     console.log(
@@ -2864,14 +2839,14 @@ class ComprehensiveDatabaseOperationsDemo {
       '   ✅ Regular tables (non-snapshots) are not affected by protection'
     );
 
-    console.log('✅ Step 20 completed');
+    console.log('✅ Step 19 completed');
   }
 
   /**
-   * 21. Delete table
+   * 20. Delete table
    */
   private async demoDeleteTable(): Promise<void> {
-    console.log('\n2️⃣1️⃣  Deleting Table');
+    console.log('\n2️⃣0️⃣  Deleting Table');
     console.log('-'.repeat(40));
 
     // Verify the table we're about to delete
@@ -2896,7 +2871,7 @@ class ComprehensiveDatabaseOperationsDemo {
       console.log(`✅ Successfully deleted table: ${this.createdTableName}`);
     }
 
-    console.log('✅ Step 21 completed');
+    console.log('✅ Step 20 completed');
   }
 
   /**

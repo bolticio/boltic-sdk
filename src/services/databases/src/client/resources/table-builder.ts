@@ -22,7 +22,6 @@ export interface TableBuilderOptions {
 export class TableBuilder {
   private tableName: string;
   private description?: string;
-  private isPublic: boolean = false;
   private fields: FieldDefinition[] = [];
   private tablesApiClient?: TablesApiClient;
 
@@ -45,14 +44,6 @@ export class TableBuilder {
    */
   describe(description: string): TableBuilder {
     this.description = description;
-    return this;
-  }
-
-  /**
-   * Set if table is public
-   */
-  public(isPublic: boolean = true): TableBuilder {
-    this.isPublic = isPublic;
     return this;
   }
 
