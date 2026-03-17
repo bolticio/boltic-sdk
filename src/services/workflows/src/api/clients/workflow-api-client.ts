@@ -1,141 +1,43 @@
 /**
  * Workflow API Client
- * Handles HTTP communication with the workflow execution APIs.
+ * Extends BaseApiClient — shares auth, headers, error handling, and HTTP
+ * infrastructure with the rest of the SDK via the common module.
  */
 
-import type { HttpAdapter } from '../../../../databases/src/utils/http/adapter';
-import { createHttpAdapter } from '../../../../databases/src/utils/http/client-factory';
+import {
+  BaseApiClient,
+  SERVICE_PATHS,
+  type BaseApiClientConfig,
+  type BolticErrorResponse,
+  type BolticSuccessResponse,
+} from '../../../../common';
 import type {
   CredentialsListData,
-  Environment,
   ExecuteActivityRequestBody,
   ExecuteActivityResponseData,
   GetCredentialsParams,
   GetIntegrationsParams,
   IntegrationExecutionData,
   IntegrationsListData,
-  Region,
-  WorkflowApiClientConfig,
-  WorkflowErrorResponse,
-  WorkflowSuccessResponse,
 } from '../../types/workflow';
 import {
   WORKFLOW_ENDPOINTS,
   buildWorkflowEndpointPath,
 } from '../endpoints/workflows';
 
-type WorkflowResponse<T> = WorkflowSuccessResponse<T> | WorkflowErrorResponse;
+type WorkflowResponse<T> = BolticSuccessResponse<T> | BolticErrorResponse;
 
-interface WorkflowEnvironmentConfig {
-  baseURL: string;
-  timeout: number;
-  debug?: boolean;
-}
-
-const WORKFLOW_REGION_CONFIGS: Record<
-  Region,
-  Record<Environment, WorkflowEnvironmentConfig>
-> = {
-  'asia-south1': {
-    local: { baseURL: 'http://localhost:8000', timeout: 30000, debug: true },
-    sit: {
-      baseURL:
-        'https://asia-south1.api.fcz0.de/service/panel/temporal',
-      timeout: 15000,
-    },
-    uat: {
-      baseURL:
-        'https://asia-south1.api.uat.fcz0.de/service/panel/temporal',
-      timeout: 15000,
-    },
-    prod: {
-      baseURL:
-        'https://asia-south1.api.boltic.io/service/panel/temporal',
-      timeout: 10000,
-    },
-  },
-  'us-central1': {
-    local: { baseURL: 'http://localhost:8000', timeout: 30000, debug: true },
-    sit: {
-      baseURL:
-        'https://us-central1.api.fcz0.de/service/panel/temporal',
-      timeout: 15000,
-    },
-    uat: {
-      baseURL:
-        'https://us-central1.api.uat.fcz0.de/service/panel/temporal',
-      timeout: 15000,
-    },
-    prod: {
-      baseURL:
-        'https://us-central1.api.boltic.io/service/panel/temporal',
-      timeout: 10000,
-    },
-  },
-};
-
-export class WorkflowApiClient {
-  private httpAdapter: HttpAdapter;
-  private config: WorkflowApiClientConfig;
-  private baseURL: string;
+export class WorkflowApiClient extends BaseApiClient {
   private integrationBaseURL: string;
 
   constructor(
     apiKey: string,
-    config: Omit<WorkflowApiClientConfig, 'apiKey'> = {}
+    config: Omit<BaseApiClientConfig, 'apiKey'> = {}
   ) {
-    this.config = { apiKey, ...config };
-    this.httpAdapter = createHttpAdapter();
-
-    const environment = config.environment || 'prod';
-    const region = config.region || 'asia-south1';
-    this.baseURL = this.resolveBaseURL(environment, region);
-    this.integrationBaseURL = this.resolveIntegrationBaseURL(environment, region);
-  }
-
-  private resolveBaseURL(environment: Environment, region: Region): string {
-    const regionConfig = WORKFLOW_REGION_CONFIGS[region];
-    if (!regionConfig) {
-      throw new Error(`Unsupported region: ${region}`);
-    }
-
-    const envConfig = regionConfig[environment];
-    if (!envConfig) {
-      throw new Error(
-        `Unsupported environment: ${environment} for region: ${region}`
-      );
-    }
-
-    return `${envConfig.baseURL}/v1.0`;
-  }
-
-  /** Derives the integration service base URL (service/panel/integration/v1) from the temporal base URL. */
-  private resolveIntegrationBaseURL(environment: Environment, region: Region): string {
-    const regionConfig = WORKFLOW_REGION_CONFIGS[region];
-    if (!regionConfig) {
-      throw new Error(`Unsupported region: ${region}`);
-    }
-
-    const envConfig = regionConfig[environment];
-    if (!envConfig) {
-      throw new Error(
-        `Unsupported environment: ${environment} for region: ${region}`
-      );
-    }
-
-    const base = envConfig.baseURL.replace(
-      '/service/panel/temporal',
-      '/service/panel/integration'
+    super(apiKey, config, SERVICE_PATHS.WORKFLOW_TEMPORAL);
+    this.integrationBaseURL = this.resolveAdditionalServiceURL(
+      SERVICE_PATHS.INTEGRATION
     );
-    return `${base}/v1`;
-  }
-
-  private buildHeaders(): Record<string, string> {
-    return {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'x-boltic-token': this.config.apiKey,
-    };
   }
 
   /**
@@ -149,7 +51,7 @@ export class WorkflowApiClient {
     try {
       const endpoint = WORKFLOW_ENDPOINTS.executeActivity;
       const url = `${this.baseURL}${endpoint.path}`;
-      console.log('url', url);
+
       const response = await this.httpAdapter.request<
         WorkflowResponse<ExecuteActivityResponseData>
       >({
@@ -162,7 +64,7 @@ export class WorkflowApiClient {
 
       return response.data;
     } catch (error: unknown) {
-      return this.handleError(error);
+      return this.formatErrorResponse(error, 'WORKFLOW');
     }
   }
 
@@ -190,7 +92,7 @@ export class WorkflowApiClient {
 
       return response.data;
     } catch (error: unknown) {
-      return this.handleError(error);
+      return this.formatErrorResponse(error, 'WORKFLOW');
     }
   }
 
@@ -221,7 +123,7 @@ export class WorkflowApiClient {
 
       return response.data;
     } catch (error: unknown) {
-      return this.handleError(error);
+      return this.formatErrorResponse(error, 'WORKFLOW');
     }
   }
 
@@ -255,78 +157,7 @@ export class WorkflowApiClient {
 
       return response.data;
     } catch (error: unknown) {
-      return this.handleError(error);
+      return this.formatErrorResponse(error, 'INTEGRATION');
     }
-  }
-
-  private handleError(error: unknown): WorkflowErrorResponse {
-    if (this.config.debug) {
-      // eslint-disable-next-line no-console
-      console.error('[WorkflowApiClient] Error:', error);
-    }
-
-    if (
-      error &&
-      typeof error === 'object' &&
-      'response' in error &&
-      typeof (error as { response: unknown }).response === 'object' &&
-      (error as { response: unknown }).response !== null
-    ) {
-      const resp = (
-        error as {
-          response: {
-            data?: WorkflowErrorResponse;
-            status?: number;
-          };
-        }
-      ).response;
-
-      if (resp.data?.error) {
-        return resp.data;
-      }
-
-      return {
-        error: {
-          code: 'WORKFLOW_API_ERROR',
-          message:
-            error instanceof Error
-              ? error.message
-              : 'Unknown workflow API error',
-          meta: [`Status: ${resp.status || 'unknown'}`],
-        },
-      };
-    }
-
-    if (error instanceof Error) {
-      return {
-        error: {
-          code: 'WORKFLOW_CLIENT_ERROR',
-          message: error.message,
-          meta: [],
-        },
-      };
-    }
-
-    return {
-      error: {
-        code: 'WORKFLOW_UNKNOWN_ERROR',
-        message: 'An unexpected workflow error occurred',
-        meta: [],
-      },
-    };
-  }
-
-  toString(): string {
-    return `WorkflowApiClient { environment: "${this.config.environment || 'prod'}", debug: ${this.config.debug || false} }`;
-  }
-
-  toJSON(): object {
-    const safeConfig = { ...this.config };
-    delete (safeConfig as Record<string, unknown>).apiKey;
-    return { client: 'WorkflowApiClient', config: safeConfig };
-  }
-
-  [Symbol.for('nodejs.util.inspect.custom')](): string {
-    return this.toString();
   }
 }

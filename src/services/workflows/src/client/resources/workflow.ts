@@ -1,10 +1,18 @@
 /**
  * Workflow Resource
  * Provides workflow integration execution and polling operations.
+ * Extends BaseResource for consistency with other SDK modules.
  */
 
 import { POLLING_INTERVAL_MS, MAX_POLLING_ATTEMPTS } from '../../constants';
 import { WorkflowApiClient } from '../../api/clients/workflow-api-client';
+import {
+  BaseResource,
+  BaseClient,
+  isErrorResponse,
+  type BolticErrorResponse,
+  type BolticSuccessResponse,
+} from '../../../../common';
 import type {
   ActivityResultPayload,
   CredentialsListData,
@@ -15,16 +23,12 @@ import type {
   GetIntegrationsParams,
   IntegrationExecutionData,
   IntegrationsListData,
-  WorkflowErrorResponse,
-  WorkflowResourceConfig,
-  WorkflowSuccessResponse,
 } from '../../types/workflow';
 
 // ---------------------------------------------------------------------------
 // Request body builder – isolated so defaults are easy to adjust later
 // ---------------------------------------------------------------------------
 
-/** Default result/context payload. */
 function buildDefaultResultPayload(): ActivityResultPayload {
   return {
     payload: {},
@@ -32,28 +36,18 @@ function buildDefaultResultPayload(): ActivityResultPayload {
   };
 }
 
-/**
- * Assemble the full execute-activity request body.
- * Uses caller-supplied nodes directly; falls back to defaults for result.
- */
 function buildExecuteActivityBody(
   params: ExecuteIntegrationParams
 ): ExecuteActivityRequestBody {
   return {
     nodes: params.nodes,
-    result: buildDefaultResultPayload(),
+    result: params.result ?? buildDefaultResultPayload(),
   };
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function isWorkflowError(
-  response: WorkflowSuccessResponse<unknown> | WorkflowErrorResponse
-): response is WorkflowErrorResponse {
-  return 'error' in response && response.error !== undefined;
-}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -63,12 +57,13 @@ function sleep(ms: number): Promise<void> {
 // Resource
 // ---------------------------------------------------------------------------
 
-export class WorkflowResource {
+export class WorkflowResource extends BaseResource {
   private apiClient: WorkflowApiClient;
-  private debug: boolean;
 
-  constructor(config: WorkflowResourceConfig) {
-    this.debug = config.debug ?? false;
+  constructor(client: BaseClient) {
+    super(client, '/workflows');
+
+    const config = client.getConfig();
     this.apiClient = new WorkflowApiClient(config.apiKey, {
       environment: config.environment,
       region: config.region,
@@ -89,13 +84,11 @@ export class WorkflowResource {
    *
    * @example
    * ```typescript
-   * // Execute and wait for result (default)
    * const result = await client.workflow.executeIntegration({
    *   nodes: [{ id: 'api1', data: { ... }, activity_data: { ... } }],
    * });
    *
-   * // Fire-and-forget
-   * const result = await client.workflow.executeIntegration({
+   * const fire = await client.workflow.executeIntegration({
    *   nodes: [{ id: 'api1', data: { ... }, activity_data: { ... } }],
    *   executeOnly: true,
    * });
@@ -104,16 +97,15 @@ export class WorkflowResource {
   async executeIntegration(
     params: ExecuteIntegrationParams
   ): Promise<
-    | WorkflowSuccessResponse<
+    | BolticSuccessResponse<
         ExecuteActivityResponseData | IntegrationExecutionData
       >
-    | WorkflowErrorResponse
+    | BolticErrorResponse
   > {
     const body = buildExecuteActivityBody(params);
-
     const executeResult = await this.apiClient.executeActivity(body);
 
-    if (isWorkflowError(executeResult)) {
+    if (isErrorResponse(executeResult)) {
       return executeResult;
     }
 
@@ -126,8 +118,7 @@ export class WorkflowResource {
       return {
         error: {
           code: 'MISSING_EXECUTION_ID',
-          message:
-            'Execute API response did not contain an execution_id',
+          message: 'Execute API response did not contain an execution_id',
           meta: [],
         },
       };
@@ -138,9 +129,6 @@ export class WorkflowResource {
 
   /**
    * Retrieve the result of a workflow execution by its run/execution ID.
-   *
-   * This method is both consumer-facing and used internally by the
-   * polling flow inside `executeIntegration`.
    *
    * @param executionId - The execution run ID
    * @returns The execution data or an error response
@@ -153,7 +141,7 @@ export class WorkflowResource {
   async getIntegrationExecuteById(
     executionId: string
   ): Promise<
-    WorkflowSuccessResponse<IntegrationExecutionData> | WorkflowErrorResponse
+    BolticSuccessResponse<IntegrationExecutionData> | BolticErrorResponse
   > {
     return this.apiClient.getExecutionById(executionId);
   }
@@ -167,13 +155,12 @@ export class WorkflowResource {
    * @example
    * ```typescript
    * const list = await client.workflow.getIntegrations();
-   * const page2 = await client.workflow.getIntegrations({ page: 2, per_page: 50 });
    * ```
    */
   async getIntegrations(
     params: GetIntegrationsParams = {}
   ): Promise<
-    WorkflowSuccessResponse<IntegrationsListData> | WorkflowErrorResponse
+    BolticSuccessResponse<IntegrationsListData> | BolticErrorResponse
   > {
     return this.apiClient.getIntegrations(params);
   }
@@ -192,7 +179,7 @@ export class WorkflowResource {
   async getCredentials(
     params: GetCredentialsParams
   ): Promise<
-    WorkflowSuccessResponse<CredentialsListData> | WorkflowErrorResponse
+    BolticSuccessResponse<CredentialsListData> | BolticErrorResponse
   > {
     return this.apiClient.getCredentials(params);
   }
@@ -205,17 +192,19 @@ export class WorkflowResource {
   private async pollExecution(
     executionId: string
   ): Promise<
-    WorkflowSuccessResponse<IntegrationExecutionData> | WorkflowErrorResponse
+    BolticSuccessResponse<IntegrationExecutionData> | BolticErrorResponse
   > {
+    const debug = this.client.getConfig().debug;
+
     for (let attempt = 0; attempt < MAX_POLLING_ATTEMPTS; attempt++) {
       const result = await this.apiClient.getExecutionById(executionId);
 
-      if (isWorkflowError(result)) {
+      if (isErrorResponse(result)) {
         return result;
       }
 
       if (result.data && Object.keys(result.data).length > 0) {
-        if (this.debug) {
+        if (debug) {
           // eslint-disable-next-line no-console
           console.log(
             `[WorkflowResource] Execution ${executionId} completed after ${attempt + 1} poll(s)`

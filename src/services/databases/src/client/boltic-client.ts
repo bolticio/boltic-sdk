@@ -38,7 +38,11 @@ import { SqlResource } from './resources/sql';
 import { TableResource } from './resources/table';
 import { createTableBuilder, TableBuilder } from './resources/table-builder';
 import { WorkflowResource } from '../../../workflows/src/client/resources/workflow';
-import type { ExecuteIntegrationParams, GetCredentialsParams, GetIntegrationsParams } from '../../../workflows/src/types/workflow';
+import type {
+  ExecuteIntegrationParams,
+  GetCredentialsParams,
+  GetIntegrationsParams,
+} from '../../../workflows/src/types/workflow';
 
 export interface ClientOptions extends Partial<EnvironmentConfig> {
   environment?: Environment;
@@ -107,14 +111,9 @@ export class BolticClient {
     // Initialize Database operations
     this.databaseResource = new DatabaseResource(this.baseClient);
 
+    console.log('config', this.baseClient);
     // Initialize Workflow operations
-    this.workflowResource = new WorkflowResource({
-      apiKey: config.apiKey,
-      environment: config.environment,
-      region: config.region,
-      timeout: config.timeout,
-      debug: config.debug,
-    });
+    this.workflowResource = new WorkflowResource(this.baseClient);
 
     // Set default database context (will use default database in API if not specified)
     this.currentDatabase = null;
@@ -490,14 +489,7 @@ export class BolticClient {
     this.indexResource = new IndexResource(this.baseClient);
     this.databaseResource = new DatabaseResource(this.baseClient);
 
-    const updatedConfig = this.configManager.getConfig();
-    this.workflowResource = new WorkflowResource({
-      apiKey: updatedConfig.apiKey,
-      environment: updatedConfig.environment,
-      region: updatedConfig.region,
-      timeout: updatedConfig.timeout,
-      debug: updatedConfig.debug,
-    });
+    this.workflowResource = new WorkflowResource(this.baseClient);
   }
 
   // Security methods to prevent API key exposure

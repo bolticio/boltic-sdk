@@ -1,3 +1,6 @@
+// Common shared infrastructure
+export * from './common';
+
 // Main SDK exports
 export { createClient } from './databases/src/client';
 export * from './databases/src/errors';
@@ -18,11 +21,9 @@ export type {
   IntegrationExecutionData,
   IntegrationsListData,
   RetryConfig,
-  WorkflowApiClientConfig,
   WorkflowApiEndpoint,
   WorkflowApiResponse,
   WorkflowErrorResponse,
-  WorkflowResourceConfig,
   WorkflowSuccessResponse,
 } from './workflows/src/types';
 

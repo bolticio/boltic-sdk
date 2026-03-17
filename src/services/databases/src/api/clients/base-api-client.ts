@@ -1,7 +1,15 @@
 import { BolticErrorResponse } from '../../types/common/responses';
 import type { Environment, Region } from '../../types/config/environment';
-import { REGION_CONFIGS } from '../../types/config/environment';
+import { resolveServiceURL } from '../../types/config/environment';
 import { HttpAdapter, createHttpAdapter } from '../../utils/http';
+
+/** Well-known service paths used across the SDK */
+export const SERVICE_PATHS = {
+  DATABASES: '/service/sdk/boltic-tables/v1',
+  WORKFLOW_TEMPORAL: '/service/panel/temporal/v1.0',
+  // WORKFLOW_AUTOMATION: '/service/panel/automation/v1.0',
+  INTEGRATION: '/service/panel/integration/v1',
+} as const;
 
 export interface BaseApiClientConfig {
   apiKey: string;
@@ -15,40 +23,38 @@ export interface BaseApiClientConfig {
 }
 
 /**
- * Base API Client - provides common functionality for all API clients
+ * Base API Client - provides common functionality for all API clients.
+ *
+ * Subclasses pass a `servicePath` to target different backend services
+ * while sharing auth, headers, error handling, and HTTP infrastructure.
  */
 export abstract class BaseApiClient {
   protected httpAdapter: HttpAdapter;
   protected config: BaseApiClientConfig;
   protected baseURL: string;
+  protected environment: Environment;
+  protected region: Region;
 
   constructor(
     apiKey: string,
-    config: Omit<BaseApiClientConfig, 'apiKey'> = {}
+    config: Omit<BaseApiClientConfig, 'apiKey'> = {},
+    servicePath: string = SERVICE_PATHS.DATABASES
   ) {
     this.config = { apiKey, ...config };
     this.httpAdapter = createHttpAdapter();
 
-    // Set baseURL based on environment and region
-    const environment = config.environment || 'prod';
-    const region = config.region || 'asia-south1'; // Default to asia-south1 for legacy support
-    this.baseURL = this.getBaseURL(environment, region);
+    this.environment = config.environment || 'prod';
+    this.region = config.region || 'asia-south1';
+    this.baseURL = resolveServiceURL(this.region, this.environment, servicePath);
   }
 
-  private getBaseURL(environment: Environment, region: Region): string {
-    const regionConfig = REGION_CONFIGS[region];
-    if (!regionConfig) {
-      throw new Error(`Unsupported region: ${region}`);
-    }
-
-    const envConfig = regionConfig[environment];
-    if (!envConfig) {
-      throw new Error(
-        `Unsupported environment: ${environment} for region: ${region}`
-      );
-    }
-
-    return `${envConfig.baseURL}/v1`;
+  /**
+   * Resolve a secondary service URL using the same region/environment
+   * but a different service path. Useful when a single client talks
+   * to multiple backend services (e.g. temporal + integration).
+   */
+  protected resolveAdditionalServiceURL(servicePath: string): string {
+    return resolveServiceURL(this.region, this.environment, servicePath);
   }
 
   protected buildHeaders(): Record<string, string> {
@@ -65,10 +71,10 @@ export abstract class BaseApiClient {
     prefix = 'API'
   ): BolticErrorResponse {
     if (this.config.debug) {
-      console.error(`${prefix} Error:`, error);
+      // eslint-disable-next-line no-console
+      console.error(`[${this.constructor.name}] ${prefix} Error:`, error);
     }
 
-    // Handle different error types following Boltic format
     if (error && typeof error === 'object' && 'response' in error) {
       const apiError = error as {
         response?: {
@@ -77,28 +83,28 @@ export abstract class BaseApiClient {
         };
       };
 
-      // If API already returned Boltic format, use it
       if (apiError.response?.data?.error) {
         return apiError.response.data;
       }
 
-      // Otherwise format it to Boltic structure
       return {
         error: {
           code: `${prefix}_ERROR`,
           message:
-            (error as unknown as Error).message || `Unknown ${prefix} error`,
+            error instanceof Error
+              ? error.message
+              : `Unknown ${prefix} error`,
           meta: [`Status: ${apiError.response?.status || 'unknown'}`],
         },
       };
     }
 
-    if (error && typeof error === 'object' && 'message' in error) {
+    if (error instanceof Error) {
       return {
         error: {
           code: `${prefix}_CLIENT_ERROR`,
-          message: (error as Error).message,
-          meta: [`${prefix} client-side error occurred`],
+          message: error.message,
+          meta: [],
         },
       };
     }
@@ -107,12 +113,11 @@ export abstract class BaseApiClient {
       error: {
         code: `${prefix}_UNKNOWN_ERROR`,
         message: `An unexpected ${prefix} error occurred`,
-        meta: [`Unknown ${prefix} error type`],
+        meta: [],
       },
     };
   }
 
-  // Security methods to prevent API key exposure
   toString(): string {
     return `${this.constructor.name} { environment: "${this.config.environment || 'prod'}", debug: ${this.config.debug || false} }`;
   }
@@ -126,7 +131,6 @@ export abstract class BaseApiClient {
     };
   }
 
-  // Custom inspect method for Node.js console logging
   [Symbol.for('nodejs.util.inspect.custom')](): string {
     return this.toString();
   }

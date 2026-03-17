@@ -1,10 +1,30 @@
 /**
  * Workflow module types
- * Defines request/response shapes for workflow integration execution APIs.
+ *
+ * Domain-specific request/response shapes for workflow APIs.
+ * Common infrastructure types (Region, Environment, response wrappers,
+ * client config) are imported from the shared common module.
  */
 
-export type Region = 'asia-south1' | 'us-central1';
-export type Environment = 'local' | 'sit' | 'uat' | 'prod';
+import type {
+  Region,
+  Environment,
+  BolticSuccessResponse,
+  BolticErrorResponse,
+  BaseApiClientConfig,
+} from '../../../common';
+
+// Re-export shared types so consumers can import from one place
+export type { Region, Environment, BolticSuccessResponse, BolticErrorResponse, BaseApiClientConfig };
+
+/** @deprecated Use `BolticSuccessResponse` directly */
+export type WorkflowSuccessResponse<T> = BolticSuccessResponse<T>;
+/** @deprecated Use `BolticErrorResponse` directly */
+export type WorkflowErrorResponse = BolticErrorResponse;
+/** @deprecated Use `BolticSuccessResponse<T> | BolticErrorResponse` directly */
+export type WorkflowApiResponse<T> =
+  | BolticSuccessResponse<T>
+  | BolticErrorResponse;
 
 // ---------------------------------------------------------------------------
 // Endpoint
@@ -146,50 +166,3 @@ export interface GetCredentialsParams {
 
 /** Data returned from the get-credentials API */
 export type CredentialsListData = Record<string, unknown>;
-
-// ---------------------------------------------------------------------------
-// Boltic-style response wrappers (local to workflow module)
-// ---------------------------------------------------------------------------
-
-/** Workflow API success response */
-export interface WorkflowSuccessResponse<T> {
-  data: T;
-  message?: string;
-}
-
-/** Workflow API error response */
-export interface WorkflowErrorResponse {
-  data?: never;
-  error: {
-    code?: string;
-    message?: string;
-    meta?: string[];
-  };
-}
-
-/** Union of success and error responses */
-export type WorkflowApiResponse<T> =
-  | WorkflowSuccessResponse<T>
-  | WorkflowErrorResponse;
-
-// ---------------------------------------------------------------------------
-// Client / resource configuration
-// ---------------------------------------------------------------------------
-
-/** Configuration for `WorkflowApiClient` */
-export interface WorkflowApiClientConfig {
-  apiKey: string;
-  environment?: Environment;
-  region?: Region;
-  timeout?: number;
-  debug?: boolean;
-}
-
-/** Configuration for `WorkflowResource` */
-export interface WorkflowResourceConfig {
-  apiKey: string;
-  environment: Environment;
-  region: Region;
-  timeout: number;
-  debug?: boolean;
-}

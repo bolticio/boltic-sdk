@@ -13,7 +13,7 @@ export {
   CONTINUE_ON_FAILURE,
 } from './constants';
 
-// Types
+// Workflow-specific types (domain types only — response wrappers come from shared module)
 export type {
   ActivityNode,
   ActivityProperties,
@@ -27,10 +27,8 @@ export type {
   IntegrationExecutionData,
   IntegrationsListData,
   RetryConfig,
-  WorkflowApiClientConfig,
   WorkflowApiEndpoint,
   WorkflowApiResponse,
   WorkflowErrorResponse,
-  WorkflowResourceConfig,
   WorkflowSuccessResponse,
 } from './types';
