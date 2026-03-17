@@ -24,8 +24,7 @@ dotenv.config({ path: '.env' });
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
-// const API_KEY = process.env.BOLTIC_API_KEY || '<YOUR_API_KEY>';
-const API_KEY = '3958f540-938e-4a9d-b236-236f6035678c';
+const API_KEY = process.env.BOLTIC_API_KEY || '<YOUR_API_KEY>';
 const REGION: 'asia-south1' | 'us-central1' = 'asia-south1';
 const ENVIRONMENT: 'local' | 'sit' | 'uat' | 'prod' = 'prod';
 
