@@ -30,5 +30,24 @@ export type {
   WhereCondition,
 } from './services/databases/src/types';
 
+// Export workflow module
+export { WorkflowResource } from './services/workflows/src/client';
+export type {
+  ExecuteIntegrationParams,
+  ExecuteActivityResponseData,
+  GetCredentialsParams,
+  GetIntegrationsParams,
+  CredentialsListData,
+  IntegrationExecutionData,
+  IntegrationsListData,
+  WorkflowSuccessResponse,
+  WorkflowErrorResponse,
+  WorkflowApiResponse,
+  ActivityNode,
+  ActivityProperties,
+  ActivityResultPayload,
+  RetryConfig,
+} from './services/workflows/src/types';
+
 // Version information
 export const VERSION = '1.0.0';

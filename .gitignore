@@ -89,3 +89,4 @@ src/services/databases/docs/
 .settings/
 .metadata/
 .recommenders/
+.temp/

@@ -1,10 +1,19 @@
-// Main SDK exports
-export { createClient } from './databases/src/client';
-export * from './databases/src/errors';
-export * from './databases/src/types';
+// Client
+export { WorkflowResource } from './client';
 
-// Workflow module
-export { WorkflowResource } from './workflows/src/client';
+// API
+export { WorkflowApiClient } from './api';
+export { WORKFLOW_ENDPOINTS, buildWorkflowEndpointPath } from './api';
+
+// Constants
+export {
+  POLLING_INTERVAL_MS,
+  MAX_POLLING_ATTEMPTS,
+  DEFAULT_RETRY_CONFIG,
+  CONTINUE_ON_FAILURE,
+} from './constants';
+
+// Types
 export type {
   ActivityNode,
   ActivityProperties,
@@ -24,7 +33,4 @@ export type {
   WorkflowErrorResponse,
   WorkflowResourceConfig,
   WorkflowSuccessResponse,
-} from './workflows/src/types';
-
-// Version information
-export const VERSION = '1.0.0';
+} from './types';

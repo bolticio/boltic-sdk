@@ -37,6 +37,8 @@ import { createRecordBuilder, RecordBuilder } from './resources/record-builder';
 import { SqlResource } from './resources/sql';
 import { TableResource } from './resources/table';
 import { createTableBuilder, TableBuilder } from './resources/table-builder';
+import { WorkflowResource } from '../../../workflows/src/client/resources/workflow';
+import type { ExecuteIntegrationParams, GetCredentialsParams, GetIntegrationsParams } from '../../../workflows/src/types/workflow';
 
 export interface ClientOptions extends Partial<EnvironmentConfig> {
   environment?: Environment;
@@ -61,6 +63,7 @@ export class BolticClient {
   private sqlResource: SqlResource;
   private indexResource: IndexResource;
   private databaseResource: DatabaseResource;
+  private workflowResource: WorkflowResource;
   private currentDatabase: DatabaseContext | null = null;
   private clientOptions: ClientOptions;
 
@@ -103,6 +106,15 @@ export class BolticClient {
 
     // Initialize Database operations
     this.databaseResource = new DatabaseResource(this.baseClient);
+
+    // Initialize Workflow operations
+    this.workflowResource = new WorkflowResource({
+      apiKey: config.apiKey,
+      environment: config.environment,
+      region: config.region,
+      timeout: config.timeout,
+      debug: config.debug,
+    });
 
     // Set default database context (will use default database in API if not specified)
     this.currentDatabase = null;
@@ -335,6 +347,36 @@ export class BolticClient {
     };
   }
 
+  /**
+   * Workflow integration operations.
+   *
+   * @example
+   * ```typescript
+   * // Execute and poll for result
+   * const result = await client.workflow.executeIntegration({
+   *   nodes: [{ id: 'api1', data: { ... }, activity_data: { ... } }],
+   * });
+   *
+   * // Get execution result by ID
+   * const exec = await client.workflow.getIntegrationExecuteById('run-uuid');
+   *
+   * // List integrations
+   * const integrations = await client.workflow.getIntegrations();
+   * ```
+   */
+  get workflow() {
+    return {
+      executeIntegration: (params: ExecuteIntegrationParams) =>
+        this.workflowResource.executeIntegration(params),
+      getIntegrationExecuteById: (executionId: string) =>
+        this.workflowResource.getIntegrationExecuteById(executionId),
+      getIntegrations: (params?: GetIntegrationsParams) =>
+        this.workflowResource.getIntegrations(params),
+      getCredentials: (params: GetCredentialsParams) =>
+        this.workflowResource.getCredentials(params),
+    };
+  }
+
   // SQL resource access for testing
   getSqlResource(): SqlResource {
     return this.sqlResource;
@@ -447,6 +489,15 @@ export class BolticClient {
     this.sqlResource = new SqlResource(this.baseClient);
     this.indexResource = new IndexResource(this.baseClient);
     this.databaseResource = new DatabaseResource(this.baseClient);
+
+    const updatedConfig = this.configManager.getConfig();
+    this.workflowResource = new WorkflowResource({
+      apiKey: updatedConfig.apiKey,
+      environment: updatedConfig.environment,
+      region: updatedConfig.region,
+      timeout: updatedConfig.timeout,
+      debug: updatedConfig.debug,
+    });
   }
 
   // Security methods to prevent API key exposure
