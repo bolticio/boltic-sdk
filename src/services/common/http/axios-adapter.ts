@@ -1,0 +1,161 @@
+import { createErrorWithContext } from '../errors';
+import { HttpAdapter, HttpRequestConfig, HttpResponse } from './adapter';
+
+interface AxiosInstance {
+  (config: unknown): Promise<{
+    data: unknown;
+    status: number;
+    statusText: string;
+    headers: Record<string, string>;
+  }>;
+}
+
+export class AxiosAdapter implements HttpAdapter {
+  private axios: AxiosInstance;
+
+  constructor() {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      this.axios = require('axios');
+    } catch (error) {
+      throw createErrorWithContext(
+        'Axios is required for Node.js < 18. Please install axios: npm install axios',
+        { error }
+      );
+    }
+  }
+
+  async request<T = unknown>(
+    config: HttpRequestConfig
+  ): Promise<HttpResponse<T>> {
+    try {
+      const axiosConfig = {
+        url: config.url,
+        method: config.method.toLowerCase(),
+        headers: config.headers,
+        params: config.params,
+        data: config.data,
+        timeout: config.timeout,
+        signal: config.signal,
+        validateStatus: () => true,
+      };
+
+      const response = await this.axios(axiosConfig);
+
+      if (response.status < 200 || response.status >= 300) {
+        const isHtmlError =
+          (typeof response.data === 'string' &&
+            response.data.trim().startsWith('<!DOCTYPE')) ||
+          (typeof response.data === 'string' &&
+            response.data.includes('<html'));
+
+        if (isHtmlError) {
+          const htmlContent = response.data as string;
+          const preMatch = htmlContent.match(/<pre>(.*?)<\/pre>/s);
+          const errorMessage = preMatch
+            ? preMatch[1].trim()
+            : `HTTP ${response.status}: ${response.statusText}`;
+
+          throw createErrorWithContext(errorMessage, {
+            url: config.url,
+            method: config.method,
+            status: response.status,
+            statusText: response.statusText,
+            isHtmlError: true,
+          });
+        }
+
+        if (
+          response.data &&
+          typeof response.data === 'object' &&
+          'error' in response.data
+        ) {
+          return {
+            data: response.data as T,
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers || {},
+          };
+        }
+
+        throw createErrorWithContext(
+          `HTTP ${response.status}: ${response.statusText}`,
+          {
+            url: config.url,
+            method: config.method,
+            status: response.status,
+            statusText: response.statusText,
+            responseData: response.data,
+          }
+        );
+      }
+
+      return {
+        data: response.data as T,
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers || {},
+      };
+    } catch (error: unknown) {
+      const axiosError = error as {
+        code?: string;
+        message?: string;
+        name?: string;
+      };
+
+      if (
+        axiosError.code === 'ECONNABORTED' ||
+        axiosError.message?.includes('timeout')
+      ) {
+        throw createErrorWithContext('Request timeout', {
+          url: config.url,
+          method: config.method,
+          timeout: config.timeout,
+        });
+      }
+
+      if (
+        axiosError.code === 'ERR_NETWORK' ||
+        axiosError.code === 'ENOTFOUND' ||
+        axiosError.code === 'ECONNREFUSED' ||
+        axiosError.code === 'EHOSTUNREACH' ||
+        axiosError.code === 'ETIMEDOUT' ||
+        axiosError.code === 'ERR_INTERNET_DISCONNECTED' ||
+        axiosError.message?.includes('network') ||
+        axiosError.message?.includes('internet') ||
+        axiosError.message?.includes('connection') ||
+        axiosError.message?.includes('resolve')
+      ) {
+        throw createErrorWithContext(
+          'Network connection failed. Please check your internet connection or VPN settings.',
+          {
+            url: config.url,
+            method: config.method,
+            networkError: true,
+            errorCode: axiosError.code,
+            originalMessage: axiosError.message,
+          }
+        );
+      }
+
+      if (
+        axiosError.name === 'AbortError' ||
+        axiosError.code === 'ERR_CANCELED'
+      ) {
+        throw createErrorWithContext('Request was aborted', {
+          url: config.url,
+          method: config.method,
+        });
+      }
+
+      throw createErrorWithContext(
+        `HTTP request failed: ${axiosError.message || 'Unknown error'}`,
+        {
+          url: config.url,
+          method: config.method,
+          originalError: error,
+        }
+      );
+    }
+  }
+}
