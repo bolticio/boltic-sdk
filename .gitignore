@@ -23,8 +23,8 @@ coverage/
 # Editor directories and files
 .vscode/
 .idea/
-.claude/
-.cursor/
+# .claude/
+# .cursor/
 .vim/
 .netrwhist
 *.swp

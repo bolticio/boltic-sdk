@@ -1,0 +1,95 @@
+---
+description: Boltic SDK architecture, conventions, and base class hierarchy. Core context for all SDK work.
+alwaysApply: true
+---
+
+# Boltic SDK Architecture
+
+## 5-Layer Service Pattern
+
+Every service module follows this stack. When modifying or creating operations, all layers must be consistent.
+
+```
+types/          → Request/response interfaces
+api/endpoints/  → { path, method, authenticated } endpoint definitions
+api/clients/    → Class extending BaseApiClient — raw HTTP calls
+client/resources/ → Class extending BaseResource — business logic + orchestration
+BolticClient    → Facade getter exposing resource methods to end users
+```
+
+## Base Classes
+
+- **BaseApiClient** (`services/common/client/base-api-client.ts`): Constructor takes `(apiKey, config, servicePath)`. Provides `httpAdapter`, `baseURL`, `buildHeaders()`, `formatErrorResponse()`. All API client methods follow the pattern: try → build URL from endpoint → `httpAdapter.request()` → return `response.data` / catch → `formatErrorResponse()`.
+- **BaseResource** (`services/common/client/base-resource.ts`): Constructor takes `(client: BaseClient, basePath)`. Provides `makeRequest()`, `buildQueryParams()`, `handleResponse()`.
+
+## Endpoint Definition Pattern
+
+```typescript
+export const MODULE_ENDPOINTS: ModuleEndpoints = {
+  operationName: {
+    path: '/resource/{param_id}/action',
+    method: 'POST',
+    authenticated: true,
+  },
+};
+
+export function buildModuleEndpointPath(
+  endpoint: ModuleApiEndpoint,
+  params: Record<string, string> = {}
+): string {
+  let path = endpoint.path;
+  for (const [key, value] of Object.entries(params)) {
+    path = path.replace(`{${key}}`, value);
+  }
+  return path;
+}
+```
+
+## API Client Method Pattern
+
+```typescript
+async methodName(params: MethodParams): Promise<ModuleResponse<DataType>> {
+  try {
+    const endpoint = MODULE_ENDPOINTS.operationName;
+    const path = buildModuleEndpointPath(endpoint, { param_id: params.id });
+    const url = `${this.baseURL}${path}`;
+
+    const response = await this.httpAdapter.request<ModuleResponse<DataType>>({
+      url,
+      method: endpoint.method,
+      headers: this.buildHeaders(),
+      data: body,          // for POST/PUT/PATCH
+      timeout: this.config.timeout,
+    });
+
+    return response.data;
+  } catch (error: unknown) {
+    return this.formatErrorResponse(error, 'MODULE_PREFIX');
+  }
+}
+```
+
+## Response Contract
+
+All public methods return `BolticSuccessResponse<T> | BolticErrorResponse`. Never throw — always return error responses. Use `isErrorResponse()` guard.
+
+## Auth Header
+
+`x-boltic-token` (not Bearer). Set via `buildHeaders()` in BaseApiClient.
+
+## Service Paths
+
+Add new paths to `SERVICE_PATHS` in `common/client/base-api-client.ts`:
+
+```typescript
+export const SERVICE_PATHS = {
+  DATABASES: '/service/sdk/boltic-tables/v1',
+  WORKFLOW_TEMPORAL: '/service/panel/temporal/v1.0',
+  INTEGRATION: '/service/panel/integration/v1',
+  // NEW_MODULE: '/service/...',
+} as const;
+```
+
+## Export Chain
+
+Service module `index.ts` → root `src/index.ts`. Every public type, class, and function must be exported from both.
