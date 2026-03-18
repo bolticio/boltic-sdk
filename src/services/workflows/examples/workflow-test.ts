@@ -26,7 +26,7 @@ dotenv.config({ path: '.env' });
 // ---------------------------------------------------------------------------
 const API_KEY = process.env.BOLTIC_API_KEY || '<YOUR_API_KEY>';
 const REGION: 'asia-south1' | 'us-central1' = 'asia-south1';
-const ENVIRONMENT: 'local' | 'sit' | 'uat' | 'prod' = 'prod';
+const ENVIRONMENT: 'sit' | 'uat' | 'prod' = 'prod';
 
 const SAMPLE_NODES: ActivityNode[] = [
   {

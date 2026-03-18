@@ -113,8 +113,7 @@ export class BolticClient {
 
     // Initialize Database operations
     this.databaseResource = new DatabaseResource(this.baseClient);
-
-    console.log('config', this.baseClient);
+    
     // Initialize Workflow operations
     this.workflowResource = new WorkflowResource(this.baseClient);
 
