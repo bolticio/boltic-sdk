@@ -4,25 +4,19 @@ import {
   TableQueryOptions,
   TableRecord,
 } from '../../types/api/table';
-import type { Environment, Region } from '../../types/config/environment';
-import { REGION_CONFIGS } from '../../types/config/environment';
+import {
+  BaseApiClient,
+  type BaseApiClientConfig,
+  type BolticSuccessResponse,
+  type BolticListResponse,
+  type BolticErrorResponse,
+} from '../../../../common';
 import { filterArrayFields, filterObjectFields } from '../../utils/common';
 import { addDbIdToUrl } from '../../utils/database/db-context';
-import { createHttpAdapter } from '../../utils/http';
-import { HttpAdapter } from '../../utils/http/adapter';
 import { buildEndpointPath, TABLE_ENDPOINTS } from '../endpoints/tables';
 import { transformTableCreateRequest } from '../transformers/tables';
 
-export interface TablesApiClientConfig {
-  apiKey: string;
-  environment?: Environment;
-  region?: Region;
-  timeout?: number;
-  debug?: boolean;
-  retryAttempts?: number;
-  retryDelay?: number;
-  headers?: Record<string, string>;
-}
+export type TablesApiClientConfig = BaseApiClientConfig;
 
 export interface TableCreateOptions {
   is_ai_generated_schema?: boolean;
@@ -36,68 +30,12 @@ export interface TableListOptions extends TableQueryOptions {
   db_id?: string;
 }
 
-// Boltic API Response Structure interfaces
-interface BolticSuccessResponse<T = unknown> {
-  data: T;
-  message?: string;
-}
-
-interface BolticListResponse<T = unknown> {
-  data: T[];
-  pagination?: {
-    total_count: number;
-    total_pages: number;
-    current_page: number;
-    per_page: number;
-    type: string;
-  };
-  message?: string;
-}
-
-interface BolticErrorResponse {
-  data?: never;
-  error: {
-    code?: string;
-    message?: string;
-    meta?: string[];
-  };
-}
-
-/**
- * Tables API Client - handles all table-related API operations
- */
-export class TablesApiClient {
-  private httpAdapter: HttpAdapter;
-  private config: TablesApiClientConfig;
-  private baseURL: string;
-
+export class TablesApiClient extends BaseApiClient {
   constructor(
     apiKey: string,
-    config: Omit<TablesApiClientConfig, 'apiKey'> = {}
+    config: Omit<BaseApiClientConfig, 'apiKey'> = {}
   ) {
-    this.config = { apiKey, ...config };
-    this.httpAdapter = createHttpAdapter();
-
-    // Set baseURL based on environment and region
-    const environment = config.environment || 'prod';
-    const region = config.region || 'asia-south1'; // Default to asia-south1 for legacy support
-    this.baseURL = this.getBaseURL(environment, region);
-  }
-
-  private getBaseURL(environment: Environment, region: Region): string {
-    const regionConfig = REGION_CONFIGS[region];
-    if (!regionConfig) {
-      throw new Error(`Unsupported region: ${region}`);
-    }
-
-    const envConfig = regionConfig[environment];
-    if (!envConfig) {
-      throw new Error(
-        `Unsupported environment: ${environment} for region: ${region}`
-      );
-    }
-
-    return `${envConfig.baseURL}/v1`;
+    super(apiKey, config);
   }
 
   /**
@@ -272,63 +210,5 @@ export class TablesApiClient {
     } catch (error) {
       return this.formatErrorResponse(error);
     }
-  }
-
-  // Private helper methods
-
-  private buildHeaders(): Record<string, string> {
-    return {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'x-boltic-token': this.config.apiKey,
-    };
-  }
-
-  private formatErrorResponse(error: unknown): BolticErrorResponse {
-    if (this.config.debug) {
-      console.error('Tables API Error:', error);
-    }
-
-    // Handle different error types following Boltic format
-    if (error && typeof error === 'object' && 'response' in error) {
-      const apiError = error as {
-        response?: {
-          data?: BolticErrorResponse;
-          status?: number;
-        };
-      };
-
-      // If API already returned Boltic format, use it
-      if (apiError.response?.data?.error) {
-        return apiError.response.data;
-      }
-
-      // Otherwise format it to Boltic structure
-      return {
-        error: {
-          code: 'API_ERROR',
-          message: (error as unknown as Error).message || 'Unknown API error',
-          meta: [`Status: ${apiError.response?.status || 'unknown'}`],
-        },
-      };
-    }
-
-    if (error && typeof error === 'object' && 'message' in error) {
-      return {
-        error: {
-          code: 'CLIENT_ERROR',
-          message: (error as Error).message,
-          meta: ['Client-side error occurred'],
-        },
-      };
-    }
-
-    return {
-      error: {
-        code: 'UNKNOWN_ERROR',
-        message: 'An unexpected error occurred',
-        meta: ['Unknown error type'],
-      },
-    };
   }
 }

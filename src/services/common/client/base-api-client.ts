@@ -44,7 +44,11 @@ export abstract class BaseApiClient {
 
     this.environment = config.environment || 'prod';
     this.region = config.region || 'asia-south1';
-    this.baseURL = resolveServiceURL(this.region, this.environment, servicePath);
+    this.baseURL = resolveServiceURL(
+      this.region,
+      this.environment,
+      servicePath
+    );
   }
 
   /**
@@ -89,9 +93,7 @@ export abstract class BaseApiClient {
         error: {
           code: `${prefix}_ERROR`,
           message:
-            error instanceof Error
-              ? error.message
-              : `Unknown ${prefix} error`,
+            error instanceof Error ? error.message : `Unknown ${prefix} error`,
           meta: [`Status: ${apiError.response?.status || 'unknown'}`],
         },
       };

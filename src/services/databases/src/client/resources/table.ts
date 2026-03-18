@@ -2,7 +2,17 @@ import {
   TablesApiClient,
   TableListOptions,
 } from '../../api/clients/tables-api-client';
-import { ApiError, ValidationError } from '../../errors';
+import {
+  ApiError,
+  ValidationError,
+  type ApiResponse,
+  type BolticSuccessResponse,
+  type BolticErrorResponse,
+  isErrorResponse,
+  isListResponse,
+  BaseClient,
+  BaseResource,
+} from '../../../../common';
 import {
   FieldDefinition,
   TableCreateRequest,
@@ -11,14 +21,6 @@ import {
   TableRecord,
   TableUpdateRequest,
 } from '../../types/api/table';
-import {
-  ApiResponse,
-  BolticSuccessResponse,
-  isErrorResponse,
-  isListResponse,
-} from '../../types/common/responses';
-import { BaseClient } from '../core/base-client';
-import { BaseResource } from '../core/base-resource';
 
 export class TableResource extends BaseResource {
   private tablesApiClient: TablesApiClient;
@@ -251,10 +253,7 @@ export class TableResource extends BaseResource {
   async findOne(
     options: TableQueryOptions,
     dbId?: string
-  ): Promise<
-    | BolticSuccessResponse<TableRecord | null>
-    | import('../../types/common/responses').BolticErrorResponse
-  > {
+  ): Promise<BolticSuccessResponse<TableRecord | null> | BolticErrorResponse> {
     try {
       if (!options.where?.id && !options.where?.name) {
         throw new ValidationError(
@@ -350,10 +349,7 @@ export class TableResource extends BaseResource {
   async findByName(
     name: string,
     dbId?: string
-  ): Promise<
-    | BolticSuccessResponse<TableRecord | null>
-    | import('../../types/common/responses').BolticErrorResponse
-  > {
+  ): Promise<BolticSuccessResponse<TableRecord | null> | BolticErrorResponse> {
     return this.findOne({ where: { name } }, dbId);
   }
 
@@ -363,10 +359,7 @@ export class TableResource extends BaseResource {
   async findById(
     id: string,
     dbId?: string
-  ): Promise<
-    | BolticSuccessResponse<TableRecord | null>
-    | import('../../types/common/responses').BolticErrorResponse
-  > {
+  ): Promise<BolticSuccessResponse<TableRecord | null> | BolticErrorResponse> {
     return this.findOne({ where: { id } }, dbId);
   }
 
@@ -377,10 +370,7 @@ export class TableResource extends BaseResource {
     name: string,
     data: TableUpdateRequest,
     dbId?: string
-  ): Promise<
-    | BolticSuccessResponse<TableRecord>
-    | import('../../types/common/responses').BolticErrorResponse
-  > {
+  ): Promise<BolticSuccessResponse<TableRecord> | BolticErrorResponse> {
     try {
       // First find the table to get its ID
       const tableResult = await this.findByName(name, dbId);
@@ -424,10 +414,7 @@ export class TableResource extends BaseResource {
   async delete(
     name: string,
     dbId?: string
-  ): Promise<
-    | BolticSuccessResponse<{ message: string }>
-    | import('../../types/common/responses').BolticErrorResponse
-  > {
+  ): Promise<BolticSuccessResponse<{ message: string }> | BolticErrorResponse> {
     try {
       // First find the table to get its ID
       const tableResult = await this.findByName(name, dbId);

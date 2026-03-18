@@ -21,12 +21,16 @@
  */
 
 import * as dotenv from 'dotenv';
+import * as path from 'path';
 import { BolticClient, FieldDefinition, isErrorResponse } from '../../src';
 import { SqlTestClient } from '../../src/testing/sql-test-client';
 import { StreamingUtils } from '../../src/utils/streaming/async-iterable';
 
 // Load environment variables
-dotenv.config({ path: '../.env' });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+if (!process.env.BOLTIC_API_KEY) {
+  dotenv.config();
+}
 
 // Configuration
 const DEMO_CONFIG = {

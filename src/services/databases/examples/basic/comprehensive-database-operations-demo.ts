@@ -23,6 +23,7 @@
  * - Ensure you have proper API access
  */
 
+import * as path from 'path';
 import * as dotenv from 'dotenv';
 import {
   AddIndexRequest,
@@ -34,7 +35,10 @@ import {
 import { createFilter } from '../../src/utils/filters/filter-mapper';
 
 // Load environment variables
-dotenv.config({ path: '../.env' });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+if (!process.env.BOLTIC_API_KEY) {
+  dotenv.config();
+}
 
 // Configuration
 const DEMO_CONFIG = {

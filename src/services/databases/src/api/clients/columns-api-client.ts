@@ -6,28 +6,23 @@ import {
   ColumnUpdateRequest,
 } from '../../types/api/column';
 import { FieldDefinition } from '../../types/api/table';
-import type { Environment, Region } from '../../types/config/environment';
-import { REGION_CONFIGS } from '../../types/config/environment';
+import {
+  BaseApiClient,
+  type BaseApiClientConfig,
+  type BolticSuccessResponse,
+  type BolticListResponse,
+  type BolticErrorResponse,
+  isErrorResponse,
+} from '../../../../common';
 import { filterArrayFields, filterObjectFields } from '../../utils/common';
 import { addDbIdToUrl } from '../../utils/database/db-context';
-import { createHttpAdapter } from '../../utils/http';
-import { HttpAdapter } from '../../utils/http/adapter';
 import { buildEndpointPath, COLUMN_ENDPOINTS } from '../endpoints/columns';
 import {
   transformColumnCreateRequest,
   transformColumnUpdateRequest,
 } from '../transformers/columns';
 
-export interface ColumnsApiClientConfig {
-  apiKey: string;
-  environment?: Environment;
-  region?: Region;
-  timeout?: number;
-  debug?: boolean;
-  retryAttempts?: number;
-  retryDelay?: number;
-  headers?: Record<string, string>;
-}
+export type ColumnsApiClientConfig = BaseApiClientConfig;
 
 export interface ColumnListOptions extends ColumnQueryOptions {
   page?: number;
@@ -35,7 +30,6 @@ export interface ColumnListOptions extends ColumnQueryOptions {
   db_id?: string;
 }
 
-// API request format interfaces
 export interface ApiFilter {
   field: string;
   operator: string;
@@ -56,68 +50,12 @@ export interface ColumnApiListRequest {
   sort: ApiSort[];
 }
 
-// Boltic API Response Structure interfaces
-interface BolticSuccessResponse<T = unknown> {
-  data: T;
-  message?: string;
-}
-
-interface BolticListResponse<T = unknown> {
-  data: T[];
-  pagination?: {
-    total_count: number;
-    total_pages: number;
-    current_page: number;
-    per_page: number;
-    type: string;
-  };
-  message?: string;
-}
-
-interface BolticErrorResponse {
-  data?: never;
-  error: {
-    code?: string;
-    message?: string;
-    meta?: string[];
-  };
-}
-
-/**
- * Columns API Client - handles all column-related API operations
- */
-export class ColumnsApiClient {
-  private httpAdapter: HttpAdapter;
-  private config: ColumnsApiClientConfig;
-  private baseURL: string;
-
+export class ColumnsApiClient extends BaseApiClient {
   constructor(
     apiKey: string,
-    config: Omit<ColumnsApiClientConfig, 'apiKey'> = {}
+    config: Omit<BaseApiClientConfig, 'apiKey'> = {}
   ) {
-    this.config = { apiKey, ...config };
-    this.httpAdapter = createHttpAdapter();
-
-    // Set baseURL based on environment and region
-    const environment = config.environment || 'prod';
-    const region = config.region || 'asia-south1'; // Default to asia-south1 for legacy support
-    this.baseURL = this.getBaseURL(environment, region);
-  }
-
-  private getBaseURL(environment: Environment, region: Region): string {
-    const regionConfig = REGION_CONFIGS[region];
-    if (!regionConfig) {
-      throw new Error(`Unsupported region: ${region}`);
-    }
-
-    const envConfig = regionConfig[environment];
-    if (!envConfig) {
-      throw new Error(
-        `Unsupported environment: ${environment} for region: ${region}`
-      );
-    }
-
-    return `${envConfig.baseURL}/v1`;
+    super(apiKey, config);
   }
 
   /**
@@ -170,7 +108,7 @@ export class ColumnsApiClient {
       for (const column of columns) {
         const result = await this.createColumn(tableId, column);
 
-        if ('error' in result) {
+        if (isErrorResponse(result)) {
           return result;
         }
 
@@ -375,7 +313,7 @@ export class ColumnsApiClient {
         tableId,
         apiRequest as unknown as ColumnListOptions
       );
-      if ('error' in listResult) {
+      if (isErrorResponse(listResult)) {
         return listResult;
       }
       const column = listResult.data[0] || null;
@@ -432,7 +370,7 @@ export class ColumnsApiClient {
       // First find the column to get its current data
       const findResult = await this.findColumnByName(tableId, columnName);
 
-      if ('error' in findResult) {
+      if (isErrorResponse(findResult)) {
         return findResult;
       }
 
@@ -479,7 +417,7 @@ export class ColumnsApiClient {
       // First find the column to get its ID
       const findResult = await this.findColumnByName(tableId, columnName);
 
-      if ('error' in findResult) {
+      if (isErrorResponse(findResult)) {
         return findResult;
       }
 
@@ -498,61 +436,5 @@ export class ColumnsApiClient {
     } catch (error) {
       return this.formatErrorResponse(error);
     }
-  }
-
-  private buildHeaders(): Record<string, string> {
-    return {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'x-boltic-token': this.config.apiKey,
-    };
-  }
-
-  private formatErrorResponse(error: unknown): BolticErrorResponse {
-    if (this.config.debug) {
-      console.error('Columns API Error:', error);
-    }
-
-    // Handle different error types following Boltic format
-    if (error && typeof error === 'object' && 'response' in error) {
-      const apiError = error as {
-        response?: {
-          data?: BolticErrorResponse;
-          status?: number;
-        };
-      };
-
-      // If API already returned Boltic format, use it
-      if (apiError.response?.data?.error) {
-        return apiError.response.data;
-      }
-
-      // Otherwise format it to Boltic structure
-      return {
-        error: {
-          code: 'API_ERROR',
-          message: (error as unknown as Error).message || 'Unknown API error',
-          meta: [`Status: ${apiError.response?.status || 'unknown'}`],
-        },
-      };
-    }
-
-    if (error && typeof error === 'object' && 'message' in error) {
-      return {
-        error: {
-          code: 'CLIENT_ERROR',
-          message: (error as Error).message,
-          meta: ['Client-side error occurred'],
-        },
-      };
-    }
-
-    return {
-      error: {
-        code: 'UNKNOWN_ERROR',
-        message: 'An unexpected error occurred',
-        meta: ['Unknown error type'],
-      },
-    };
   }
 }

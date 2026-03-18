@@ -19,16 +19,19 @@ import {
   TableUpdateRequest,
 } from '../types/api/table';
 import {
-  BolticErrorResponse,
-  BolticSuccessResponse,
+  type BolticErrorResponse,
+  type BolticSuccessResponse,
   isErrorResponse,
-} from '../types/common/responses';
-import { Environment, EnvironmentConfig } from '../types/config/environment';
+  type Environment,
+  type EnvironmentConfig,
+  type HttpRequestConfig,
+  type HttpResponse,
+  AuthManager,
+  BaseClient,
+  type ClientConfig,
+  ConfigManager,
+} from '../../../common';
 import { TextToSQLOptions } from '../types/sql';
-import { HttpRequestConfig, HttpResponse } from '../utils/http/adapter';
-import { AuthManager } from './core/auth-manager';
-import { BaseClient } from './core/base-client';
-import { ClientConfig, ConfigManager } from './core/config';
 import { ColumnResource } from './resources/column';
 import { DatabaseResource } from './resources/database';
 import { IndexResource } from './resources/indexes';

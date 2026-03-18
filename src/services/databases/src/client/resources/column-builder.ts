@@ -4,10 +4,10 @@ import {
   ColumnUpdateRequest,
 } from '../../types/api/column';
 import {
-  BolticErrorResponse,
-  BolticListResponse,
-  BolticSuccessResponse,
-} from '../../types/common/responses';
+  type BolticErrorResponse,
+  type BolticListResponse,
+  type BolticSuccessResponse,
+} from '../../../../common';
 import { ColumnResource } from './column';
 
 export interface ColumnBuilderOptions {

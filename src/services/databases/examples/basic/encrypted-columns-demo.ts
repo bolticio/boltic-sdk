@@ -14,6 +14,7 @@
  * - Set BOLTIC_API_KEY environment variable
  */
 
+import * as path from 'path';
 import * as dotenv from 'dotenv';
 import {
     BolticClient,
@@ -21,8 +22,11 @@ import {
     FieldTypeEnum,
 } from '../../src';
 
-// Load environment variables
-dotenv.config({ path: '../.env' });
+// Load environment variables — resolve relative to script location, then fall back to CWD
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+if (!process.env.BOLTIC_API_KEY) {
+    dotenv.config();
+}
 
 // Configuration
 const DEMO_CONFIG = {

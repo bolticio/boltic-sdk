@@ -15,7 +15,13 @@ import type {
 } from '../../../common';
 
 // Re-export shared types so consumers can import from one place
-export type { Region, Environment, BolticSuccessResponse, BolticErrorResponse, BaseApiClientConfig };
+export type {
+  Region,
+  Environment,
+  BolticSuccessResponse,
+  BolticErrorResponse,
+  BaseApiClientConfig,
+};
 
 /** @deprecated Use `BolticSuccessResponse` directly */
 export type WorkflowSuccessResponse<T> = BolticSuccessResponse<T>;
@@ -85,7 +91,7 @@ export interface ActivityNode {
 }
 
 /** Properties describing the activity to execute (dynamic, varies by integration) */
-export type ActivityProperties = Record<string, any>;
+export type ActivityProperties = Record<string, unknown>;
 
 /** Retry configuration for an activity */
 export interface RetryConfig {

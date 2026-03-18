@@ -12,9 +12,9 @@ import {
   BolticListResponse,
   BolticSuccessResponse,
   isErrorResponse,
-} from '../../types/common/responses';
-import { BaseClient } from '../core/base-client';
-import { BaseResource } from '../core/base-resource';
+  BaseClient,
+  BaseResource,
+} from '../../../../common';
 import { TableResource } from './table';
 
 export class ColumnResource extends BaseResource {

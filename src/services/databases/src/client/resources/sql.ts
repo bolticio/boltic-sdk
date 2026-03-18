@@ -1,9 +1,12 @@
 import { SqlApiClient } from '../../api/clients/sql-api-client';
 import { transformTextToSQLRequest } from '../../api/transformers/sql';
 import { ExecuteSQLApiResponse } from '../../types/api/sql';
-import { isErrorResponse } from '../../types/common/responses';
+import {
+  isErrorResponse,
+  BaseClient,
+  type BolticErrorResponse,
+} from '../../../../common';
 import { TextToSQLOptions } from '../../types/sql';
-import { BaseClient } from '../core/base-client';
 
 export class SqlResource {
   private sqlApiClient: SqlApiClient;
@@ -57,10 +60,7 @@ export class SqlResource {
   async executeSQL(
     query: string,
     dbId?: string
-  ): Promise<
-    | ExecuteSQLApiResponse
-    | import('../../types/common/responses').BolticErrorResponse
-  > {
+  ): Promise<ExecuteSQLApiResponse | BolticErrorResponse> {
     const response = await this.sqlApiClient.executeSQL({ query }, dbId);
 
     if (isErrorResponse(response)) {

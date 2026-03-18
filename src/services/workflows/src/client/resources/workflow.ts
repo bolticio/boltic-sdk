@@ -178,9 +178,7 @@ export class WorkflowResource extends BaseResource {
    */
   async getCredentials(
     params: GetCredentialsParams
-  ): Promise<
-    BolticSuccessResponse<CredentialsListData> | BolticErrorResponse
-  > {
+  ): Promise<BolticSuccessResponse<CredentialsListData> | BolticErrorResponse> {
     return this.apiClient.getCredentials(params);
   }
 

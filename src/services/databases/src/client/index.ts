@@ -7,11 +7,14 @@ export function createClient(
   return new BolticClient(apiKey, options);
 }
 
-export type { Region } from '../types/config/environment';
-export * from './core/auth-manager';
-export * from './core/base-client';
-export * from './core/base-resource';
-export * from './core/config';
+export type { Region } from '../../../common';
+export {
+  AuthManager,
+  BaseClient,
+  BaseResource,
+  ConfigManager,
+} from '../../../common';
+export type { ClientConfig } from '../../../common';
 export * from './resources/database';
 export * from './resources/record';
 export * from './resources/record-builder';

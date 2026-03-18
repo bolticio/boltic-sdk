@@ -15,88 +15,31 @@ import {
   DatabaseQueryOptions,
   DatabaseRecord,
   DatabaseUpdateRequest,
-  PaginationMetadata,
 } from '../../types/api/database';
-import type { Environment, Region } from '../../types/config/environment';
-import { REGION_CONFIGS } from '../../types/config/environment';
+import {
+  BaseApiClient,
+  type BaseApiClientConfig,
+  type BolticSuccessResponse,
+  type BolticListResponse,
+  type BolticErrorResponse,
+} from '../../../../common';
 import { filterArrayFields } from '../../utils/common';
-import { createHttpAdapter } from '../../utils/http';
-import { HttpAdapter } from '../../utils/http/adapter';
 import {
   buildDatabaseEndpointPath,
   DATABASE_ENDPOINTS,
 } from '../endpoints/databases';
 
-export interface DatabasesApiClientConfig {
-  apiKey: string;
-  environment?: Environment;
-  region?: Region;
-  timeout?: number;
-  debug?: boolean;
-  retryAttempts?: number;
-  retryDelay?: number;
-  headers?: Record<string, string>;
-}
-
-// Boltic API Response Structure interfaces
-interface BolticSuccessResponse<T = unknown> {
-  data: T;
-  message?: string;
-}
-
-interface BolticListResponse<T = unknown> {
-  data: T[];
-  pagination?: PaginationMetadata;
-  message?: string;
-}
-
-interface BolticErrorResponse {
-  data?: never;
-  error: {
-    code?: string | number;
-    message?: string;
-    meta?: string[];
-  };
-}
+export type DatabasesApiClientConfig = BaseApiClientConfig;
 
 type BolticResponse<T> = BolticSuccessResponse<T> | BolticErrorResponse;
 type BolticListApiResponse<T> = BolticListResponse<T> | BolticErrorResponse;
 
-/**
- * Databases API Client - handles all database-related API operations
- */
-export class DatabasesApiClient {
-  private httpAdapter: HttpAdapter;
-  private config: DatabasesApiClientConfig;
-  private baseURL: string;
-
+export class DatabasesApiClient extends BaseApiClient {
   constructor(
     apiKey: string,
-    config: Omit<DatabasesApiClientConfig, 'apiKey'> = {}
+    config: Omit<BaseApiClientConfig, 'apiKey'> = {}
   ) {
-    this.config = { apiKey, ...config };
-    this.httpAdapter = createHttpAdapter();
-
-    // Set baseURL based on environment and region
-    const environment = config.environment || 'prod';
-    const region = config.region || 'asia-south1';
-    this.baseURL = this.getBaseURL(environment, region);
-  }
-
-  private getBaseURL(environment: Environment, region: Region): string {
-    const regionConfig = REGION_CONFIGS[region];
-    if (!regionConfig) {
-      throw new Error(`Unsupported region: ${region}`);
-    }
-
-    const envConfig = regionConfig[environment];
-    if (!envConfig) {
-      throw new Error(
-        `Unsupported environment: ${environment} for region: ${region}`
-      );
-    }
-
-    return `${envConfig.baseURL}/v1`;
+    super(apiKey, config);
   }
 
   /**
@@ -114,17 +57,14 @@ export class DatabasesApiClient {
       >({
         url,
         method: endpoint.method,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-boltic-token': this.config.apiKey,
-        },
+        headers: this.buildHeaders(),
         data: request,
         timeout: this.config.timeout,
       });
 
       return response.data;
     } catch (error: unknown) {
-      return this.handleError(error);
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -161,10 +101,7 @@ export class DatabasesApiClient {
       >({
         url,
         method: endpoint.method,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-boltic-token': this.config.apiKey,
-        },
+        headers: this.buildHeaders(),
         data: request,
         timeout: this.config.timeout,
       });
@@ -184,7 +121,7 @@ export class DatabasesApiClient {
 
       return result;
     } catch (error: unknown) {
-      return this.handleError(error);
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -205,17 +142,14 @@ export class DatabasesApiClient {
       >({
         url,
         method: endpoint.method,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-boltic-token': this.config.apiKey,
-        },
+        headers: this.buildHeaders(),
         data: request,
         timeout: this.config.timeout,
       });
 
       return response.data;
     } catch (error: unknown) {
-      return this.handleError(error);
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -235,16 +169,13 @@ export class DatabasesApiClient {
       >({
         url,
         method: endpoint.method,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-boltic-token': this.config.apiKey,
-        },
+        headers: this.buildHeaders(),
         timeout: this.config.timeout,
       });
 
       return response.data;
     } catch (error: unknown) {
-      return this.handleError(error);
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -264,10 +195,7 @@ export class DatabasesApiClient {
       >({
         url,
         method: endpoint.method,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-boltic-token': this.config.apiKey,
-        },
+        headers: this.buildHeaders(),
         data: request,
         timeout: this.config.timeout,
       });
@@ -287,7 +215,7 @@ export class DatabasesApiClient {
 
       return result;
     } catch (error: unknown) {
-      return this.handleError(error);
+      return this.formatErrorResponse(error);
     }
   }
 
@@ -307,125 +235,13 @@ export class DatabasesApiClient {
       >({
         url,
         method: endpoint.method,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-boltic-token': this.config.apiKey,
-        },
+        headers: this.buildHeaders(),
         timeout: this.config.timeout,
       });
 
       return response.data;
     } catch (error: unknown) {
-      return this.handleError(error);
+      return this.formatErrorResponse(error);
     }
-  }
-
-  /**
-   * Handle API errors and convert to standard error format
-   */
-  private handleError(error: unknown): BolticErrorResponse {
-    if (this.config.debug) {
-      console.error('[DatabasesApiClient] Error:', error);
-    }
-
-    // Type guard for error with error property
-    const hasErrorProperty = (
-      err: unknown
-    ): err is {
-      error: { code?: string | number; message?: string; meta?: string[] };
-    } => {
-      return (
-        typeof err === 'object' &&
-        err !== null &&
-        'error' in err &&
-        typeof (err as { error: unknown }).error === 'object' &&
-        (err as { error: unknown }).error !== null
-      );
-    };
-
-    // Type guard for HTTP error with response
-    const hasResponseError = (
-      err: unknown
-    ): err is {
-      response: {
-        data: {
-          error: { code?: string | number; message?: string; meta?: string[] };
-        };
-      };
-    } => {
-      return (
-        typeof err === 'object' &&
-        err !== null &&
-        'response' in err &&
-        typeof (err as { response: unknown }).response === 'object' &&
-        (err as { response: unknown }).response !== null &&
-        'data' in (err as { response: { data?: unknown } }).response &&
-        typeof (err as { response: { data: unknown } }).response.data ===
-          'object' &&
-        (err as { response: { data: unknown } }).response.data !== null &&
-        'error' in
-          (err as { response: { data: { error?: unknown } } }).response.data
-      );
-    };
-
-    // Type guard for standard Error
-    const isStandardError = (
-      err: unknown
-    ): err is Error & { code?: string } => {
-      return err instanceof Error;
-    };
-
-    // If error already has the right structure, return it
-    if (hasErrorProperty(error)) {
-      const errorWithError = error;
-      return {
-        error: {
-          code:
-            typeof errorWithError.error.code === 'number'
-              ? String(errorWithError.error.code)
-              : errorWithError.error.code || 'UNKNOWN_ERROR',
-          message: errorWithError.error.message || 'An error occurred',
-          meta: errorWithError.error.meta || [],
-        },
-      };
-    }
-
-    // If it's an HTTP error with response data
-    if (hasResponseError(error)) {
-      const errorWithResponse = error;
-      return {
-        error: {
-          code:
-            typeof errorWithResponse.response.data.error.code === 'number'
-              ? String(errorWithResponse.response.data.error.code)
-              : errorWithResponse.response.data.error.code || 'UNKNOWN_ERROR',
-          message:
-            errorWithResponse.response.data.error.message ||
-            'An error occurred',
-          meta: errorWithResponse.response.data.error.meta || [],
-        },
-      };
-    }
-
-    // Default error format
-    if (isStandardError(error)) {
-      const standardError = error;
-      return {
-        error: {
-          code: standardError.code || 'UNKNOWN_ERROR',
-          message: standardError.message || 'An unexpected error occurred',
-          meta: [],
-        },
-      };
-    }
-
-    // Fallback for completely unknown error types
-    return {
-      error: {
-        code: 'UNKNOWN_ERROR',
-        message: 'An unexpected error occurred',
-        meta: [],
-      },
-    };
   }
 }

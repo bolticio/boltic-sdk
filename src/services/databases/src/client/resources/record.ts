@@ -10,16 +10,15 @@ import {
   RecordUpdateOptions,
   RecordWithId,
 } from '../../types/api/record';
-import { BaseClient } from '../core/base-client';
-import { ColumnResource } from './column';
-import { TableResource } from './table';
-
 import {
   BolticErrorResponse,
   BolticListResponse,
   BolticSuccessResponse,
   isErrorResponse,
-} from '../../types/common/responses';
+  BaseClient,
+} from '../../../../common';
+import { ColumnResource } from './column';
+import { TableResource } from './table';
 
 export class RecordResource {
   private apiClient: RecordsApiClient;
