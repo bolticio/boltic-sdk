@@ -23,6 +23,8 @@ export type {
   TableListResponse,
   TableQueryOptions,
   TableRecord,
+  TableSchemaRecord,
+  SchemaListOptions,
   TableUpdateRequest,
 } from './api/table';
 export * from './sql';

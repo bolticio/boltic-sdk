@@ -17,6 +17,7 @@ import {
   TableCreateRequest,
   TableQueryOptions,
   TableUpdateRequest,
+  SchemaListOptions,
 } from '../types/api/table';
 import {
   type BolticErrorResponse,
@@ -113,7 +114,7 @@ export class BolticClient {
 
     // Initialize Database operations
     this.databaseResource = new DatabaseResource(this.baseClient);
-    
+
     // Initialize Workflow operations
     this.workflowResource = new WorkflowResource(this.baseClient);
 
@@ -211,6 +212,12 @@ export class BolticClient {
       delete: (name: string) => this.tableResource.delete(name, dbId),
       rename: (oldName: string, newName: string) =>
         this.tableResource.rename(oldName, newName, dbId),
+      getDatabaseSchema: (options?: SchemaListOptions) =>
+        this.tableResource.getDatabaseSchema(options, dbId),
+      getTableSchema: (
+        tableName: string,
+        options?: Omit<SchemaListOptions, 'tableName'>
+      ) => this.tableResource.getTableSchema(tableName, options, dbId),
     };
   }
 

@@ -7,6 +7,7 @@ import {
   ValidationError,
   type ApiResponse,
   type BolticSuccessResponse,
+  type BolticListResponse,
   type BolticErrorResponse,
   isErrorResponse,
   isListResponse,
@@ -19,6 +20,8 @@ import {
   TableCreateResponse,
   TableQueryOptions,
   TableRecord,
+  TableSchemaRecord,
+  SchemaListOptions,
   TableUpdateRequest,
 } from '../../types/api/table';
 
@@ -472,6 +475,72 @@ export class TableResource extends BaseResource {
   }
 
   // Helper method to format generic errors
+  /**
+   * Get the schema for all tables in a database
+   * Returns all table schemas with their column definitions
+   */
+  async getDatabaseSchema(
+    options: SchemaListOptions = {},
+    dbId?: string
+  ): Promise<BolticListResponse<TableSchemaRecord>> {
+    try {
+      const result = await this.tablesApiClient.listSchema({
+        ...options,
+        db_id: options.db_id || dbId,
+      });
+
+      if (isErrorResponse(result)) {
+        throw new ApiError(
+          result.error.message || 'Get database schema failed',
+          400,
+          result.error
+        );
+      }
+
+      return result;
+    } catch (error) {
+      throw error instanceof ApiError
+        ? error
+        : new ApiError(this.formatError(error), 500);
+    }
+  }
+
+  /**
+   * Get the schema for a specific table by name
+   * Returns the table schema with its column definitions
+   */
+  async getTableSchema(
+    tableName: string,
+    options: Omit<SchemaListOptions, 'tableName'> = {},
+    dbId?: string
+  ): Promise<BolticSuccessResponse<TableSchemaRecord | null>> {
+    try {
+      const result = await this.tablesApiClient.listSchema({
+        ...options,
+        tableName,
+        db_id: options.db_id || dbId,
+      });
+
+      if (isErrorResponse(result)) {
+        throw new ApiError(
+          result.error.message || 'Get table schema failed',
+          400,
+          result.error
+        );
+      }
+
+      const schema = result.data?.[0] || null;
+      return {
+        data: schema,
+        message: schema ? 'Table schema found' : 'Table schema not found',
+      };
+    } catch (error) {
+      throw error instanceof ApiError
+        ? error
+        : new ApiError(this.formatError(error), 500);
+    }
+  }
+
   private formatError(error: unknown): string {
     if (error instanceof Error) {
       return error.message;
