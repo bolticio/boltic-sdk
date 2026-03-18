@@ -180,6 +180,7 @@ class SchemaDemo {
 
       const table = result.data;
       console.log(`\n✅ Found schema for table: ${table.name}`);
+      console.log(JSON.stringify(table, null, 2));
       console.log(`   ID: ${table.id}`);
       console.log(`   Internal name: ${table.internal_table_name}`);
       console.log(`   Database ID: ${table.db_id || 'default'}`);
