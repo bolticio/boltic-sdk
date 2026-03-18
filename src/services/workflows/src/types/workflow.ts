@@ -83,11 +83,11 @@ export interface ActivityNode {
     name: string;
     properties: ActivityProperties;
   };
-  activity_data: {
-    id: string;
-    properties: Record<string, unknown>;
-    status: string;
-  };
+  // activity_data: {
+  //   id: string;
+  //   properties: Record<string, unknown>;
+  //   status: string;
+  // };
 }
 
 /** Properties describing the activity to execute (dynamic, varies by integration) */
@@ -172,3 +172,96 @@ export interface GetCredentialsParams {
 
 /** Data returned from the get-credentials API */
 export type CredentialsListData = Record<string, unknown>;
+
+// ---------------------------------------------------------------------------
+// Get Integration Resource (schema) – user-facing params
+// ---------------------------------------------------------------------------
+
+/** Parameters accepted by `workflow.getIntegrationResource()`. */
+export interface GetIntegrationResourceParams {
+  /** Integration slug identifier (e.g. "blt-int.asana"). */
+  integration_slug: string;
+}
+
+/** Data returned from the get-integration-resource API */
+export type IntegrationResourceData = Record<string, unknown>;
+
+// ---------------------------------------------------------------------------
+// Get Integration Form (fields) – user-facing params
+// ---------------------------------------------------------------------------
+
+/** Parameters accepted by `workflow.getIntegrationForm()`. */
+export interface GetIntegrationFormParams {
+  /** Integration slug identifier (e.g. "blt-int.asana"). */
+  integration_slug: string;
+
+  /** Resource type (e.g. "project", "task"). */
+  resource: string;
+
+  /** Operation type (e.g. "create", "update", "read"). */
+  operation: string;
+
+  /** Credential secret for the integration. */
+  secret: string;
+
+  /**
+   * When `true`, returns only the form schema without executing.
+   * @defaultValue true
+   */
+  getFormOnly?: boolean;
+
+  /**
+   * When `true`, the response `data` is returned as a JSON Schema object
+   * describing the expected input shape (type, required, default, enum).
+   *
+   * When `false` or omitted, the response `data` is a flat JSON object
+   * with default/fallback values for each field.
+   *
+   * @defaultValue false
+   */
+  asJsonSchema?: boolean;
+}
+
+/** Data returned from the get-integration-form API */
+export type IntegrationFormData = Record<string, unknown>;
+
+// ---------------------------------------------------------------------------
+// Form field shape (raw API response)
+// ---------------------------------------------------------------------------
+
+/** A single field in the integration form response */
+export interface FormField {
+  name: string;
+  meta: {
+    displayType?: string;
+    value?: unknown;
+    validation?: { required?: boolean; [key: string]: unknown };
+    options?: Array<{ label: string; value: string }>;
+    description?: string;
+    placeholder?: string;
+    displayName?: string;
+    config?: Record<string, unknown>;
+    htmlProps?: Record<string, unknown>;
+    dependencies?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// JSON Schema output
+// ---------------------------------------------------------------------------
+
+/** A single property in the generated JSON Schema */
+export interface JsonSchemaProperty {
+  type: string;
+  required?: boolean;
+  default?: unknown;
+  description?: string;
+  enum?: string[];
+}
+
+/** JSON Schema output for an integration form */
+export interface IntegrationFormJsonSchema {
+  type: 'object';
+  properties: Record<string, JsonSchemaProperty>;
+}

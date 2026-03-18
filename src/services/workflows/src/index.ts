@@ -11,7 +11,14 @@ export {
   MAX_POLLING_ATTEMPTS,
   DEFAULT_RETRY_CONFIG,
   CONTINUE_ON_FAILURE,
+  SCHEMA_TYPE_MAPPING,
 } from './constants';
+
+// Utilities
+export {
+  transformFormToDefaults,
+  transformFormToJsonSchema,
+} from './utils/form-transformer';
 
 // Workflow-specific types (domain types only — response wrappers come from shared module)
 export type {
@@ -22,10 +29,17 @@ export type {
   ExecuteActivityRequestBody,
   ExecuteActivityResponseData,
   ExecuteIntegrationParams,
+  FormField,
   GetCredentialsParams,
+  GetIntegrationFormParams,
+  GetIntegrationResourceParams,
   GetIntegrationsParams,
   IntegrationExecutionData,
+  IntegrationFormData,
+  IntegrationFormJsonSchema,
+  IntegrationResourceData,
   IntegrationsListData,
+  JsonSchemaProperty,
   RetryConfig,
   WorkflowApiEndpoint,
   WorkflowApiResponse,

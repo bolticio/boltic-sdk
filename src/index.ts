@@ -51,11 +51,18 @@ export { WorkflowResource } from './services/workflows/src/client';
 export type {
   ExecuteIntegrationParams,
   ExecuteActivityResponseData,
+  FormField,
   GetCredentialsParams,
+  GetIntegrationFormParams,
+  GetIntegrationResourceParams,
   GetIntegrationsParams,
   CredentialsListData,
   IntegrationExecutionData,
+  IntegrationFormData,
+  IntegrationFormJsonSchema,
+  IntegrationResourceData,
   IntegrationsListData,
+  JsonSchemaProperty,
   WorkflowSuccessResponse,
   WorkflowErrorResponse,
   WorkflowApiResponse,
@@ -64,6 +71,11 @@ export type {
   ActivityResultPayload,
   RetryConfig,
 } from './services/workflows/src/types';
+
+export {
+  transformFormToDefaults,
+  transformFormToJsonSchema,
+} from './services/workflows/src/utils/form-transformer';
 
 // Version information
 export const VERSION = '1.0.0';

@@ -16,8 +16,12 @@ import type {
   ExecuteActivityRequestBody,
   ExecuteActivityResponseData,
   GetCredentialsParams,
+  GetIntegrationFormParams,
+  GetIntegrationResourceParams,
   GetIntegrationsParams,
   IntegrationExecutionData,
+  IntegrationFormData,
+  IntegrationResourceData,
   IntegrationsListData,
 } from '../../types/workflow';
 import {
@@ -158,6 +162,73 @@ export class WorkflowApiClient extends BaseApiClient {
       return response.data;
     } catch (error: unknown) {
       return this.formatErrorResponse(error, 'INTEGRATION');
+    }
+  }
+
+  /**
+   * Fetch the resource/operation schema for an integration.
+   *
+   * @param params - Integration slug identifier
+   */
+  async getIntegrationResource(
+    params: GetIntegrationResourceParams
+  ): Promise<WorkflowResponse<IntegrationResourceData>> {
+    try {
+      const endpoint = WORKFLOW_ENDPOINTS.getIntegrationResource;
+      const path = buildWorkflowEndpointPath(endpoint, {
+        integration_slug: params.integration_slug,
+      });
+      const url = `${this.baseURL}${path}`;
+
+      const response = await this.httpAdapter.request<
+        WorkflowResponse<IntegrationResourceData>
+      >({
+        url,
+        method: endpoint.method,
+        headers: this.buildHeaders(),
+        timeout: this.config.timeout,
+      });
+
+      return response.data;
+    } catch (error: unknown) {
+      return this.formatErrorResponse(error, 'WORKFLOW');
+    }
+  }
+
+  /**
+   * Fetch the form schema (fields) for a specific integration resource + operation.
+   *
+   * @param params - Integration slug, resource, operation, and credential secret
+   */
+  async getIntegrationForm(
+    params: GetIntegrationFormParams
+  ): Promise<WorkflowResponse<IntegrationFormData>> {
+    try {
+      const endpoint = WORKFLOW_ENDPOINTS.getIntegrationForm;
+      const path = buildWorkflowEndpointPath(endpoint, {
+        integration_slug: params.integration_slug,
+      });
+
+      const query = new URLSearchParams({
+        resource: params.resource,
+        operation: params.operation,
+        // getFormOnly: String(params.getFormOnly ?? true),
+        secret: params.secret,
+      });
+      const url = `${this.baseURL}${path}?${query.toString()}`;
+
+      const response = await this.httpAdapter.request<
+        WorkflowResponse<IntegrationFormData>
+      >({
+        url,
+        method: endpoint.method,
+        headers: this.buildHeaders(),
+        timeout: this.config.timeout,
+      });
+
+      return response.data;
+    } catch (error: unknown) {
+      return this.formatErrorResponse(error, 'WORKFLOW');
     }
   }
 }

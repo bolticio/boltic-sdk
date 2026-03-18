@@ -8,6 +8,8 @@
  *   npx tsx src/services/workflows/examples/workflow-test.ts execute-poll
  *   npx tsx src/services/workflows/examples/workflow-test.ts get-integrations
  *   npx tsx src/services/workflows/examples/workflow-test.ts get-credentials <entity>
+ *   npx tsx src/services/workflows/examples/workflow-test.ts get-integration-resource <slug>
+ *   npx tsx src/services/workflows/examples/workflow-test.ts get-integration-form <slug> <resource> <operation> <secret>
  *   npx tsx src/services/workflows/examples/workflow-test.ts all
  *
  * Prerequisites:
@@ -16,7 +18,7 @@
 
 import * as dotenv from 'dotenv';
 import { createClient } from '../../../index';
-import type { ActivityNode } from '../src/types/workflow';
+import type { ActivityNode, Environment } from '../src/types/workflow';
 import { DEFAULT_RETRY_CONFIG, CONTINUE_ON_FAILURE } from '../src/constants';
 
 dotenv.config({ path: '.env' });
@@ -26,7 +28,7 @@ dotenv.config({ path: '.env' });
 // ---------------------------------------------------------------------------
 const API_KEY = process.env.BOLTIC_API_KEY || '<YOUR_API_KEY>';
 const REGION: 'asia-south1' | 'us-central1' = 'asia-south1';
-const ENVIRONMENT: 'sit' | 'uat' | 'prod' = 'prod';
+const ENVIRONMENT = (process.env.BOLTIC_ENVIRONMENT || 'prod') as Environment;
 
 const SAMPLE_NODES: ActivityNode[] = [
   {
@@ -50,11 +52,11 @@ const SAMPLE_NODES: ActivityNode[] = [
         integration_slug: 'blt-int.api',
       },
     },
-    activity_data: {
-      id: '6cc1d090-334c-4377-a638-8777c48a1d07',
-      properties: {},
-      status: 'published',
-    },
+    // activity_data: {
+    //   id: '6cc1d090-334c-4377-a638-8777c48a1d07',
+    //   properties: {},
+    //   status: 'published',
+    // },
   },
 ];
 
@@ -177,6 +179,53 @@ async function testGetCredentials(entity: string): Promise<void> {
   console.log(JSON.stringify(result, null, 2));
 }
 
+async function testGetIntegrationResource(integrationSlug: string): Promise<void> {
+  separator(`getIntegrationResource (slug: ${integrationSlug})`);
+
+  const client = getClient();
+  console.log(`Calling workflow.getIntegrationResource({ integration_slug: "${integrationSlug}" }) ...`);
+
+  const result = await client.workflow.getIntegrationResource({
+    integration_slug: integrationSlug,
+  });
+
+  if (isError(result)) {
+    console.error('ERROR:', JSON.stringify(result, null, 2));
+    return;
+  }
+
+  console.log('SUCCESS – integration resource schema:');
+  console.log(JSON.stringify(result, null, 2));
+}
+
+async function testGetIntegrationForm(
+  integrationSlug: string,
+  resource: string,
+  operation: string,
+  secret: string
+): Promise<void> {
+  separator(`getIntegrationForm (slug: ${integrationSlug}, resource: ${resource}, op: ${operation})`);
+
+  const client = getClient();
+  console.log(`Calling workflow.getIntegrationForm(...) ...`);
+
+  const result = await client.workflow.getIntegrationForm({
+    integration_slug: integrationSlug,
+    resource,
+    operation,
+    secret,
+    asJsonSchema: true,
+  });
+
+  if (isError(result)) {
+    console.error('ERROR:', JSON.stringify(result, null, 2));
+    return;
+  }
+
+  console.log('SUCCESS – integration form schema:');
+  console.log(JSON.stringify(result, null, 2));
+}
+
 async function testAll(): Promise<void> {
   const executionId = await testExecuteOnly();
 
@@ -189,7 +238,8 @@ async function testAll(): Promise<void> {
 
   await testExecuteWithPolling();
   await testGetIntegrations();
-  await testGetCredentials('freshsales');
+  await testGetCredentials('asana');
+  await testGetIntegrationResource('blt-int.asana');
 }
 
 // ---------------------------------------------------------------------------
@@ -214,6 +264,20 @@ const TESTS: Record<string, (...args: string[]) => Promise<void>> = {
     }
     await testGetCredentials(entity);
   },
+  'get-integration-resource': async (slug: string) => {
+    if (!slug) {
+      console.error('Usage: get-integration-resource <integration_slug>');
+      process.exit(1);
+    }
+    await testGetIntegrationResource(slug);
+  },
+  'get-integration-form': async (slug: string, resource: string, operation: string, secret: string) => {
+    if (!slug || !resource || !operation || !secret) {
+      console.error('Usage: get-integration-form <integration_slug> <resource> <operation> <secret>');
+      process.exit(1);
+    }
+    await testGetIntegrationForm(slug, resource, operation, secret);
+  },
   'all': async () => { await testAll(); },
 };
 
@@ -226,12 +290,14 @@ async function main() {
 
   if (!testName || !TESTS[testName]) {
     console.log('\nAvailable tests:');
-    console.log('  execute-only              Execute activity, return immediately');
-    console.log('  get-by-id <execution_id>  Fetch execution result by ID');
-    console.log('  execute-poll              Execute activity and poll for result');
-    console.log('  get-integrations          Fetch integrations list');
-    console.log('  get-credentials <entity>  Fetch credentials for an integration');
-    console.log('  all                       Run all tests sequentially');
+    console.log('  execute-only                                              Execute activity, return immediately');
+    console.log('  get-by-id <execution_id>                                  Fetch execution result by ID');
+    console.log('  execute-poll                                              Execute activity and poll for result');
+    console.log('  get-integrations                                          Fetch integrations list');
+    console.log('  get-credentials <entity>                                  Fetch credentials for an integration');
+    console.log('  get-integration-resource <slug>                           Fetch resource/operation schema');
+    console.log('  get-integration-form <slug> <resource> <operation> <secret> Fetch form fields schema');
+    console.log('  all                                                       Run all tests sequentially');
     if (testName) {
       console.error(`\nUnknown test: "${testName}"`);
     }

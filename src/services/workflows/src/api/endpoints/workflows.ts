@@ -10,6 +10,8 @@ export interface WorkflowEndpoints {
   getExecutionById: WorkflowApiEndpoint;
   getIntegrations: WorkflowApiEndpoint;
   getCredentials: WorkflowApiEndpoint;
+  getIntegrationResource: WorkflowApiEndpoint;
+  getIntegrationForm: WorkflowApiEndpoint;
 }
 
 export const WORKFLOW_ENDPOINTS: WorkflowEndpoints = {
@@ -30,6 +32,16 @@ export const WORKFLOW_ENDPOINTS: WorkflowEndpoints = {
   },
   getCredentials: {
     path: '/integrations/entity/{entity}',
+    method: 'GET',
+    authenticated: true,
+  },
+  getIntegrationResource: {
+    path: '/integrations/{integration_slug}/schema',
+    method: 'GET',
+    authenticated: true,
+  },
+  getIntegrationForm: {
+    path: '/integrations/{integration_slug}/fields',
     method: 'GET',
     authenticated: true,
   },

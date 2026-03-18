@@ -44,6 +44,8 @@ import { WorkflowResource } from '../../../workflows/src/client/resources/workfl
 import type {
   ExecuteIntegrationParams,
   GetCredentialsParams,
+  GetIntegrationFormParams,
+  GetIntegrationResourceParams,
   GetIntegrationsParams,
 } from '../../../workflows/src/types/workflow';
 
@@ -375,6 +377,10 @@ export class BolticClient {
         this.workflowResource.getIntegrations(params),
       getCredentials: (params: GetCredentialsParams) =>
         this.workflowResource.getCredentials(params),
+      getIntegrationResource: (params: GetIntegrationResourceParams) =>
+        this.workflowResource.getIntegrationResource(params),
+      getIntegrationForm: (params: GetIntegrationFormParams) =>
+        this.workflowResource.getIntegrationForm(params),
     };
   }
 
