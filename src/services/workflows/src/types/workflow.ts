@@ -81,17 +81,11 @@ export interface ExecuteIntegrationParams {
 
 /** A single activity node in the execute request body */
 export interface ActivityNode {
-  // id: string;
   data: {
     type: string;
     name: string;
     properties: ActivityProperties;
   };
-  // activity_data: {
-  //   id: string;
-  //   properties: Record<string, unknown>;
-  //   status: string;
-  // };
 }
 
 /** Properties describing the activity to execute (dynamic, varies by integration) */
