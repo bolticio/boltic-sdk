@@ -18,7 +18,7 @@
 
 import * as dotenv from 'dotenv';
 import { createClient } from '../../../index';
-import type { ActivityNode, Environment } from '../src/types/workflow';
+import type { Environment } from '../src/types/workflow';
 import { DEFAULT_RETRY_CONFIG, CONTINUE_ON_FAILURE } from '../src/constants';
 
 dotenv.config({ path: '.env' });
@@ -30,35 +30,25 @@ const API_KEY = process.env.BOLTIC_API_KEY || '<YOUR_API_KEY>';
 const REGION: 'asia-south1' | 'us-central1' = 'asia-south1';
 const ENVIRONMENT = (process.env.BOLTIC_ENVIRONMENT || 'prod') as Environment;
 
-const SAMPLE_NODES: ActivityNode[] = [
-  {
-    id: 'api1',
-    data: {
-      type: 'apiActivity',
-      name: 'api1',
-      properties: {
-        method: 'get',
-        endpoint: 'https://dummyjson.com/products',
-        query_params: {},
-        state_params: {},
-        headers: {},
-        body: null,
-        body_type: 'none',
-        api_timeout: 30000,
-        branches: [{ ref: 'success' }, { ref: 'failure' }],
-        maximum_timeout: 60000,
-        retry_config: DEFAULT_RETRY_CONFIG,
-        continue_on_failure: CONTINUE_ON_FAILURE,
-        integration_slug: 'blt-int.api',
-      },
-    },
-    // activity_data: {
-    //   id: '6cc1d090-334c-4377-a638-8777c48a1d07',
-    //   properties: {},
-    //   status: 'published',
-    // },
+const SAMPLE_DATA = {
+  type: 'apiActivity',
+  name: 'api1',
+  properties: {
+    method: 'get',
+    endpoint: 'https://dummyjson.com/products',
+    query_params: {},
+    state_params: {},
+    headers: {},
+    body: null,
+    body_type: 'none',
+    api_timeout: 30000,
+    branches: [{ ref: 'success' }, { ref: 'failure' }],
+    // maximum_timeout: 60000,
+    // retry_config: DEFAULT_RETRY_CONFIG,
+    // continue_on_failure: CONTINUE_ON_FAILURE,
+    integration_slug: 'blt-int.api',
   },
-];
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -89,7 +79,7 @@ async function testExecuteOnly(): Promise<string | null> {
   console.log('Calling workflow.executeIntegration with executeOnly = true ...');
 
   const result = await client.workflow.executeIntegration({
-    nodes: SAMPLE_NODES,
+    data: SAMPLE_DATA,
     executeOnly: true,
   });
 
@@ -132,7 +122,7 @@ async function testExecuteWithPolling(): Promise<void> {
 
   const startTime = Date.now();
   const result = await client.workflow.executeIntegration({
-    nodes: SAMPLE_NODES,
+    data: SAMPLE_DATA,
   });
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 

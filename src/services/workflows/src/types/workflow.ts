@@ -61,8 +61,12 @@ export interface ExecuteIntegrationParams {
    */
   executeOnly?: boolean;
 
-  /** Activity nodes to include in the request body. */
-  nodes: ActivityNode[];
+  /** Activity data describing what to execute. The SDK wraps this into the `nodes[]` structure the API expects. */
+  data: {
+    type: string;
+    name: string;
+    properties: ActivityProperties;
+  };
 
   /**
    * Result/context payload for the execute request.
@@ -77,7 +81,7 @@ export interface ExecuteIntegrationParams {
 
 /** A single activity node in the execute request body */
 export interface ActivityNode {
-  id: string;
+  // id: string;
   data: {
     type: string;
     name: string;

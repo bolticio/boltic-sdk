@@ -14,6 +14,7 @@ import {
   type BolticSuccessResponse,
 } from '../../../../common';
 import type {
+  ActivityNode,
   ActivityResultPayload,
   CredentialsListData,
   ExecuteActivityRequestBody,
@@ -49,8 +50,16 @@ function buildDefaultResultPayload(): ActivityResultPayload {
 function buildExecuteActivityBody(
   params: ExecuteIntegrationParams
 ): ExecuteActivityRequestBody {
+  const node: ActivityNode = {
+    data: {
+      type: params.data.type,
+      name: params.data.name,
+      properties: params.data.properties,
+    },
+  };
+
   return {
-    nodes: params.nodes,
+    nodes: [node],
     result: params.result ?? buildDefaultResultPayload(),
   };
 }
@@ -95,11 +104,11 @@ export class WorkflowResource extends BaseResource {
    * @example
    * ```typescript
    * const result = await client.workflow.executeIntegration({
-   *   nodes: [{ id: 'api1', data: { ... }, activity_data: { ... } }],
+   *   data: { type: 'apiActivity', name: 'api1', properties: { method: 'get', endpoint: '...' } },
    * });
    *
    * const fire = await client.workflow.executeIntegration({
-   *   nodes: [{ id: 'api1', data: { ... }, activity_data: { ... } }],
+   *   data: { type: 'apiActivity', name: 'api1', properties: { method: 'get', endpoint: '...' } },
    *   executeOnly: true,
    * });
    * ```
