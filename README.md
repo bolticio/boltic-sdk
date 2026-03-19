@@ -42,6 +42,7 @@ const client = createClient('your-api-key', {
 
 // Database operations
 const tables = client.tables;
+const columns = client.columns;
 const records = client.records;
 
 // Workflow operations
