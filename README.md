@@ -8,15 +8,18 @@ Boltic SDK is an open-source TypeScript library, developed by Fynd, for integrat
 
 ## Features
 
-- **Full TypeScript Support** — Comprehensive type definitions and IntelliSense
-- **Modern Architecture** — ES modules and CommonJS support
-- **Built-in Authentication** — Integrated API key management
-- **Database Operations** — Complete table, column, record, and index management
-- **SQL Operations** — Natural language to SQL conversion and direct query execution
+
+- 🔧 **Full TypeScript Support**: Comprehensive type definitions and IntelliSense
+- 🚀 **Modern Architecture**: ES modules and CommonJS support
+- 🔐 **Built-in Authentication**: Integrated API key management
+- 📊 **Database Operations**: Complete table and column management
+- 📝 **Record Operations**: Full CRUD operations with advanced querying
+- 🌐 **Multi-Region Support**: Asia Pacific and US Central regions
+- 🔍 **Advanced Filtering**: Comprehensive query operators
+- 🛠️ **Helper Classes**: Schema and column creation utilities
+- 🎯 **Vector Support**: AI/ML vector fields with multiple precisions
 - **Workflow Operations** — Execute integration activities, poll for results, manage credentials
 - **Multi-Region Support** — Asia Pacific and US Central regions
-- **Advanced Filtering** — Comprehensive query operators for records
-- **Vector Support** — AI/ML vector fields with multiple precisions
 
 ## Prerequisites
 
