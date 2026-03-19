@@ -273,8 +273,8 @@ export class WorkflowResource extends BaseResource {
     if (isErrorResponse(rawResult)) {
       return rawResult;
     }
-
-    const fields = (rawResult.data as unknown as FormField[]) ?? [];
+    const configuration = rawResult.data?.configuration as unknown as { data: FormField[] } || rawResult.data;
+    const fields = (configuration as unknown as FormField[]) ?? [];
 
     const transformed = params.asJsonSchema
       ? transformFormToJsonSchema(fields)
