@@ -635,6 +635,33 @@ const deleteWithFilters = await client.records.delete('users', {
 });
 ```
 
+### Bulk Insert Operations
+
+The SDK provides an efficient `insertMany()` method for inserting multiple records in a single API call:
+
+```typescript
+// Bulk insert with validation (default behavior)
+const records = [
+  { name: 'User 1', email: 'user1@example.com', age: 25 },
+  { name: 'User 2', email: 'user2@example.com', age: 30 },
+  { name: 'User 3', email: 'user3@example.com', age: 35 },
+];
+
+const result = await client.records.insertMany('users', records);
+
+if (result.error) {
+  console.error('Bulk insertion failed:', result.error);
+} else {
+  console.log(`Successfully inserted ${result.data.insert_count} records`);
+  console.log('Response:', result.data);
+}
+
+// Bulk insert without validation (faster, less safe)
+const resultNoValidation = await client.records.insertMany('users', records, {
+  validation: false,
+});
+```
+
 ## SQL Operations
 
 The Boltic SDK provides powerful SQL capabilities including natural language to SQL conversion and direct SQL query execution.
@@ -731,6 +758,13 @@ const complex = await client.sql.executeSQL(`
   WHERE u.id::text IN ('uuid1', 'uuid2')
 `);
 ```
+
+**Why UUID Casting is Required:**
+
+- The `id` field uses PostgreSQL's UUID type internally
+- When comparing UUIDs with text columns (like foreign key references), PostgreSQL requires explicit type casting
+- The `::text` operator converts the UUID to its string representation for comparison
+- This applies to all system-generated `id` fields (`id`, and potentially foreign key references)
 
 ### SQL Error Handling
 
