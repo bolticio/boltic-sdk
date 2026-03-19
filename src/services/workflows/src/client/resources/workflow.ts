@@ -269,11 +269,11 @@ export class WorkflowResource extends BaseResource {
     | BolticErrorResponse
   > {
     const rawResult = await this.apiClient.getIntegrationForm(params);
-
+    console.log('rawResult', JSON.stringify(rawResult, null, 2));
     if (isErrorResponse(rawResult)) {
       return rawResult;
     }
-    const configuration = rawResult.data?.configuration as unknown as { data: FormField[] } || rawResult.data;
+    const configuration = rawResult.data?.parameters as unknown as { data: FormField[] } || rawResult.data;
     const fields = (configuration as unknown as FormField[]) ?? [];
 
     const transformed = params.asJsonSchema

@@ -204,7 +204,7 @@ async function testGetIntegrationForm(
     resource,
     operation,
     secret,
-    asJsonSchema: true,
+    asJsonSchema: false,
   });
 
   if (isError(result)) {
