@@ -48,6 +48,15 @@ import type {
   GetIntegrationResourceParams,
   GetIntegrationsParams,
 } from '../../../workflows/src/types/workflow';
+import { ServerlessResource } from '../../../serverless/src/client/resources/serverless';
+import type {
+  ListServerlessParams,
+  CreateServerlessParams,
+  UpdateServerlessParams,
+  GetBuildsParams,
+  GetLogsParams,
+  GetBuildLogsParams,
+} from '../../../serverless/src/types/serverless';
 
 export interface ClientOptions extends Partial<EnvironmentConfig> {
   environment?: Environment;
@@ -73,6 +82,7 @@ export class BolticClient {
   private indexResource: IndexResource;
   private databaseResource: DatabaseResource;
   private workflowResource: WorkflowResource;
+  private serverlessResource: ServerlessResource;
   private currentDatabase: DatabaseContext | null = null;
   private clientOptions: ClientOptions;
 
@@ -115,9 +125,12 @@ export class BolticClient {
 
     // Initialize Database operations
     this.databaseResource = new DatabaseResource(this.baseClient);
-    
+
     // Initialize Workflow operations
     this.workflowResource = new WorkflowResource(this.baseClient);
+
+    // Initialize Serverless operations
+    this.serverlessResource = new ServerlessResource(this.baseClient);
 
     // Set default database context (will use default database in API if not specified)
     this.currentDatabase = null;
@@ -384,6 +397,59 @@ export class BolticClient {
     };
   }
 
+  /**
+   * Serverless function operations.
+   *
+   * @example
+   * ```typescript
+   * // List all serverless functions
+   * const list = await client.serverless.list();
+   *
+   * // Create a new serverless function
+   * const fn = await client.serverless.create({
+   *   Name: 'my-api',
+   *   Runtime: 'code',
+   *   CodeOpts: { Language: 'nodejs/20', Code: '...' },
+   *   Resources: { CPU: 0.1, MemoryMB: 128, MemoryMaxMB: 128 },
+   *   Scaling: { AutoStop: false, Min: 1, Max: 1, MaxIdleTime: 0 },
+   * });
+   *
+   * // Get a serverless function by ID
+   * const details = await client.serverless.get('serverless-id');
+   *
+   * // Get builds
+   * const builds = await client.serverless.getBuilds({ appId: 'id' });
+   *
+   * // Get runtime logs
+   * const logs = await client.serverless.getLogs({ appId: 'id' });
+   * ```
+   */
+  get serverless() {
+    return {
+      list: (params?: ListServerlessParams) =>
+        this.serverlessResource.list(params),
+      get: (appId: string) => this.serverlessResource.get(appId),
+      create: (params: CreateServerlessParams) =>
+        this.serverlessResource.create(params),
+      createAndWait: (params: CreateServerlessParams) =>
+        this.serverlessResource.createAndWait(params),
+      update: (params: UpdateServerlessParams) =>
+        this.serverlessResource.update(params),
+      updateAndWait: (params: UpdateServerlessParams) =>
+        this.serverlessResource.updateAndWait(params),
+      getBuilds: (params: GetBuildsParams) =>
+        this.serverlessResource.getBuilds(params),
+      getLogs: (params: GetLogsParams) =>
+        this.serverlessResource.getLogs(params),
+      getBuildLogs: (params: GetBuildLogsParams) =>
+        this.serverlessResource.getBuildLogs(params),
+      pollStatus: (
+        appId: string,
+        options?: { intervalMs?: number; maxAttempts?: number }
+      ) => this.serverlessResource.pollStatus(appId, options),
+    };
+  }
+
   // SQL resource access for testing
   getSqlResource(): SqlResource {
     return this.sqlResource;
@@ -498,6 +564,8 @@ export class BolticClient {
     this.databaseResource = new DatabaseResource(this.baseClient);
 
     this.workflowResource = new WorkflowResource(this.baseClient);
+
+    this.serverlessResource = new ServerlessResource(this.baseClient);
   }
 
   // Security methods to prevent API key exposure
