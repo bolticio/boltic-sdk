@@ -73,11 +73,11 @@ export class SqlApiClient extends BaseApiClient {
   ): Promise<ExecuteSQLApiResponse | BolticErrorResponse> {
     try {
       const endpoint = SQL_ENDPOINTS.executeSQL;
-      let url = `${this.baseURL}${buildSqlEndpointPath(endpoint)}`;
-
+      const params = new URLSearchParams({ source: 'sdk' });
       if (dbId) {
-        url += `?db_id=${encodeURIComponent(dbId)}`;
+        params.set('db_id', dbId);
       }
+      const url = `${this.baseURL}${buildSqlEndpointPath(endpoint)}?${params.toString()}`;
 
       const response = await this.httpAdapter.request({
         url,
