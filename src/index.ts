@@ -77,5 +77,48 @@ export {
   transformFormToJsonSchema,
 } from './services/workflows/src/utils/form-transformer';
 
+// Export serverless module
+export { ServerlessResource } from './services/serverless/src/client';
+export { ServerlessApiClient } from './services/serverless/src/api';
+export {
+  STATUS_POLLING_INTERVAL_MS,
+  MAX_STATUS_POLLING_ATTEMPTS,
+  TERMINAL_STATUSES,
+  DEFAULT_RESOURCES,
+  DEFAULT_SCALING,
+} from './services/serverless/src/constants';
+export type {
+  ServerlessApiEndpoint,
+  ServerlessRuntime,
+  ServerlessStatus,
+  ServerlessScaling,
+  ServerlessResources,
+  ServerlessCodeOpts,
+  ServerlessContainerOpts,
+  ServerlessPortMap,
+  ServerlessGitRepository,
+  ServerlessAppDomain,
+  ServerlessConfig,
+  ServerlessData,
+  ListServerlessParams,
+  ListServerlessData,
+  GetServerlessParams,
+  GetServerlessData,
+  CreateServerlessParams,
+  CreateServerlessData,
+  UpdateServerlessParams,
+  UpdateServerlessData,
+  ServerlessBuildStatusEntry,
+  ServerlessBuild,
+  GetBuildsParams,
+  GetBuildsData,
+  ServerlessLogEntry,
+  GetLogsParams,
+  GetLogsData,
+  ServerlessBuildLogEntry,
+  GetBuildLogsParams,
+  GetBuildLogsData,
+} from './services/serverless/src/types';
+
 // Version information
 export const VERSION = '1.0.0';
