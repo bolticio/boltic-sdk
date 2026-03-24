@@ -22,9 +22,9 @@ import {
   BolticListResponse,
   BolticSuccessResponse,
   isErrorResponse,
-} from '../../types/common/responses';
-import { BaseClient } from '../core/base-client';
-import { BaseResource } from '../core/base-resource';
+  BaseClient,
+  BaseResource,
+} from '../../../../common';
 
 /**
  * Database Resource - handles database CRUD operations
@@ -63,7 +63,7 @@ export class DatabaseResource extends BaseResource {
     request: DatabaseCreateRequest
   ): Promise<BolticSuccessResponse<DatabaseRecord> | BolticErrorResponse> {
     const result = await this.apiClient.createDatabase(request);
-    if ('error' in result) {
+    if (isErrorResponse(result)) {
       return {
         error: {
           code:
@@ -147,7 +147,7 @@ export class DatabaseResource extends BaseResource {
       queryParams,
       options
     );
-    if ('error' in result) {
+    if (isErrorResponse(result)) {
       return {
         error: {
           code:
@@ -306,7 +306,7 @@ export class DatabaseResource extends BaseResource {
     };
 
     const result = await this.apiClient.updateDatabase(dbId, updateRequest);
-    if ('error' in result) {
+    if (isErrorResponse(result)) {
       return {
         error: {
           code:
@@ -368,7 +368,7 @@ export class DatabaseResource extends BaseResource {
 
     const dbId = dbInfo.data.id;
     const result = await this.apiClient.deleteDatabase(dbId);
-    if ('error' in result) {
+    if (isErrorResponse(result)) {
       return {
         error: {
           code:
@@ -422,7 +422,7 @@ export class DatabaseResource extends BaseResource {
     }
 
     const result = await this.apiClient.listDatabaseJobs(request, options);
-    if ('error' in result) {
+    if (isErrorResponse(result)) {
       return {
         error: {
           code:
@@ -479,7 +479,7 @@ export class DatabaseResource extends BaseResource {
     BolticSuccessResponse<DatabaseDeletionStatusResponse> | BolticErrorResponse
   > {
     const result = await this.apiClient.pollDeleteStatus(jobId);
-    if ('error' in result) {
+    if (isErrorResponse(result)) {
       return {
         error: {
           code:

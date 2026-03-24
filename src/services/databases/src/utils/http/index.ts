@@ -1,4 +1,2 @@
-export * from './adapter';
-export * from './axios-adapter';
-export * from './client-factory';
-export * from './fetch-adapter';
+// Canonical source: common/http
+export * from '../../../../common/http';

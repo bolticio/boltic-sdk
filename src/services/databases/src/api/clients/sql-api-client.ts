@@ -4,9 +4,12 @@ import {
   TextToSQLApiRequest,
   TextToSQLApiResponse,
 } from '../../types/api/sql';
-import { BolticErrorResponse } from '../../types/common/responses';
+import {
+  BaseApiClient,
+  type BaseApiClientConfig,
+  type BolticErrorResponse,
+} from '../../../../common';
 import { SQL_ENDPOINTS, buildSqlEndpointPath } from '../endpoints/sql';
-import { BaseApiClient, BaseApiClientConfig } from './base-api-client';
 
 export interface SqlApiClientConfig extends BaseApiClientConfig {}
 

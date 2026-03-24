@@ -1,12 +1,13 @@
 # Boltic SDK
 
-Boltic SDK is an open-source TypeScript library, developed by Fynd, designed to empower developers worldwide with integration to the Boltic platform. Effortlessly manage databases, tables, columns, records, and run SQL queries to build robust, modern applications with ease and confidence.
+Boltic SDK is an open-source TypeScript library, developed by Fynd, for integrating with the Boltic platform. Manage databases, tables, records, run SQL queries, and execute workflow integrations to build robust, modern applications.
 
 ## Documentation
 
 - **[Boltic SDK Documentation](https://docs.boltic.io/sdk/intro)** - Complete SDK documentation
 
 ## Features
+
 
 - 🔧 **Full TypeScript Support**: Comprehensive type definitions and IntelliSense
 - 🚀 **Modern Architecture**: ES modules and CommonJS support
@@ -17,6 +18,8 @@ Boltic SDK is an open-source TypeScript library, developed by Fynd, designed to 
 - 🔍 **Advanced Filtering**: Comprehensive query operators
 - 🛠️ **Helper Classes**: Schema and column creation utilities
 - 🎯 **Vector Support**: AI/ML vector fields with multiple precisions
+- **Workflow Operations** — Execute integration activities, poll for results, manage credentials
+- **Multi-Region Support** — Asia Pacific and US Central regions
 
 ## Prerequisites
 
@@ -40,10 +43,13 @@ const client = createClient('your-api-key', {
   debug: false,
 });
 
-// Use the client for database operations
+// Database operations
 const tables = client.tables;
 const columns = client.columns;
 const records = client.records;
+
+// Workflow operations
+const workflow = client.workflow;
 ```
 
 ## Authentication
@@ -486,33 +492,6 @@ const bulkNoValidationResult = await client.records.insertMany(
 
 - Unlike single insert(), insertMany() requires complete records. All required fields must be provided in insertMany() call.
 
-### Bulk Insert Operations
-
-The SDK provides an efficient `insertMany()` method for inserting multiple records in a single API call:
-
-```typescript
-// Bulk insert with validation (default behavior)
-const records = [
-  { name: 'User 1', email: 'user1@example.com', age: 25 },
-  { name: 'User 2', email: 'user2@example.com', age: 30 },
-  { name: 'User 3', email: 'user3@example.com', age: 35 },
-];
-
-const result = await client.records.insertMany('users', records);
-
-if (result.error) {
-  console.error('Bulk insertion failed:', result.error);
-} else {
-  console.log(`Successfully inserted ${result.data.insert_count} records`);
-  console.log('Response:', result.data);
-}
-
-// Bulk insert without validation (faster, less safe)
-const resultNoValidation = await client.records.insertMany('users', records, {
-  validation: false,
-});
-```
-
 ### Querying Records
 
 ```typescript
@@ -660,6 +639,33 @@ const deleteWithFilters = await client.records.delete('users', {
 });
 ```
 
+### Bulk Insert Operations
+
+The SDK provides an efficient `insertMany()` method for inserting multiple records in a single API call:
+
+```typescript
+// Bulk insert with validation (default behavior)
+const records = [
+  { name: 'User 1', email: 'user1@example.com', age: 25 },
+  { name: 'User 2', email: 'user2@example.com', age: 30 },
+  { name: 'User 3', email: 'user3@example.com', age: 35 },
+];
+
+const result = await client.records.insertMany('users', records);
+
+if (result.error) {
+  console.error('Bulk insertion failed:', result.error);
+} else {
+  console.log(`Successfully inserted ${result.data.insert_count} records`);
+  console.log('Response:', result.data);
+}
+
+// Bulk insert without validation (faster, less safe)
+const resultNoValidation = await client.records.insertMany('users', records, {
+  validation: false,
+});
+```
+
 ## SQL Operations
 
 The Boltic SDK provides powerful SQL capabilities including natural language to SQL conversion and direct SQL query execution.
@@ -734,55 +740,27 @@ if (result.error) {
   }
 }
 
-// When joining or comparing id fields with other columns, cast to text using ::text
-const joinQuery = await client.sql.executeSQL(`
+```
+
+### UUID Casting in Joins
+
+The `id` field uses PostgreSQL's UUID type. When joining or comparing `id` with text columns, cast with `::text`:
+
+```typescript
+const result = await client.sql.executeSQL(`
   SELECT u.name, p.title 
   FROM "users" u
   JOIN "posts" p ON u.id::text = p.user_id
 `);
-```
 
-**Note:** When joining or comparing an `id` field with a different-typed column, you need to cast using `::text` (e.g., `u.id::text = p.user_id`) since `id` fields are UUID type.
-
-### Working with UUID ID Fields in SQL
-
-**Important:** The `id` field in Boltic tables contains UUID values. When joining tables or comparing `id` fields with other column types, you must cast the `id` field to text using `::text`:
-
-```typescript
-const query = `
-  SELECT u.name, p.title 
-  FROM "users" u
-  JOIN "posts" p ON u.id::text = p.user_id
-`;
-
-const result = await client.sql.executeSQL(query);
-
-// More examples of UUID casting:
-
-// Filtering by UUID id
-const filterByIdQuery = `
-  SELECT * FROM "users" 
-  WHERE id::text = 'some-uuid-string'
-`;
-
-// Joining multiple tables with UUID references
-const complexJoinQuery = `
+// Multi-table joins with UUID casting
+const complex = await client.sql.executeSQL(`
   SELECT u.name, p.title, c.content
   FROM "users" u
   JOIN "posts" p ON u.id::text = p.user_id
   JOIN "comments" c ON p.id::text = c.post_id
-  WHERE u.id::text IN ('uuid1', 'uuid2', 'uuid3')
-`;
-
-// Using UUID id in subqueries
-const subqueryExample = `
-  SELECT * FROM "users" u
-  WHERE u.id::text IN (
-    SELECT DISTINCT user_id 
-    FROM "posts" 
-    WHERE created_at > '2024-01-01'
-  )
-`;
+  WHERE u.id::text IN ('uuid1', 'uuid2')
+`);
 ```
 
 **Why UUID Casting is Required:**
@@ -810,6 +788,135 @@ try {
 } catch (error) {
   console.error('SQL execution exception:', error);
 }
+```
+
+## Workflow Operations
+
+The SDK provides workflow integration capabilities — execute activities against third-party integrations, poll for results, browse available integrations, and fetch form schemas.
+
+### Executing an Integration Activity
+
+Execute an activity and automatically poll until completion:
+
+```typescript
+const result = await client.workflow.executeIntegration({
+  data: {
+    type: 'apiActivity',
+    name: 'api1',
+    properties: {
+      method: 'get',
+      endpoint: 'https://dummyjson.com/products',
+      query_params: {},
+      headers: {},
+      body: null,
+      body_type: 'none',
+      api_timeout: 30000,
+      maximum_timeout: 60000,
+      integration_slug: 'blt-int.api',
+    },
+  },
+});
+
+if (result.error) {
+  console.error('Execution failed:', result.error);
+} else {
+  console.log('Execution result:', result.data);
+}
+```
+
+### Fire-and-Forget Execution
+
+Return immediately after triggering the activity without waiting for completion:
+
+```typescript
+const result = await client.workflow.executeIntegration({
+  data: {
+    type: 'apiActivity',
+    name: 'api1',
+    properties: {
+      method: 'get',
+      endpoint: 'https://dummyjson.com/products',
+      integration_slug: 'blt-int.api',
+    },
+  },
+  executeOnly: true,
+});
+
+if (!result.error) {
+  const executionId = result.data.execution_id;
+  console.log('Execution started:', executionId);
+}
+```
+
+### Getting Execution Result by ID
+
+Retrieve the result of a previously triggered execution:
+
+```typescript
+const result = await client.workflow.getIntegrationExecuteById('execution-id-here');
+
+if (!result.error) {
+  console.log('Execution data:', result.data);
+}
+```
+
+### Listing Available Integrations
+
+```typescript
+const result = await client.workflow.getIntegrations();
+
+if (!result.error) {
+  console.log('Integrations:', result.data);
+}
+```
+
+### Getting Credentials for an Integration
+
+```typescript
+const result = await client.workflow.getCredentials({
+  entity: 'asana',
+});
+
+if (!result.error) {
+  console.log('Credentials:', result.data);
+}
+```
+
+### Getting Integration Resource Schema
+
+Fetch the available resources and operations for an integration:
+
+```typescript
+const result = await client.workflow.getIntegrationResource({
+  integration_slug: 'blt-int.asana',
+});
+
+if (!result.error) {
+  console.log('Resources & operations:', result.data);
+}
+```
+
+### Getting Integration Form Schema
+
+Fetch the input form fields for a specific integration resource and operation. Returns default values by default, or a JSON Schema when `asJsonSchema: true`:
+
+```typescript
+// Get default values for each field
+const defaults = await client.workflow.getIntegrationForm({
+  integration_slug: 'blt-int.asana',
+  resource: 'project',
+  operation: 'create',
+  secret: 'credential-secret-here',
+});
+
+// Get JSON Schema describing the expected input shape
+const schema = await client.workflow.getIntegrationForm({
+  integration_slug: 'blt-int.asana',
+  resource: 'project',
+  operation: 'create',
+  secret: 'credential-secret-here',
+  asJsonSchema: true,
+});
 ```
 
 ## Advanced Features
@@ -928,83 +1035,12 @@ Each region has its own API endpoints and environment configurations.
 
 The SDK supports both ES modules and CommonJS:
 
-### ES Modules (Recommended)
-
 ```typescript
-import { createClient } from '@boltic/sdk';
-```
-
-### CommonJS
-
-```javascript
-const { createClient } = require('@boltic/sdk');
-```
-
-### TypeScript
-
-```typescript
-import { createClient, ClientOptions, BolticClient } from '@boltic/sdk';
-
-const options: ClientOptions = {
-  region: 'asia-south1',
-  debug: true,
-  timeout: 30000,
-  maxRetries: 3,
-};
-
-const client: BolticClient = createClient('your-api-key', options);
-```
-
-## File Format Examples
-
-### JavaScript (.js)
-
-```javascript
-const { createClient } = require('@boltic/sdk');
-
-const client = createClient('your-api-key');
-
-async function main() {
-  const tables = await client.tables.findAll();
-  console.log('Tables:', tables);
-}
-
-main().catch(console.error);
-```
-
-### TypeScript (.ts)
-
-```typescript
-import { createClient, ClientOptions } from '@boltic/sdk';
-
-const options: ClientOptions = {
-  region: 'asia-south1',
-  debug: true,
-};
-
-const client = createClient('your-api-key', options);
-
-async function main(): Promise<void> {
-  const tables = await client.tables.findAll();
-  console.log('Tables:', tables);
-}
-
-main().catch(console.error);
-```
-
-### ES Modules (.mjs)
-
-```javascript
+// ES Modules / TypeScript (recommended)
 import { createClient } from '@boltic/sdk';
 
-const client = createClient('your-api-key');
-
-async function main() {
-  const tables = await client.tables.findAll();
-  console.log('Tables:', tables);
-}
-
-main().catch(console.error);
+// CommonJS
+const { createClient } = require('@boltic/sdk');
 ```
 
 ## API Reference
@@ -1060,20 +1096,29 @@ main().catch(console.error);
 - **`client.sql.textToSQL(prompt, options?)`**: Convert natural language to SQL query (streaming)
 - **`client.sql.executeSQL(query)`**: Execute SQL query with safety measures
 
+### Workflow Operations
+
+- **`client.workflow.executeIntegration(params)`**: Execute an integration activity. Polls until completion by default; set `executeOnly: true` to return immediately.
+- **`client.workflow.getIntegrationExecuteById(executionId)`**: Get the result of a workflow execution by run ID
+- **`client.workflow.getIntegrations(params?)`**: List available integrations with optional pagination
+- **`client.workflow.getCredentials(params)`**: Fetch credentials for an integration entity
+- **`client.workflow.getIntegrationResource(params)`**: Fetch the resource/operation schema for an integration
+- **`client.workflow.getIntegrationForm(params)`**: Fetch form field schema for a specific resource + operation. Returns default values or JSON Schema (`asJsonSchema: true`).
+
 ## Examples and Demos
 
 Check out the comprehensive demo files for complete usage examples:
 
-- **[Comprehensive Database Operations Demo](./src/services/databases/examples/basic/comprehensive-database-operations-demo.ts)** - Complete SDK functionality demo
-- **[SQL Operations Demo](./src/services/databases/examples/basic/comprehensive-sql-operations-demo.ts)** - SQL operations and text-to-SQL demo
+- **[Database Operations Demo](./src/services/databases/examples/basic/comprehensive-database-operations-demo.ts)** — Tables, columns, records, indexes, filters, bulk ops
+- **[SQL Operations Demo](./src/services/databases/examples/basic/comprehensive-sql-operations-demo.ts)** — Text-to-SQL conversion and SQL query execution
+- **[Workflow Integration Demo](./src/services/workflows/examples/workflow-test.ts)** — Execute activities, poll results, list integrations, fetch form schemas
 
-These demos cover:
+Run any example:
 
-- All column types and their properties
-- Advanced filtering and querying
-- Error handling patterns
-- Vector operations
-- SQL operations and text-to-SQL conversion
+```bash
+npx tsx src/services/workflows/examples/workflow-test.ts all
+npx tsx src/services/databases/examples/basic/comprehensive-database-operations-demo.ts
+```
 
 ## Development
 

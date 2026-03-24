@@ -1,0 +1,155 @@
+---
+description: Boltic SDK code patterns — endpoint, API client, resource, and type conventions for service modules
+globs: src/services/**/*.ts
+alwaysApply: false
+---
+
+# SDK Code Patterns
+
+## Endpoint File
+
+```typescript
+import type { ModuleApiEndpoint } from '../../types/module';
+
+export interface ModuleEndpoints {
+  operationName: ModuleApiEndpoint;
+}
+
+export const MODULE_ENDPOINTS: ModuleEndpoints = {
+  operationName: {
+    path: '/resource/{param}',
+    method: 'POST',
+    authenticated: true,
+  },
+};
+
+export function buildModuleEndpointPath(
+  endpoint: ModuleApiEndpoint,
+  params: Record<string, string> = {}
+): string {
+  let path = endpoint.path;
+  for (const [key, value] of Object.entries(params)) {
+    path = path.replace(`{${key}}`, value);
+  }
+  return path;
+}
+```
+
+## Type File
+
+```typescript
+import type { BolticSuccessResponse, BolticErrorResponse, BaseApiClientConfig } from '../../../common';
+
+export type { BolticSuccessResponse, BolticErrorResponse, BaseApiClientConfig };
+
+export interface ModuleApiEndpoint {
+  path: string;
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  authenticated: boolean;
+}
+
+export interface OperationParams {
+  param_field: string;
+  optional_field?: number;
+}
+
+export type OperationResponseData = Record<string, unknown>;
+// or a concrete interface for known shapes
+```
+
+## API Client Method — GET with path params
+
+```typescript
+async getResource(params: GetParams): Promise<ModuleResponse<DataType>> {
+  try {
+    const endpoint = MODULE_ENDPOINTS.getResource;
+    const path = buildModuleEndpointPath(endpoint, { id: params.id });
+    const url = `${this.baseURL}${path}`;
+    const response = await this.httpAdapter.request<ModuleResponse<DataType>>({
+      url, method: endpoint.method, headers: this.buildHeaders(), timeout: this.config.timeout,
+    });
+    return response.data;
+  } catch (error: unknown) {
+    return this.formatErrorResponse(error, 'MODULE');
+  }
+}
+```
+
+## API Client Method — POST with body
+
+```typescript
+async createResource(body: CreateBody): Promise<ModuleResponse<DataType>> {
+  try {
+    const endpoint = MODULE_ENDPOINTS.create;
+    const url = `${this.baseURL}${endpoint.path}`;
+    const response = await this.httpAdapter.request<ModuleResponse<DataType>>({
+      url, method: endpoint.method, headers: this.buildHeaders(), data: body, timeout: this.config.timeout,
+    });
+    return response.data;
+  } catch (error: unknown) {
+    return this.formatErrorResponse(error, 'MODULE');
+  }
+}
+```
+
+## API Client Method — GET with query params
+
+```typescript
+async listResources(params: ListParams = {}): Promise<ModuleResponse<ListData>> {
+  try {
+    const endpoint = MODULE_ENDPOINTS.list;
+    const query = new URLSearchParams({
+      page: String(params.page ?? 1),
+      per_page: String(params.per_page ?? 20),
+    });
+    const url = `${this.baseURL}${endpoint.path}?${query.toString()}`;
+    const response = await this.httpAdapter.request<ModuleResponse<ListData>>({
+      url, method: endpoint.method, headers: this.buildHeaders(), timeout: this.config.timeout,
+    });
+    return response.data;
+  } catch (error: unknown) {
+    return this.formatErrorResponse(error, 'MODULE');
+  }
+}
+```
+
+## Resource Method — Simple passthrough
+
+```typescript
+async getResource(params: GetParams): Promise<BolticSuccessResponse<DataType> | BolticErrorResponse> {
+  return this.apiClient.getResource(params);
+}
+```
+
+## Resource Method — With business logic
+
+```typescript
+async executeAndPoll(params: ExecParams): Promise<BolticSuccessResponse<ResultData> | BolticErrorResponse> {
+  const result = await this.apiClient.execute(params);
+  if (isErrorResponse(result)) return result;
+  if (params.fireAndForget) return result;
+  return this.poll(result.data.execution_id);
+}
+```
+
+## BolticClient Getter
+
+```typescript
+get moduleName() {
+  return {
+    operation1: (params: Op1Params) => this.moduleResource.operation1(params),
+    operation2: (id: string) => this.moduleResource.operation2(id),
+  };
+}
+```
+
+## Naming Conventions
+
+- Endpoint file: `<module>.ts` (plural if resource-based)
+- API client: `<module>-api-client.ts`
+- Resource: `<module>.ts`
+- Types: `<module>.ts`
+- Constants: `constants.ts`
+- Endpoint object: `MODULE_ENDPOINTS` (SCREAMING_SNAKE)
+- Path builder: `buildModuleEndpointPath`
+- Response type alias: `type ModuleResponse<T> = BolticSuccessResponse<T> | BolticErrorResponse`

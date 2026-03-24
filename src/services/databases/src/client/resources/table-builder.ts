@@ -1,14 +1,14 @@
 import { TablesApiClient } from '../../api/clients/tables-api-client';
-import { ValidationError } from '../../errors/utils';
+import {
+  ValidationError,
+  type BolticErrorResponse,
+  type BolticSuccessResponse,
+} from '../../../../common';
 import {
   FieldDefinition,
   TableCreateRequest,
   TableCreateResponse,
 } from '../../types/api/table';
-import {
-  BolticErrorResponse,
-  BolticSuccessResponse,
-} from '../../types/common/responses';
 
 export interface TableBuilderOptions {
   name: string;

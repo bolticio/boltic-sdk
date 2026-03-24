@@ -5,10 +5,10 @@ import {
   RecordWithId,
 } from '../../types/api/record';
 import {
-  BolticErrorResponse,
-  BolticListResponse,
-  BolticSuccessResponse,
-} from '../../types/common/responses';
+  type BolticErrorResponse,
+  type BolticListResponse,
+  type BolticSuccessResponse,
+} from '../../../../common';
 import { RecordResource } from './record';
 
 export interface RecordBuilderOptions {

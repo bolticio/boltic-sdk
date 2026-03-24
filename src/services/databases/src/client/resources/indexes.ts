@@ -7,13 +7,12 @@ import {
   ListIndexesQuery,
   ListIndexesResponse,
 } from '../../types/api/index';
-import { BaseClient } from '../core/base-client';
-import { TableResource } from './table';
-
 import {
-  BolticErrorResponse,
-  BolticSuccessResponse,
-} from '../../types/common/responses';
+  type BolticErrorResponse,
+  type BolticSuccessResponse,
+  BaseClient,
+} from '../../../../common';
+import { TableResource } from './table';
 
 export class IndexResource {
   private apiClient: IndexesApiClient;

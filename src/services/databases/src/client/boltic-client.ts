@@ -19,16 +19,19 @@ import {
   TableUpdateRequest,
 } from '../types/api/table';
 import {
-  BolticErrorResponse,
-  BolticSuccessResponse,
+  type BolticErrorResponse,
+  type BolticSuccessResponse,
   isErrorResponse,
-} from '../types/common/responses';
-import { Environment, EnvironmentConfig } from '../types/config/environment';
+  type Environment,
+  type EnvironmentConfig,
+  type HttpRequestConfig,
+  type HttpResponse,
+  AuthManager,
+  BaseClient,
+  type ClientConfig,
+  ConfigManager,
+} from '../../../common';
 import { TextToSQLOptions } from '../types/sql';
-import { HttpRequestConfig, HttpResponse } from '../utils/http/adapter';
-import { AuthManager } from './core/auth-manager';
-import { BaseClient } from './core/base-client';
-import { ClientConfig, ConfigManager } from './core/config';
 import { ColumnResource } from './resources/column';
 import { DatabaseResource } from './resources/database';
 import { IndexResource } from './resources/indexes';
@@ -37,6 +40,14 @@ import { createRecordBuilder, RecordBuilder } from './resources/record-builder';
 import { SqlResource } from './resources/sql';
 import { TableResource } from './resources/table';
 import { createTableBuilder, TableBuilder } from './resources/table-builder';
+import { WorkflowResource } from '../../../workflows/src/client/resources/workflow';
+import type {
+  ExecuteIntegrationParams,
+  GetCredentialsParams,
+  GetIntegrationFormParams,
+  GetIntegrationResourceParams,
+  GetIntegrationsParams,
+} from '../../../workflows/src/types/workflow';
 
 export interface ClientOptions extends Partial<EnvironmentConfig> {
   environment?: Environment;
@@ -61,6 +72,7 @@ export class BolticClient {
   private sqlResource: SqlResource;
   private indexResource: IndexResource;
   private databaseResource: DatabaseResource;
+  private workflowResource: WorkflowResource;
   private currentDatabase: DatabaseContext | null = null;
   private clientOptions: ClientOptions;
 
@@ -103,6 +115,9 @@ export class BolticClient {
 
     // Initialize Database operations
     this.databaseResource = new DatabaseResource(this.baseClient);
+    
+    // Initialize Workflow operations
+    this.workflowResource = new WorkflowResource(this.baseClient);
 
     // Set default database context (will use default database in API if not specified)
     this.currentDatabase = null;
@@ -335,6 +350,40 @@ export class BolticClient {
     };
   }
 
+  /**
+   * Workflow integration operations.
+   *
+   * @example
+   * ```typescript
+   * // Execute and poll for result
+   * const result = await client.workflow.executeIntegration({
+   *   nodes: [{ id: 'api1', data: { ... }, activity_data: { ... } }],
+   * });
+   *
+   * // Get execution result by ID
+   * const exec = await client.workflow.getIntegrationExecuteById('run-uuid');
+   *
+   * // List integrations
+   * const integrations = await client.workflow.getIntegrations();
+   * ```
+   */
+  get workflow() {
+    return {
+      executeIntegration: (params: ExecuteIntegrationParams) =>
+        this.workflowResource.executeIntegration(params),
+      getIntegrationExecuteById: (executionId: string) =>
+        this.workflowResource.getIntegrationExecuteById(executionId),
+      getIntegrations: (params?: GetIntegrationsParams) =>
+        this.workflowResource.getIntegrations(params),
+      getCredentials: (params: GetCredentialsParams) =>
+        this.workflowResource.getCredentials(params),
+      getIntegrationResource: (params: GetIntegrationResourceParams) =>
+        this.workflowResource.getIntegrationResource(params),
+      getIntegrationForm: (params: GetIntegrationFormParams) =>
+        this.workflowResource.getIntegrationForm(params),
+    };
+  }
+
   // SQL resource access for testing
   getSqlResource(): SqlResource {
     return this.sqlResource;
@@ -447,6 +496,8 @@ export class BolticClient {
     this.sqlResource = new SqlResource(this.baseClient);
     this.indexResource = new IndexResource(this.baseClient);
     this.databaseResource = new DatabaseResource(this.baseClient);
+
+    this.workflowResource = new WorkflowResource(this.baseClient);
   }
 
   // Security methods to prevent API key exposure
