@@ -8,6 +8,7 @@ export const SERVICE_PATHS = {
   DATABASES: '/service/sdk/boltic-tables/v1',
   WORKFLOW_TEMPORAL: '/service/panel/temporal/v1.0',
   INTEGRATION: '/service/panel/integration/v1',
+  SERVERLESS: '/service/panel/serverless/v1.0',
 } as const;
 
 export interface BaseApiClientConfig {
