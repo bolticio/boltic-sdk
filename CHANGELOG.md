@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > Added
 
-- Add `source=sdk` query parameter to SQL execution requests (`/tables/query/execute`) to identify executions originating from the SDK.
+- Add `x-request-source: sdk` header to SQL requests (`/tables/query/execute` and `/tables/query/text-to-sql`) to identify executions originating from SDK functions.
 
 ## [v0.1.2] - 2026-02-24
 

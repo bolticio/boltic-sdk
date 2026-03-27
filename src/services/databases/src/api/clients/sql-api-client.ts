@@ -41,7 +41,10 @@ export class SqlApiClient extends BaseApiClient {
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
-        headers: this.buildHeaders(),
+        headers: {
+          ...this.buildHeaders(),
+          'x-request-source': 'sdk',
+        },
         data: request,
         timeout: this.config.timeout,
       });
@@ -73,16 +76,19 @@ export class SqlApiClient extends BaseApiClient {
   ): Promise<ExecuteSQLApiResponse | BolticErrorResponse> {
     try {
       const endpoint = SQL_ENDPOINTS.executeSQL;
-      const params = new URLSearchParams({ source: 'sdk' });
+      let url = `${this.baseURL}${buildSqlEndpointPath(endpoint)}`;
+
       if (dbId) {
-        params.set('db_id', dbId);
+        url += `?db_id=${encodeURIComponent(dbId)}`;
       }
-      const url = `${this.baseURL}${buildSqlEndpointPath(endpoint)}?${params.toString()}`;
 
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
-        headers: this.buildHeaders(),
+        headers: {
+          ...this.buildHeaders(),
+          'x-request-source': 'sdk',
+        },
         data: request,
         timeout: this.config.timeout,
       });
