@@ -41,7 +41,10 @@ export class SqlApiClient extends BaseApiClient {
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
-        headers: this.buildHeaders(),
+        headers: {
+          ...this.buildHeaders(),
+          'x-request-source': 'sdk',
+        },
         data: request,
         timeout: this.config.timeout,
       });
@@ -82,7 +85,10 @@ export class SqlApiClient extends BaseApiClient {
       const response = await this.httpAdapter.request({
         url,
         method: endpoint.method,
-        headers: this.buildHeaders(),
+        headers: {
+          ...this.buildHeaders(),
+          'x-request-source': 'sdk',
+        },
         data: request,
         timeout: this.config.timeout,
       });
