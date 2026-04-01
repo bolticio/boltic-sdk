@@ -84,7 +84,7 @@ Add new paths to `SERVICE_PATHS` in `common/client/base-api-client.ts`:
 ```typescript
 export const SERVICE_PATHS = {
   DATABASES: '/service/sdk/boltic-tables/v1',
-  STORAGE: '/service/panel/boltic-storage/v2',
+  STORAGE: '/service/panel/storage/v1.0',
   WORKFLOW_TEMPORAL: '/service/panel/temporal/v1.0',
   INTEGRATION: '/service/panel/integration/v1',
   // NEW_MODULE: '/service/...',

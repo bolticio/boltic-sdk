@@ -19,4 +19,6 @@ Canonical notes for the Boltic SDK storage surface (`SERVICE_PATHS.STORAGE`). Ke
 
 **Download:** `downloadFile` → **`POST /file-export`**; response body is file bytes (`DownloadFileData.bytes`).
 
-**Docs:** When you change storage behavior or paths, update **`../SKILL.md`** and this file together.
+**User-facing docs (Gyrate):** `Boltic/services/gyrate/docs/sdk/storage/` — `overview.md` mirrors workflow-style SDK docs (`client.storage`, errors, end-to-end flow); per-method pages under the same folder.
+
+**Docs:** When you change storage behavior or paths, update **`../SKILL.md`** and this file together; keep Gyrate storage docs aligned when the public surface changes.

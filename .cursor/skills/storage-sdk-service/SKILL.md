@@ -46,3 +46,5 @@ types → `api/endpoints/storage.ts` → `storage-api-client.ts` → `storage.ts
 `npm run type-check` and eslint on files you changed.
 
 **Local built SDK smoke test:** `npm run build` then `npm run test:module:storage -- help` / `full` / per-operation commands (see `scripts/test-module-boltic-storage.mjs`).
+
+**Gyrate (public docs):** `Boltic/services/gyrate/docs/sdk/storage/` — update `overview.md` and method pages when you change `client.storage` behavior; follow the same structure as `docs/sdk/workflows/`.
