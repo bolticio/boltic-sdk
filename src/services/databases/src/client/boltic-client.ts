@@ -57,6 +57,14 @@ import type {
   GetLogsParams,
   GetBuildLogsParams,
 } from '../../../serverless/src/types/serverless';
+import { StorageResource } from '../../../storage/src/client/resources/storage';
+import type {
+  CreateFolderParams,
+  DeleteFileParams,
+  DownloadFileParams,
+  ListStorageParams,
+  UploadParams,
+} from '../../../storage/src/types/storage';
 
 export interface ClientOptions extends Partial<EnvironmentConfig> {
   environment?: Environment;
@@ -83,6 +91,7 @@ export class BolticClient {
   private databaseResource: DatabaseResource;
   private workflowResource: WorkflowResource;
   private serverlessResource: ServerlessResource;
+  private storageResource: StorageResource;
   private currentDatabase: DatabaseContext | null = null;
   private clientOptions: ClientOptions;
 
@@ -131,6 +140,9 @@ export class BolticClient {
 
     // Initialize Serverless operations
     this.serverlessResource = new ServerlessResource(this.baseClient);
+
+    // Initialize Storage operations
+    this.storageResource = new StorageResource(this.baseClient);
 
     // Set default database context (will use default database in API if not specified)
     this.currentDatabase = null;
@@ -450,6 +462,23 @@ export class BolticClient {
     };
   }
 
+  get storage() {
+    return {
+      list: (params?: ListStorageParams) => this.storageResource.list(params),
+      upload: (params: UploadParams) => this.storageResource.upload(params),
+      createFolder: (params: CreateFolderParams) =>
+        this.storageResource.createFolder(params),
+      deleteFile: (params: DeleteFileParams) =>
+        this.storageResource.deleteFile(params),
+      makePublic: (filePath: string, options?: { ttl_seconds?: number }) =>
+        this.storageResource.makePublic(filePath, options),
+      makePrivate: (filePath: string) =>
+        this.storageResource.makePrivate(filePath),
+      downloadFile: (params: DownloadFileParams) =>
+        this.storageResource.downloadFile(params),
+    };
+  }
+
   // SQL resource access for testing
   getSqlResource(): SqlResource {
     return this.sqlResource;
@@ -566,6 +595,8 @@ export class BolticClient {
     this.workflowResource = new WorkflowResource(this.baseClient);
 
     this.serverlessResource = new ServerlessResource(this.baseClient);
+
+    this.storageResource = new StorageResource(this.baseClient);
   }
 
   // Security methods to prevent API key exposure

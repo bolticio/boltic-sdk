@@ -1,5 +1,38 @@
 import { createErrorWithContext } from '../errors';
 import { HttpAdapter, HttpRequestConfig, HttpResponse } from './adapter';
+import { decodeArrayBufferErrorBody } from './binary-response-body';
+
+/**
+ * Default response parsing for JSON APIs (all services except opt-in binary downloads).
+ */
+async function parseFetchBodyDefault(response: Response): Promise<unknown> {
+  const contentType = response.headers.get('content-type');
+  if (contentType?.includes('application/json')) {
+    return response.json();
+  }
+  return response.text();
+}
+
+/**
+ * ArrayBuffer path — only when `config.responseType === 'arraybuffer'` (e.g. storage download).
+ */
+async function parseFetchBodyArrayBuffer(response: Response): Promise<unknown> {
+  const buf = await response.arrayBuffer();
+  if (response.status >= 400) {
+    return decodeArrayBufferErrorBody(buf);
+  }
+  return buf;
+}
+
+async function parseFetchResponseData(
+  response: Response,
+  config: HttpRequestConfig
+): Promise<unknown> {
+  if (config.responseType === 'arraybuffer') {
+    return parseFetchBodyArrayBuffer(response);
+  }
+  return parseFetchBodyDefault(response);
+}
 
 export class FetchAdapter implements HttpAdapter {
   async request<T = unknown>(
@@ -15,12 +48,23 @@ export class FetchAdapter implements HttpAdapter {
       });
     }
 
+    const isFormData =
+      typeof FormData !== 'undefined' && config.data instanceof FormData;
+
+    const headerMap: Record<string, string> = { ...(config.headers || {}) };
+    if (!isFormData) {
+      headerMap['Content-Type'] =
+        headerMap['Content-Type'] ??
+        headerMap['content-type'] ??
+        'application/json';
+    } else {
+      delete headerMap['Content-Type'];
+      delete headerMap['content-type'];
+    }
+
     const init: RequestInit = {
       method: config.method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...config.headers,
-      },
+      headers: headerMap,
       signal: config.signal,
     };
 
@@ -28,7 +72,9 @@ export class FetchAdapter implements HttpAdapter {
       config.data &&
       ['POST', 'PUT', 'PATCH', 'DELETE'].includes(config.method)
     ) {
-      init.body = JSON.stringify(config.data);
+      init.body = isFormData
+        ? (config.data as FormData)
+        : JSON.stringify(config.data);
     }
 
     try {
@@ -57,14 +103,10 @@ export class FetchAdapter implements HttpAdapter {
         clearTimeout(timeoutId);
       }
 
-      const contentType = response.headers.get('content-type');
-      let data: T;
-
-      if (contentType?.includes('application/json')) {
-        data = await response.json();
-      } else {
-        data = (await response.text()) as T;
-      }
+      const data = (await parseFetchResponseData(
+        response,
+        config
+      )) as T;
 
       const headers: Record<string, string> = {};
       response.headers.forEach((value, key) => {

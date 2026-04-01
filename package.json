@@ -42,6 +42,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:module": "node scripts/test-module-imports.js",
+    "test:module:storage": "node scripts/test-module-boltic-storage.mjs",
     "type-check": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix",
