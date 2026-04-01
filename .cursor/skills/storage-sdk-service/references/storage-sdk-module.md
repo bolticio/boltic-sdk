@@ -11,9 +11,9 @@ Canonical notes for the Boltic SDK storage surface (`SERVICE_PATHS.STORAGE`). Ke
 
 **Auth:** `x-boltic-token` from base client. Optional `createClient(..., { headers })` merges into requests when needed; examples and `test-module-boltic-storage.mjs` do not set `headers`.
 
-**Upload:** `client.storage.upload` → **`POST /upload`** (multipart, `file` field). Server uploads to GCS. Response may include wire field `shareable_link`; the SDK exposes **`temporary_sharable_link`** on **`UploadData`** (and accepts either key when normalizing).
+**Upload:** `client.storage.upload` → **`POST /upload`** (multipart, `file` field). Server persists objects. Response may include wire field `shareable_link`; the SDK exposes **`temporary_sharable_link`** on **`UploadData`** (and accepts either key when normalizing).
 
-**List:** Each item is normalized to **only** these keys: `name`, `path`, `folderName`, `parentPath`, `isDirectory`, `isPublic`, `cdnUrl`, `fullPath`, `size`, `updatedAt` (GCS metadata flattened to `size` / `updatedAt`).
+**List:** Each item is normalized to **only** these keys: `name`, `path`, `folderName`, `parentPath`, `isDirectory`, `isPublic`, `cdnUrl`, `fullPath`, `size`, `updatedAt` (object metadata flattened to `size` / `updatedAt`).
 
 **ACL:** `makePublic` / `makePrivate` call change-object-access, then list the parent folder and return **`ObjectAccessSummary`**: `name` (full path preference: API `name` → `fullPath` → request path), `size`, `updated`, `public`.
 

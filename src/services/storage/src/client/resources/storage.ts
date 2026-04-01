@@ -38,7 +38,7 @@ export class StorageResource extends BaseResource {
     return this.apiClient.list(params);
   }
 
-  /** Direct upload — `POST /upload` (multipart); server writes to GCS. */
+  /** Direct upload — `POST /upload` (multipart); server persists the object. */
   async upload(params: UploadParams): Promise<StorageResult<UploadData>> {
     return this.apiClient.upload(params);
   }

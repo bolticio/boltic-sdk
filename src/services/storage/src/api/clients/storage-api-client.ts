@@ -81,7 +81,7 @@ export class StorageApiClient extends BaseApiClient {
     return q;
   }
 
-  /** `expire_in` is minutes; clamp to GCS max (7 days). */
+  /** `expire_in` is minutes; clamp to max temporary URL lifetime (7 days). */
   private normalizeExpireInMinutes(raw: number | string): number {
     const n = typeof raw === 'number' ? raw : Number(raw);
     if (!Number.isFinite(n) || n <= 0) {

@@ -27,7 +27,7 @@ Do **not** refactor `common/http`, `databases` resources, or other modules for s
 
 - Base URL: `SERVICE_PATHS.STORAGE` in `src/services/common/client/base-api-client.ts` (same `resolveServiceURL` / host as `DATABASES`).
 - Backend: panel storage routes + controllers — verify path/query/body before coding.
-- **Upload:** `upload` → `POST /upload` (multipart, field `file`). Server writes to GCS. Wire may return `shareable_link`; SDK maps it to **`temporary_sharable_link`** on `UploadData`.
+- **Upload:** `upload` → `POST /upload` (multipart, field `file`). Server persists objects. Wire may return `shareable_link`; SDK maps it to **`temporary_sharable_link`** on `UploadData`.
 - **List:** `GET .../list` — SDK normalizes each row to **only**: `name`, `path`, `folderName`, `parentPath`, `isDirectory`, `isPublic`, `cdnUrl`, `fullPath`, `size`, `updatedAt` (metadata flattened).
 - **ACL:** `makePublic` / `makePrivate` → `POST /change-object-access`, then a follow-up list to return **`ObjectAccessSummary`**: `{ name, size, updated, public }` only (no raw ACL body).
 - **Download:** `downloadFile` → `POST /file-export` (binary body via `arraybuffer` on the HTTP layer).

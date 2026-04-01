@@ -6,7 +6,7 @@ export type StorageApiEndpoint = {
   authenticated: boolean;
 };
 
-/** List query — forwarded to GCS list on the backend. */
+/** List query — forwarded to backend object listing. */
 export interface ListStorageParams {
   storageType?: string;
   /** Folder prefix to list under */
@@ -23,7 +23,7 @@ export interface StorageListFilesPayload {
 }
 
 /**
- * List row — only these fields are returned (size / `updatedAt` flattened from API metadata).
+ * List row — only these fields are returned (size / `updatedAt` flattened from object metadata).
  */
 export interface StorageListItem {
   name?: string;
@@ -35,9 +35,9 @@ export interface StorageListItem {
   cdnUrl?: string | null;
   /** Full object path in the bucket: `parentPath/name` for files, when derivable. */
   fullPath?: string;
-  /** Byte size as string (from GCS metadata). */
+  /** Byte size as string (from object metadata). */
   size?: string;
-  /** Last update time (from GCS `updated` / `timeUpdated`). */
+  /** Last update time (from `updated` / `timeUpdated` in raw metadata). */
   updatedAt?: string;
 }
 
