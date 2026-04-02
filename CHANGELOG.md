@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.1.6] - 2026-04-02
+
+> Added
+
+- **Storage SDK** — File storage on the same `BoticClient` / `createClient` instance as databases and other services via `client.storage`.
+- **Storage operations**: `list` (files and folders with a stable row shape), `upload` (multipart; optional temporary or public URL per options), `createFolder`, `deleteFile`, `makePublic` / `makePrivate` (returns a small object summary: name, size, updated, public), and `downloadFile` (file bytes for a path).
+- **Public exports**: `StorageResource`, `StorageApiClient`, `STORAGE_ENDPOINTS`, `buildStorageEndpointPath`, storage constants (`DEFAULT_STORAGE_TYPE`, `MAX_SIGNED_URL_EXPIRE_MINUTES`), and storage TypeScript types (list/upload/folder/delete/access/download params and response shapes).
+- **Example**: `src/services/storage/examples/storage-test.ts` for exercising the storage API.
+  > Changed
+- **HTTP layer**: Support for binary response bodies (used for downloads) in the shared HTTP adapters; added `binary-response-body` helper.
+
 ## [v0.1.5] - 2026-03-27
 
 > Added
