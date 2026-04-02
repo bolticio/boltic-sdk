@@ -32,6 +32,7 @@ import {
   isErrorResponse,
   ListIndexesQuery,
 } from '../../src';
+import type { Environment } from '../../../../index';
 import { createFilter } from '../../src/utils/filters/filter-mapper';
 
 // Load environment variables
@@ -280,6 +281,7 @@ class ComprehensiveDatabaseOperationsDemo {
       debug: DEMO_CONFIG.debug,
       timeout: DEMO_CONFIG.timeout,
       region: DEMO_CONFIG.region,
+      environment: process.env.BOLTIC_ENVIRONMENT as Environment | undefined
     });
 
     this.createdTableName = DEMO_CONFIG.tableName;
