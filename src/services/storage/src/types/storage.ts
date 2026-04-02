@@ -75,9 +75,11 @@ export interface ChangeObjectAccessParams {
   public: boolean;
 }
 
-/** Returned by `makePublic` / `makePrivate` after a successful ACL change (from a follow-up list). */
+/** Returned by `makePublic` / `makePrivate` — matches `POST /change-object-access` success body. */
 export interface ObjectAccessSummary {
-  /** Full object path in the bucket (list `name` from the API when present). */
+  /** Human-readable status from the API. */
+  message: string;
+  /** Full object path in the bucket. */
   name: string;
   size: string | null;
   updated: string | null;

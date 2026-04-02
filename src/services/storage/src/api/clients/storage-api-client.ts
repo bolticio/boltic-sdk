@@ -183,11 +183,46 @@ export class StorageApiClient extends BaseApiClient {
     row: StorageListItem | null,
     fallbackPublic: boolean
   ): ObjectAccessSummary {
+    const isPublic = row != null ? Boolean(row.isPublic) : fallbackPublic;
     return {
+      message: isPublic
+        ? 'File has been made publicly accessible.'
+        : "File's public access has been revoked, making it private.",
       name: row?.name ?? row?.fullPath ?? filePath,
       size: row?.size ?? null,
       updated: row?.updatedAt ?? null,
-      public: row != null ? Boolean(row.isPublic) : fallbackPublic,
+      public: isPublic,
+    };
+  }
+
+  /**
+   * Parses Hawkeye `POST /change-object-access` success JSON
+   * `{ message, name, size, updated, public }`.
+   */
+  private parseChangeObjectAccessResponse(
+    raw: unknown
+  ): ObjectAccessSummary | null {
+    if (typeof raw !== 'object' || raw === null) return null;
+    const o = raw as Record<string, unknown>;
+    if (typeof o.name !== 'string' || typeof o.public !== 'boolean') {
+      return null;
+    }
+    const message =
+      typeof o.message === 'string' && o.message.length > 0
+        ? o.message
+        : o.public
+          ? 'File has been made publicly accessible.'
+          : "File's public access has been revoked, making it private.";
+    const size =
+      o.size === undefined || o.size === null ? null : String(o.size);
+    const updated =
+      o.updated === undefined || o.updated === null ? null : String(o.updated);
+    return {
+      message,
+      name: o.name,
+      size,
+      updated,
+      public: o.public,
     };
   }
 
@@ -339,7 +374,7 @@ export class StorageApiClient extends BaseApiClient {
 
   /**
    * `POST /change-object-access` — used by `makePublic` / `makePrivate`.
-   * On success, performs a list on the parent folder and returns `{ name, size, updated, public }` only.
+   * Preferring API body `{ message, name, size, updated, public }`; otherwise falls back to a parent list.
    */
   async setObjectAccess(
     body: ChangeObjectAccessParams
@@ -357,6 +392,11 @@ export class StorageApiClient extends BaseApiClient {
       timeout: this.config.timeout,
     });
     if (this.isAclErrorResult(acl)) return acl;
+
+    const fromApi = this.parseChangeObjectAccessResponse(acl);
+    if (fromApi !== null) {
+      return fromApi;
+    }
 
     const row = await this.findFileListItem(body.file_path);
     if (this.isAclErrorResult(row)) return row;

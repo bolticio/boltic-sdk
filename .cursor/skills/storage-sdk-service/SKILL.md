@@ -29,7 +29,7 @@ Do **not** refactor `common/http`, `databases` resources, or other modules for s
 - Backend: panel storage routes + controllers — verify path/query/body before coding.
 - **Upload:** `upload` → `POST /upload` (multipart, field `file`). Server persists objects. Wire may return `shareable_link`; SDK maps it to **`temporary_sharable_link`** on `UploadData`.
 - **List:** `GET .../list` — SDK normalizes each row to **only**: `name`, `path`, `folderName`, `parentPath`, `isDirectory`, `isPublic`, `cdnUrl`, `fullPath`, `size`, `updatedAt` (metadata flattened).
-- **ACL:** `makePublic` / `makePrivate` → `POST /change-object-access`, then a follow-up list to return **`ObjectAccessSummary`**: `{ name, size, updated, public }` only (no raw ACL body).
+- **ACL:** `makePublic` / `makePrivate` → `POST /change-object-access`. Success body **`ObjectAccessSummary`**: `{ message, name, size, updated, public }`. SDK parses that when present; otherwise falls back to a parent list.
 - **Download:** `downloadFile` → `POST /file-export` (binary body via `arraybuffer` on the HTTP layer).
 
 ## Layers (touch only what you need)

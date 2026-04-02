@@ -15,7 +15,7 @@ Canonical notes for the Boltic SDK storage surface (`SERVICE_PATHS.STORAGE`). Ke
 
 **List:** Each item is normalized to **only** these keys: `name`, `path`, `folderName`, `parentPath`, `isDirectory`, `isPublic`, `cdnUrl`, `fullPath`, `size`, `updatedAt` (object metadata flattened to `size` / `updatedAt`).
 
-**ACL:** `makePublic` / `makePrivate` call change-object-access, then list the parent folder and return **`ObjectAccessSummary`**: `name` (full path preference: API `name` → `fullPath` → request path), `size`, `updated`, `public`.
+**ACL:** `makePublic` / `makePrivate` call **`POST /change-object-access`**. Prefer parsing the response **`{ message, name, size, updated, public }`**; if that shape is missing, list the parent folder and build **`ObjectAccessSummary`** (same fields, with default `message` strings).
 
 **Download:** `downloadFile` → **`POST /file-export`**; response body is file bytes (`DownloadFileData.bytes`).
 
