@@ -1,7 +1,6 @@
 import { StorageApiClient } from '../../api/clients/storage-api-client';
 import { BaseResource, BaseClient } from '../../../../common';
 import type {
-  ChangeObjectAccessParams,
   CreateFolderData,
   CreateFolderParams,
   DeleteFileParams,
@@ -56,15 +55,12 @@ export class StorageResource extends BaseResource {
   }
 
   async makePublic(
-    filePath: string,
-    options?: { ttl_seconds?: number }
+    filePath: string
   ): Promise<StorageResult<ObjectAccessSummary>> {
-    const body: ChangeObjectAccessParams = {
+    return this.apiClient.setObjectAccess({
       file_path: filePath,
       public: true,
-      ...options,
-    };
-    return this.apiClient.setObjectAccess(body);
+    });
   }
 
   async makePrivate(

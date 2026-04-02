@@ -470,8 +470,8 @@ export class BolticClient {
         this.storageResource.createFolder(params),
       deleteFile: (params: DeleteFileParams) =>
         this.storageResource.deleteFile(params),
-      makePublic: (filePath: string, options?: { ttl_seconds?: number }) =>
-        this.storageResource.makePublic(filePath, options),
+      makePublic: (filePath: string) =>
+        this.storageResource.makePublic(filePath),
       makePrivate: (filePath: string) =>
         this.storageResource.makePrivate(filePath),
       downloadFile: (params: DownloadFileParams) =>

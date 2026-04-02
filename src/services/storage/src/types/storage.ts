@@ -73,8 +73,6 @@ export interface ChangeObjectAccessParams {
   file_path: string;
   /** `true` = public, `false` = private */
   public: boolean;
-  /** Optional cache TTL when making public (seconds). */
-  ttl_seconds?: number;
 }
 
 /** Returned by `makePublic` / `makePrivate` after a successful ACL change (from a follow-up list). */

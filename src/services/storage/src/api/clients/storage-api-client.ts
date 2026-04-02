@@ -353,9 +353,6 @@ export class StorageApiClient extends BaseApiClient {
       data: {
         file_path: body.file_path,
         public: body.public,
-        ...(body.ttl_seconds !== undefined
-          ? { ttl_seconds: body.ttl_seconds }
-          : {}),
       },
       timeout: this.config.timeout,
     });
