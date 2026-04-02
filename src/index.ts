@@ -120,5 +120,36 @@ export type {
   GetBuildLogsData,
 } from './services/serverless/src/types';
 
+
+export { StorageResource } from './services/storage/src/client';
+export {
+  StorageApiClient,
+  STORAGE_ENDPOINTS,
+  buildStorageEndpointPath,
+} from './services/storage/src/api';
+export {
+  DEFAULT_STORAGE_TYPE,
+  MAX_SIGNED_URL_EXPIRE_MINUTES,
+} from './services/storage/src/constants';
+export type {
+  StorageApiEndpoint,
+  ListStorageParams,
+  StorageListFilesPayload,
+  StorageListItem,
+  ListStorageData,
+  CreateFolderParams,
+  CreateFolderData,
+  DeleteFileParams,
+  DeleteFileData,
+  ChangeObjectAccessParams,
+  ObjectAccessSummary,
+  UploadMultipartFields,
+  UploadParams,
+  UploadData,
+  DownloadFileParams,
+  DownloadFileData,
+  StorageResponse,
+} from './services/storage/src/types';
+
 // Version information
 export const VERSION = '1.0.0';

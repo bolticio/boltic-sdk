@@ -13,6 +13,11 @@ export interface HttpRequestConfig {
   data?: unknown;
   timeout?: number;
   signal?: AbortSignal;
+  /**
+   * Opt-in only. When unset (default), JSON/text parsing is unchanged for all services.
+   * Storage `downloadFile` sets `arraybuffer` for binary bodies.
+   */
+  responseType?: 'arraybuffer';
 }
 
 export interface HttpAdapter {

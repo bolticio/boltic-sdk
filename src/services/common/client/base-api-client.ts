@@ -9,6 +9,7 @@ export const SERVICE_PATHS = {
   WORKFLOW_TEMPORAL: '/service/panel/temporal/v1.0',
   INTEGRATION: '/service/panel/integration/v1',
   SERVERLESS: '/service/panel/serverless/v1.0',
+  STORAGE: '/service/panel/storage/v1.0',
 } as const;
 
 export interface BaseApiClientConfig {

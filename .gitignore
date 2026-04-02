@@ -73,6 +73,9 @@ test-results/
 **/docs/
 src/services/databases/docs/
 
+# Storage smoke-test downloads (test-module-boltic-storage.mjs)
+scripts/.storage-downloads/
+
 # Temporary and cache files
 *.tmp
 *.temp
