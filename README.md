@@ -418,6 +418,12 @@ const columnById = await client.columns.findById('users', 'column-id');
 const updateResult = await client.columns.update('users', 'description', {
   description: 'Updated user description',
 });
+
+// Remove FK constraint and convert FK column to normal column type
+const removeFkResult = await client.columns.removeForeignKeyConstraint(
+  'users',
+  'manager_id'
+);
 ```
 
 ### Deleting Columns
@@ -1110,6 +1116,7 @@ const { createClient } = require('@boltic/sdk');
 Check out the comprehensive demo files for complete usage examples:
 
 - **[Database Operations Demo](./src/services/databases/examples/basic/comprehensive-database-operations-demo.ts)** — Tables, columns, records, indexes, filters, bulk ops
+- **[Foreign Key Lifecycle Demo](./src/services/databases/examples/basic/foreign-key-lifecycle-demo.ts)** — Create FK with cascade, rename FK column, delete FK column
 - **[SQL Operations Demo](./src/services/databases/examples/basic/comprehensive-sql-operations-demo.ts)** — Text-to-SQL conversion and SQL query execution
 - **[Workflow Integration Demo](./src/services/workflows/examples/workflow-test.ts)** — Execute activities, poll results, list integrations, fetch form schemas
 

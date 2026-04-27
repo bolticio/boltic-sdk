@@ -91,6 +91,14 @@ function transformFieldDefinition(field: FieldDefinition): FieldDefinition {
     vector_dimension: field.vector_dimension ?? undefined,
     description: field.description,
     default_value: field.default_value,
+    show_decrypted: field.show_decrypted ?? undefined,
+    is_deterministic: field.is_deterministic ?? undefined,
+    reference_table_id: field.reference_table_id ?? undefined,
+    reference_table_name: field.reference_table_name ?? undefined,
+    reference_column_name: field.reference_column_name ?? undefined,
+    fk_on_delete: field.fk_on_delete ?? undefined,
+    fk_on_update: field.fk_on_update ?? undefined,
+    referenced_sql_type: field.referenced_sql_type ?? undefined,
   };
 }
 

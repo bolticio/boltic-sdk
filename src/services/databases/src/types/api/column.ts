@@ -1,4 +1,8 @@
 import { FieldDefinition, FieldType } from './table';
+import {
+  ForeignKeyAction,
+  ForeignKeyUpdateAction,
+} from '../../constants/foreign-key';
 
 // Alignment types
 export type AlignmentType = 'left' | 'center' | 'right';
@@ -61,6 +65,7 @@ export enum FieldTypeEnum {
   SPARSEVECTOR = 'sparsevec',
   HALFVECTOR = 'halfvec',
   ENCRYPTED = 'encrypted',
+  FOREIGN_KEY = 'foreign-key',
 }
 
 // Allowed field type conversions
@@ -204,6 +209,7 @@ export const ALLOWED_FIELD_TYPE_CONVERSIONS = {
     FieldTypeEnum.HALFVECTOR,
   ],
   [FieldTypeEnum.ENCRYPTED]: [],
+  [FieldTypeEnum.FOREIGN_KEY]: [],
 };
 
 // Field-specific validation keys map
@@ -227,6 +233,13 @@ export const FIELD_SPECIFIC_KEYS_MAP = {
   [FieldTypeEnum.SPARSEVECTOR]: ['vector_dimension'],
   [FieldTypeEnum.HALFVECTOR]: ['vector_dimension'],
   [FieldTypeEnum.ENCRYPTED]: ['show_decrypted', 'is_deterministic'],
+  [FieldTypeEnum.FOREIGN_KEY]: [
+    'reference_table_id',
+    'reference_table_name',
+    'reference_column_name',
+    'fk_on_delete',
+    'fk_on_update',
+  ],
 };
 
 export interface ColumnCreateRequest {
@@ -262,6 +275,14 @@ export interface ColumnUpdateRequest {
   vector_dimension?: number;
   show_decrypted?: boolean;
   is_deterministic?: boolean; // Cannot be changed once set
+
+  // Foreign-key specific properties
+  reference_table_id?: string;
+  reference_table_name?: string;
+  reference_column_name?: string;
+  fk_on_delete?: ForeignKeyAction;
+  fk_on_update?: ForeignKeyUpdateAction;
+  referenced_sql_type?: string;
 }
 
 export interface ColumnRecord {
@@ -300,6 +321,13 @@ export interface ColumnDetails {
   vector_dimension?: number;
   show_decrypted?: boolean;
   is_deterministic?: boolean;
+  reference_table_id?: string;
+  reference_table_name?: string;
+  reference_column_name?: string;
+  fk_on_delete?: string;
+  fk_on_update?: string;
+  referenced_sql_type?: string;
+  postgres_data_type?: string;
 }
 
 export interface ColumnQueryOptions {
@@ -345,4 +373,11 @@ export interface ColumnUpdateOptions {
     id?: string;
     name?: string;
   };
+}
+
+export interface ForeignKeyEditRequest {
+  name?: string;
+  fk_on_delete?: ForeignKeyAction;
+  fk_on_update?: ForeignKeyUpdateAction;
+  remove_foreign_key?: boolean;
 }

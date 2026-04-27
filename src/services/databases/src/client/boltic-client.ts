@@ -1,4 +1,8 @@
-import { ColumnQueryOptions, ColumnUpdateRequest } from '../types/api/column';
+import {
+  ColumnQueryOptions,
+  ColumnUpdateRequest,
+  ForeignKeyEditRequest,
+} from '../types/api/column';
 import {
   DatabaseCreateRequest,
   DatabaseJobQueryOptions,
@@ -246,6 +250,8 @@ export class BolticClient {
     return {
       create: (tableName: string, column: FieldDefinition) =>
         this.columnResource.create(tableName, column),
+      createForeignKey: (tableName: string, column: FieldDefinition) =>
+        this.columnResource.createForeignKey(tableName, column),
       createMany: (tableName: string, columns: FieldDefinition[]) =>
         this.columnResource.createMany(tableName, columns),
       findAll: (tableName: string, options?: ColumnQueryOptions) =>
@@ -259,8 +265,22 @@ export class BolticClient {
         columnName: string,
         updates: ColumnUpdateRequest
       ) => this.columnResource.update(tableName, columnName, updates),
+      renameForeignKey: (
+        tableName: string,
+        columnName: string,
+        newName: string
+      ) => this.columnResource.renameForeignKey(tableName, columnName, newName),
+      updateForeignKey: (
+        tableName: string,
+        columnName: string,
+        updates: ForeignKeyEditRequest
+      ) => this.columnResource.updateForeignKey(tableName, columnName, updates),
+      removeForeignKeyConstraint: (tableName: string, columnName: string) =>
+        this.columnResource.removeForeignKeyConstraint(tableName, columnName),
       delete: (tableName: string, columnName: string) =>
         this.columnResource.delete(tableName, columnName),
+      deleteForeignKey: (tableName: string, columnName: string) =>
+        this.columnResource.deleteForeignKey(tableName, columnName),
     };
   }
 

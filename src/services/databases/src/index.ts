@@ -5,6 +5,7 @@ export type { ClientOptions } from './client';
 // Type exports for external use
 export type {
   ColumnDetails,
+  ForeignKeyEditRequest,
   ColumnQueryOptions,
   ColumnUpdateRequest,
 } from './types/api/column';

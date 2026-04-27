@@ -14,6 +14,7 @@ export interface ColumnEndpoints {
   get: ApiEndpoint;
   update: ApiEndpoint;
   delete: ApiEndpoint;
+  foreignKey: ApiEndpoint;
 }
 
 export const COLUMN_ENDPOINTS: ColumnEndpoints = {
@@ -42,6 +43,11 @@ export const COLUMN_ENDPOINTS: ColumnEndpoints = {
   delete: {
     path: '/tables/{table_id}/fields/{field_id}',
     method: 'DELETE',
+    authenticated: true,
+  },
+  foreignKey: {
+    path: '/tables/{table_id}/fields/{field_id}/foreign-key',
+    method: 'PATCH',
     authenticated: true,
   },
 };

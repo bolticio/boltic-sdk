@@ -1,3 +1,8 @@
+import {
+  ForeignKeyAction,
+  ForeignKeyUpdateAction,
+} from '../../constants/foreign-key';
+
 export type FieldType =
   | 'text'
   | 'long-text'
@@ -13,7 +18,8 @@ export type FieldType =
   | 'vector'
   | 'halfvec'
   | 'sparsevec'
-  | 'encrypted';
+  | 'encrypted'
+  | 'foreign-key';
 
 export type AlignmentType = 'left' | 'right' | 'center';
 
@@ -47,6 +53,14 @@ export interface FieldDefinition {
   // Encrypted type properties
   show_decrypted?: boolean;
   is_deterministic?: boolean;
+
+  // Foreign key type properties
+  reference_table_id?: string;
+  reference_table_name?: string;
+  reference_column_name?: string;
+  fk_on_delete?: ForeignKeyAction;
+  fk_on_update?: ForeignKeyUpdateAction;
+  referenced_sql_type?: string;
 }
 
 export interface TableCreateRequest {

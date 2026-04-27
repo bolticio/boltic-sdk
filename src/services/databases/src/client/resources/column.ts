@@ -2,11 +2,13 @@ import { ColumnsApiClient } from '../../api/clients/columns-api-client';
 import { TablesApiClient } from '../../api/clients/tables-api-client';
 import {
   ColumnDetails,
+  ForeignKeyEditRequest,
   ColumnQueryOptions,
   ColumnRecord,
   ColumnUpdateRequest,
 } from '../../types/api/column';
 import { FieldDefinition } from '../../types/api/table';
+import { DEFAULT_FOREIGN_KEY_ACTION } from '../../constants/foreign-key';
 import {
   BolticErrorResponse,
   BolticListResponse,
@@ -94,6 +96,19 @@ export class ColumnResource extends BaseResource {
   }
 
   /**
+   * Create a foreign-key column in a table with optional cascade actions.
+   */
+  async createForeignKey(
+    tableName: string,
+    column: FieldDefinition
+  ): Promise<BolticSuccessResponse<ColumnRecord> | BolticErrorResponse> {
+    return this.create(tableName, {
+      ...column,
+      type: 'foreign-key',
+    });
+  }
+
+  /**
    * Process column defaults and auto-generate field_order
    */
   private async processColumnDefaults(
@@ -130,6 +145,29 @@ export class ColumnResource extends BaseResource {
       ) {
         throw new Error('Encrypted columns do not accept a default value');
       }
+    }
+
+    // Set defaults and validations for foreign-key columns
+    if (processedColumn.type === 'foreign-key') {
+      if (!processedColumn.reference_column_name) {
+        throw new Error('Foreign-key columns require reference_column_name');
+      }
+      if (
+        !processedColumn.reference_table_id &&
+        !processedColumn.reference_table_name
+      ) {
+        throw new Error(
+          'Foreign-key columns require reference_table_id or reference_table_name'
+        );
+      }
+
+      processedColumn.fk_on_delete =
+        processedColumn.fk_on_delete || DEFAULT_FOREIGN_KEY_ACTION;
+      processedColumn.fk_on_update =
+        processedColumn.fk_on_update || DEFAULT_FOREIGN_KEY_ACTION;
+      processedColumn.is_primary_key = false;
+      processedColumn.is_unique = false;
+      processedColumn.is_indexed = false;
     }
 
     // Auto-generate field_order if not provided
@@ -493,6 +531,101 @@ export class ColumnResource extends BaseResource {
       return {
         error: {
           code: 'DELETE_COLUMN_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
+      };
+    }
+  }
+
+  /**
+   * Rename a foreign-key column by name.
+   * Uses Athena's rename endpoint for FK columns.
+   */
+  async renameForeignKey(
+    tableName: string,
+    columnName: string,
+    newName: string
+  ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
+    return this.updateForeignKey(tableName, columnName, { name: newName });
+  }
+
+  /**
+   * Edit a foreign-key column by name (rename and/or FK actions).
+   */
+  async updateForeignKey(
+    tableName: string,
+    columnName: string,
+    updates: ForeignKeyEditRequest
+  ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
+    try {
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
+        return {
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
+        };
+      }
+
+      return await this.columnsApiClient.editForeignKeyColumnByName(
+        tableInfo.id,
+        columnName,
+        updates
+      );
+    } catch (error) {
+      return {
+        error: {
+          code: 'UPDATE_FOREIGN_KEY_COLUMN_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
+      };
+    }
+  }
+
+  /**
+   * Delete a foreign-key column by name.
+   * This is an alias of delete() for explicit FK intent.
+   */
+  async deleteForeignKey(
+    tableName: string,
+    columnName: string
+  ): Promise<
+    | BolticSuccessResponse<{ success: boolean; message?: string }>
+    | BolticErrorResponse
+  > {
+    return this.delete(tableName, columnName);
+  }
+
+  /**
+   * Remove a foreign-key constraint from a column by name.
+   * The column remains in table and is converted to normal Athena-supported type.
+   */
+  async removeForeignKeyConstraint(
+    tableName: string,
+    columnName: string
+  ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
+    try {
+      const tableInfo = await this.getTableInfo(tableName);
+      if (!tableInfo) {
+        return {
+          error: {
+            code: 'TABLE_NOT_FOUND',
+            message: `Table '${tableName}' not found`,
+          },
+        };
+      }
+
+      return await this.columnsApiClient.removeForeignKeyConstraintByName(
+        tableInfo.id,
+        columnName
+      );
+    } catch (error) {
+      return {
+        error: {
+          code: 'REMOVE_FOREIGN_KEY_CONSTRAINT_ERROR',
           message:
             error instanceof Error ? error.message : 'Unknown error occurred',
         },

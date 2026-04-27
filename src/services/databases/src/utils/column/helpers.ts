@@ -36,6 +36,12 @@ export class ColumnHelpers {
       vector_dimension: field.vector_dimension,
       show_decrypted: field.show_decrypted,
       is_deterministic: field.is_deterministic,
+      reference_table_id: field.reference_table_id,
+      reference_table_name: field.reference_table_name,
+      reference_column_name: field.reference_column_name,
+      fk_on_delete: field.fk_on_delete,
+      fk_on_update: field.fk_on_update,
+      referenced_sql_type: field.referenced_sql_type,
     };
   }
 
@@ -98,6 +104,7 @@ export class ColumnHelpers {
       halfvec: 'Half Vector',
       sparsevec: 'Sparse Vector',
       encrypted: 'Encrypted',
+      'foreign-key': 'Foreign Key',
     };
 
     return typeNames[type] || type;

@@ -21,6 +21,7 @@ import {
   TableRecord,
   TableUpdateRequest,
 } from '../../types/api/table';
+import { DEFAULT_FOREIGN_KEY_ACTION } from '../../constants/foreign-key';
 
 export class TableResource extends BaseResource {
   private tablesApiClient: TablesApiClient;
@@ -116,6 +117,29 @@ export class TableResource extends BaseResource {
         ) {
           throw new Error('Encrypted columns do not accept a default value');
         }
+      }
+
+      // Set defaults and validations for foreign-key columns
+      if (processedField.type === 'foreign-key') {
+        if (!processedField.reference_column_name) {
+          throw new Error('Foreign-key columns require reference_column_name');
+        }
+        if (
+          !processedField.reference_table_id &&
+          !processedField.reference_table_name
+        ) {
+          throw new Error(
+            'Foreign-key columns require reference_table_id or reference_table_name'
+          );
+        }
+
+        processedField.fk_on_delete =
+          processedField.fk_on_delete || DEFAULT_FOREIGN_KEY_ACTION;
+        processedField.fk_on_update =
+          processedField.fk_on_update || DEFAULT_FOREIGN_KEY_ACTION;
+        processedField.is_primary_key = false;
+        processedField.is_unique = false;
+        processedField.is_indexed = false;
       }
 
       // Auto-generate field_order if not provided (sequential for table creation)

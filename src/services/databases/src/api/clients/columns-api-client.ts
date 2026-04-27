@@ -1,6 +1,7 @@
 import {
   ColumnCreateRequest,
   ColumnDetails,
+  ForeignKeyEditRequest,
   ColumnQueryOptions,
   ColumnRecord,
   ColumnUpdateRequest,
@@ -355,7 +356,43 @@ export class ColumnsApiClient extends BaseApiClient {
       time_format: columnDetails.time_format,
       timezone: columnDetails.timezone,
       vector_dimension: columnDetails.vector_dimension,
+      reference_table_id: columnDetails.reference_table_id,
+      reference_table_name: columnDetails.reference_table_name,
+      reference_column_name: columnDetails.reference_column_name,
+      fk_on_delete: columnDetails.fk_on_delete,
+      fk_on_update: columnDetails.fk_on_update,
+      referenced_sql_type: columnDetails.referenced_sql_type,
     };
+  }
+
+  /**
+   * Edit a foreign-key column by id.
+   * Athena supports safe FK edits (name and FK actions) on this endpoint.
+   */
+  async editForeignKeyColumn(
+    tableId: string,
+    columnId: string,
+    payload: ForeignKeyEditRequest
+  ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
+    try {
+      const endpoint = COLUMN_ENDPOINTS.foreignKey;
+      const url = `${this.baseURL}${buildEndpointPath(endpoint, {
+        table_id: tableId,
+        field_id: columnId,
+      })}`;
+
+      const response = await this.httpAdapter.request({
+        url,
+        method: endpoint.method,
+        headers: this.buildHeaders(),
+        data: payload,
+        timeout: this.config.timeout,
+      });
+
+      return response.data as BolticSuccessResponse<ColumnDetails>;
+    } catch (error) {
+      return this.formatErrorResponse(error);
+    }
   }
 
   /**
@@ -436,5 +473,68 @@ export class ColumnsApiClient extends BaseApiClient {
     } catch (error) {
       return this.formatErrorResponse(error);
     }
+  }
+
+  /**
+   * Edit foreign-key column by name.
+   */
+  async editForeignKeyColumnByName(
+    tableId: string,
+    columnName: string,
+    payload: ForeignKeyEditRequest
+  ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
+    try {
+      const findResult = await this.findColumnByName(tableId, columnName);
+      if (isErrorResponse(findResult)) {
+        return findResult;
+      }
+
+      if (!findResult.data) {
+        return {
+          error: {
+            code: 'COLUMN_NOT_FOUND',
+            message: `Column '${columnName}' not found in table`,
+            meta: ['Column not found'],
+          },
+        };
+      }
+
+      return await this.editForeignKeyColumn(
+        tableId,
+        findResult.data.id,
+        payload
+      );
+    } catch (error) {
+      return this.formatErrorResponse(error);
+    }
+  }
+
+  /**
+   * Remove a foreign-key constraint from a column by id.
+   * Column is converted to a normal supported column type by Athena.
+   */
+  async removeForeignKeyConstraint(
+    tableId: string,
+    columnId: string,
+    columnName?: string
+  ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
+    return this.editForeignKeyColumn(tableId, columnId, {
+      ...(columnName ? { name: columnName } : {}),
+      remove_foreign_key: true,
+    });
+  }
+
+  /**
+   * Remove a foreign-key constraint from a column by name.
+   * Column is converted to a normal supported column type by Athena.
+   */
+  async removeForeignKeyConstraintByName(
+    tableId: string,
+    columnName: string
+  ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
+    return this.editForeignKeyColumnByName(tableId, columnName, {
+      name: columnName,
+      remove_foreign_key: true,
+    });
   }
 }

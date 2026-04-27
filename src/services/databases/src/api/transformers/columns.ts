@@ -51,6 +51,12 @@ export interface ColumnUpdateApiRequest {
   vector_dimension?: number;
   show_decrypted?: boolean;
   is_deterministic?: boolean;
+  reference_table_id?: string;
+  reference_table_name?: string;
+  reference_column_name?: string;
+  fk_on_delete?: string;
+  fk_on_update?: string;
+  referenced_sql_type?: string;
 }
 
 export interface ColumnApiResponse {
@@ -85,6 +91,13 @@ export interface ColumnApiResponse {
     vector_dimension?: number;
     show_decrypted?: boolean;
     is_deterministic?: boolean;
+    reference_table_id?: string;
+    reference_table_name?: string;
+    reference_column_name?: string;
+    fk_on_delete?: string;
+    fk_on_update?: string;
+    referenced_sql_type?: string;
+    postgres_data_type?: string;
   };
 }
 
@@ -154,6 +167,12 @@ function transformFieldDefinition(field: FieldDefinition): FieldDefinition {
     default_value: field.default_value ?? undefined,
     show_decrypted: field.show_decrypted ?? undefined,
     is_deterministic: field.is_deterministic ?? undefined,
+    reference_table_id: field.reference_table_id ?? undefined,
+    reference_table_name: field.reference_table_name ?? undefined,
+    reference_column_name: field.reference_column_name ?? undefined,
+    fk_on_delete: field.fk_on_delete ?? undefined,
+    fk_on_update: field.fk_on_update ?? undefined,
+    referenced_sql_type: field.referenced_sql_type ?? undefined,
   };
 }
 
@@ -237,6 +256,18 @@ export function transformColumnUpdateRequest(
     apiRequest.show_decrypted = updates.show_decrypted;
   if (updates.is_deterministic !== undefined)
     apiRequest.is_deterministic = updates.is_deterministic;
+  if (updates.reference_table_id !== undefined)
+    apiRequest.reference_table_id = updates.reference_table_id;
+  if (updates.reference_table_name !== undefined)
+    apiRequest.reference_table_name = updates.reference_table_name;
+  if (updates.reference_column_name !== undefined)
+    apiRequest.reference_column_name = updates.reference_column_name;
+  if (updates.fk_on_delete !== undefined)
+    apiRequest.fk_on_delete = updates.fk_on_delete;
+  if (updates.fk_on_update !== undefined)
+    apiRequest.fk_on_update = updates.fk_on_update;
+  if (updates.referenced_sql_type !== undefined)
+    apiRequest.referenced_sql_type = updates.referenced_sql_type;
 
   // Type-specific fields
   if (updates.alignment !== undefined) apiRequest.alignment = updates.alignment;
@@ -317,6 +348,13 @@ export function transformColumnResponse(
     vector_dimension: response.data.vector_dimension,
     show_decrypted: response.data.show_decrypted,
     is_deterministic: response.data.is_deterministic,
+    reference_table_id: response.data.reference_table_id,
+    reference_table_name: response.data.reference_table_name,
+    reference_column_name: response.data.reference_column_name,
+    fk_on_delete: response.data.fk_on_delete,
+    fk_on_update: response.data.fk_on_update,
+    referenced_sql_type: response.data.referenced_sql_type,
+    postgres_data_type: response.data.postgres_data_type,
   };
 }
 
