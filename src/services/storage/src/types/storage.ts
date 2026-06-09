@@ -101,6 +101,15 @@ export interface ObjectAccessSummary {
 export interface UploadMultipartFields {
   storageType?: string;
   file: Blob;
+  /**
+   * MIME type for the uploaded object (e.g. `image/png`, `video/mp4`).
+   *
+   * Determines the stored file type and therefore whether the generated CDN
+   * URL serves the object inline as media or as a download. When omitted, the
+   * SDK uses the `file`'s own `type`, then infers it from the filename
+   * extension, falling back to `application/octet-stream`.
+   */
+  contentType?: string;
   filepath?: string;
   overwrite?: boolean | string;
   /**
