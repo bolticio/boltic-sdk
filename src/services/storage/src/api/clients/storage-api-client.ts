@@ -31,6 +31,7 @@ import {
   STORAGE_ENDPOINTS,
   buildStorageEndpointPath,
 } from '../endpoints/storage';
+import { resolveUploadContentType } from '../../utils/content-type';
 
 type StorageResult<T> = T | BolticErrorResponse;
 
@@ -144,7 +145,21 @@ export class StorageApiClient extends BaseApiClient {
       throw new Error('upload requires filename or file_name');
     }
     const form = new FormData();
-    form.append('file', params.file, logicalName);
+    // The backend stores the object's file type from the multipart part's
+    // Content-Type. A Blob without a usable `type` would be sent as
+    // application/octet-stream, leaving the stored file type blank and making
+    // the CDN URL behave as a download. Resolve a real type and re-wrap so the
+    // part carries it.
+    const contentType = resolveUploadContentType(
+      logicalName,
+      params.file,
+      params.contentType
+    );
+    const filePart =
+      (params.file as { type?: string }).type === contentType
+        ? params.file
+        : new Blob([params.file], { type: contentType });
+    form.append('file', filePart, logicalName);
     form.append('filename', logicalName);
     if (params.filepath !== undefined) {
       form.append('filepath', params.filepath);
