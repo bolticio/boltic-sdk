@@ -243,24 +243,25 @@ export class BolticClient {
 
   // Direct column operations
   get columns() {
+    const dbId = this.currentDatabase?.databaseId;
     return {
       create: (tableName: string, column: FieldDefinition) =>
-        this.columnResource.create(tableName, column),
+        this.columnResource.create(tableName, column, dbId),
       createMany: (tableName: string, columns: FieldDefinition[]) =>
-        this.columnResource.createMany(tableName, columns),
+        this.columnResource.createMany(tableName, columns, dbId),
       findAll: (tableName: string, options?: ColumnQueryOptions) =>
-        this.columnResource.findAll(tableName, options),
+        this.columnResource.findAll(tableName, options, dbId),
       findOne: (tableName: string, columnName: string) =>
-        this.columnResource.get(tableName, columnName),
+        this.columnResource.get(tableName, columnName, dbId),
       findById: (tableName: string, columnId: string) =>
-        this.columnResource.findById(tableName, columnId),
+        this.columnResource.findById(tableName, columnId, dbId),
       update: (
         tableName: string,
         columnName: string,
         updates: ColumnUpdateRequest
-      ) => this.columnResource.update(tableName, columnName, updates),
+      ) => this.columnResource.update(tableName, columnName, updates, dbId),
       delete: (tableName: string, columnName: string) =>
-        this.columnResource.delete(tableName, columnName),
+        this.columnResource.delete(tableName, columnName, dbId),
     };
   }
 

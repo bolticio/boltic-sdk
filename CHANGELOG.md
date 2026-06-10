@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.1.7] - 2026-06-10
+
+> Fixed
+
+- **Cross-database table resolution** — when two databases under the same account had tables with the same name, record and column operations could silently target the wrong database's table:
+  - `records.insert` filled missing fields using columns resolved by table name without database context; the payload could carry a column from a same-named table in another database, causing API errors like `Extra field <name> provided`. Column completion now uses the already-resolved table id scoped with `db_id`.
+  - All `columns` operations (`create`, `createMany`, `findAll`, `findOne`, `findById`, `update`, `delete`) now scope table name resolution to the database selected via `useDatabase()`.
+
 ## [v0.1.5] - 2026-04-02
 
 > Added
