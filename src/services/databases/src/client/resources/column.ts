@@ -52,11 +52,12 @@ export class ColumnResource extends BaseResource {
    */
   async create(
     tableName: string,
-    column: FieldDefinition
+    column: FieldDefinition,
+    dbId?: string
   ): Promise<BolticSuccessResponse<ColumnRecord> | BolticErrorResponse> {
     try {
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -233,11 +234,12 @@ export class ColumnResource extends BaseResource {
    */
   async createMany(
     tableName: string,
-    columns: FieldDefinition[]
+    columns: FieldDefinition[],
+    dbId?: string
   ): Promise<BolticListResponse<ColumnRecord> | BolticErrorResponse> {
     try {
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -282,11 +284,12 @@ export class ColumnResource extends BaseResource {
    */
   async findAll(
     tableName: string,
-    options: ColumnQueryOptions = {}
+    options: ColumnQueryOptions = {},
+    dbId?: string
   ): Promise<BolticListResponse<ColumnDetails> | BolticErrorResponse> {
     try {
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -325,11 +328,12 @@ export class ColumnResource extends BaseResource {
    */
   async get(
     tableName: string,
-    columnName: string
+    columnName: string,
+    dbId?: string
   ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -374,11 +378,12 @@ export class ColumnResource extends BaseResource {
 
   async findById(
     tableName: string,
-    columnId: string
+    columnId: string,
+    dbId?: string
   ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -416,11 +421,12 @@ export class ColumnResource extends BaseResource {
   async update(
     tableName: string,
     columnName: string,
-    updates: ColumnUpdateRequest
+    updates: ColumnUpdateRequest,
+    dbId?: string
   ): Promise<BolticSuccessResponse<ColumnDetails> | BolticErrorResponse> {
     try {
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -457,14 +463,15 @@ export class ColumnResource extends BaseResource {
    */
   async delete(
     tableName: string,
-    columnName: string
+    columnName: string,
+    dbId?: string
   ): Promise<
     | BolticSuccessResponse<{ success: boolean; message?: string }>
     | BolticErrorResponse
   > {
     try {
       // Get table information first
-      const tableInfo = await this.getTableInfo(tableName);
+      const tableInfo = await this.getTableInfo(tableName, dbId);
       if (!tableInfo) {
         return {
           error: {
@@ -504,12 +511,15 @@ export class ColumnResource extends BaseResource {
    * Helper method to get table information by name
    */
   private async getTableInfo(
-    tableName: string
+    tableName: string,
+    dbId?: string
   ): Promise<{ id: string; snapshot_url?: string } | null> {
     try {
-      // Use the table resource to find the table by name
+      // Use the table resource to find the table by name, scoped to the
+      // database context — a name-only lookup can resolve a same-named
+      // table in a different database
       const tableResource = new TableResource(this.client);
-      const tableResult = await tableResource.findByName(tableName);
+      const tableResult = await tableResource.findByName(tableName, dbId);
 
       if (tableResult.data) {
         return {

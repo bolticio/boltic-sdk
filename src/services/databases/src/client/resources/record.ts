@@ -17,7 +17,7 @@ import {
   isErrorResponse,
   BaseClient,
 } from '../../../../common';
-import { ColumnResource } from './column';
+import { ColumnsApiClient } from '../../api/clients/columns-api-client';
 import { TableResource } from './table';
 
 export class RecordResource {
@@ -66,8 +66,9 @@ export class RecordResource {
 
       // Get table columns to determine which fields might be missing
       const completeDataResult = await this.ensureCompleteRecordData(
-        tableName,
-        data
+        tableInfo.id,
+        data,
+        dbId
       );
       if ('error' in completeDataResult && completeDataResult.error) {
         return completeDataResult as BolticErrorResponse;
@@ -461,12 +462,26 @@ export class RecordResource {
    * filling missing ones with null.
    */
   private async ensureCompleteRecordData(
-    tableName: string,
-    data: RecordData
+    tableId: string,
+    data: RecordData,
+    dbId?: string
   ): Promise<RecordData | BolticErrorResponse> {
     try {
-      const columnResource = new ColumnResource(this.client);
-      const columnsResult = await columnResource.findAll(tableName);
+      // Fetch columns by the already-resolved table id (scoped to dbId) —
+      // resolving by table name here could hit a same-named table in
+      // another database and poison the payload with its columns
+      const columnsApiClient = new ColumnsApiClient(
+        this.client.getConfig().apiKey,
+        {
+          environment: this.client.getConfig().environment,
+          region: this.client.getConfig().region,
+          timeout: this.client.getConfig().timeout,
+          debug: this.client.getConfig().debug,
+        }
+      );
+      const columnsResult = await columnsApiClient.listColumns(tableId, {
+        db_id: dbId,
+      });
 
       if (isErrorResponse(columnsResult)) {
         return columnsResult;
