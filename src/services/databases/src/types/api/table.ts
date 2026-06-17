@@ -132,3 +132,15 @@ export interface TableListResponse {
   tables: TableRecord[];
   pagination: PaginationInfo;
 }
+
+export interface TableSchemaRecord extends TableRecord {
+  fields?: FieldDefinition[];
+}
+
+export interface SchemaListOptions {
+  page?: number;
+  pageSize?: number;
+  tableName?: string;
+  db_id?: string;
+  resource_id?: string;
+}

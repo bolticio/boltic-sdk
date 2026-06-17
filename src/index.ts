@@ -43,6 +43,8 @@ export type {
   RecordWithId,
   TableCreateRequest,
   TableRecord,
+  TableSchemaRecord,
+  SchemaListOptions,
   WhereCondition,
 } from './services/databases/src/types';
 

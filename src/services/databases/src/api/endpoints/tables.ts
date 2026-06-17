@@ -10,6 +10,7 @@ export interface ApiEndpoint {
 
 export interface TableEndpoints {
   list: ApiEndpoint;
+  schemaList: ApiEndpoint;
   create: ApiEndpoint;
   get: ApiEndpoint;
   update: ApiEndpoint;
@@ -19,6 +20,12 @@ export interface TableEndpoints {
 export const TABLE_ENDPOINTS: TableEndpoints = {
   list: {
     path: '/tables/list',
+    method: 'POST',
+    authenticated: true,
+    rateLimit: { requests: 200, window: 60000 },
+  },
+  schemaList: {
+    path: '/tables/schema/list',
     method: 'POST',
     authenticated: true,
     rateLimit: { requests: 200, window: 60000 },

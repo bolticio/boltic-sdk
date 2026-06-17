@@ -3,6 +3,8 @@ import {
   TableCreateResponse,
   TableQueryOptions,
   TableRecord,
+  TableSchemaRecord,
+  SchemaListOptions,
 } from '../../types/api/table';
 import {
   BaseApiClient,
@@ -207,6 +209,57 @@ export class TablesApiClient extends BaseApiClient {
 
       // Return raw response without transformation
       return response.data as BolticSuccessResponse<{ message: string }>;
+    } catch (error) {
+      return this.formatErrorResponse(error);
+    }
+  }
+
+  /**
+   * List table schemas with optional filtering by table name
+   */
+  async listSchema(
+    options: SchemaListOptions = {}
+  ): Promise<BolticListResponse<TableSchemaRecord> | BolticErrorResponse> {
+    try {
+      const endpoint = TABLE_ENDPOINTS.schemaList;
+      let url = `${this.baseURL}${endpoint.path}`;
+      url = addDbIdToUrl(url, options.db_id);
+
+      const resourceId = options.resource_id || 'boltic';
+      url += url.includes('?')
+        ? `&resource_id=${encodeURIComponent(resourceId)}`
+        : `?resource_id=${encodeURIComponent(resourceId)}`;
+      const filters: Array<{
+        field: string;
+        operator: string;
+        values: unknown[];
+      }> = [];
+      if (options.tableName) {
+        filters.push({
+          field: 'name',
+          operator: '=',
+          values: [options.tableName],
+        });
+      }
+
+      const requestPayload = {
+        page: {
+          page_no: options.page || 1,
+          page_size: options.pageSize || 1000,
+        },
+        filters,
+        sort: [{ field: 'created_at', direction: 'desc' }],
+      };
+
+      const response = await this.httpAdapter.request({
+        url,
+        method: endpoint.method,
+        headers: this.buildHeaders(),
+        data: requestPayload,
+        timeout: this.config.timeout,
+      });
+
+      return response.data as BolticListResponse<TableSchemaRecord>;
     } catch (error) {
       return this.formatErrorResponse(error);
     }
