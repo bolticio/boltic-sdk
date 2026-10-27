@@ -174,7 +174,7 @@ export class ColumnResource extends BaseResource {
 
       // Return next available number (starting from 1 if no columns exist)
       return maxOrder + 1;
-    } catch (error) {
+    } catch {
       // Fallback to timestamp-based order if there's an error
       return Math.floor(Date.now() / 1000) % 2147483647;
     }

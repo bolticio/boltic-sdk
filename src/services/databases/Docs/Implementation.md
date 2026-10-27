@@ -199,7 +199,7 @@ Based on the comprehensive PRD analysis, the following features have been identi
 
 - **Language:** [TypeScript](https://www.typescriptlang.org/) - Type safety, generics, and excellent developer experience
 - **Documentation:** https://www.typescriptlang.org/docs/
-- **HTTP Client:** Native [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) with [Axios](https://axios-http.com/) fallback for Node.js < 18
+- **HTTP Client:** Native [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) on the [supported Node release lines](../../../../README.md#prerequisites), with an optional [Axios](https://axios-http.com/) fallback when `fetch` is unavailable. The same Node engine requirements apply when using Axios.
 - **Fetch Documentation:** https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
 - **Axios Documentation:** https://axios-http.com/docs/intro
 - **AbortController:** For request cancellation - https://developer.mozilla.org/en-US/docs/Web/API/AbortController

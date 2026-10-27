@@ -1,3 +1,4 @@
+import { version as sdkVersion } from '../../../../../package.json';
 import { ColumnQueryOptions, ColumnUpdateRequest } from '../types/api/column';
 import {
   DatabaseCreateRequest,
@@ -547,14 +548,14 @@ export class BolticClient {
   async testConnection(): Promise<boolean> {
     try {
       return await this.authManager.validateApiKeyAsync();
-    } catch (error) {
+    } catch {
       return false;
     }
   }
 
   // Get client version
   getVersion(): string {
-    return '1.0.0';
+    return sdkVersion;
   }
 
   // Environment helpers

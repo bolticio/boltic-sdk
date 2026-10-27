@@ -4,6 +4,9 @@
 
 This document serves as a comprehensive tracking system for all bugs, issues, and their resolutions encountered during the project development. Before fixing any error, always check this document for similar issues and their solutions.
 
+Resolved entries retain their historical environment versions. For current runtime
+support, use the [SDK prerequisites](../../../../README.md#prerequisites).
+
 ## Bug Status Categories
 
 - **🔴 Open** - Issue identified, needs investigation/resolution
