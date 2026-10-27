@@ -247,7 +247,8 @@ export class StorageApiClient extends BaseApiClient {
     storageType?: string
   ): Promise<StorageListItem | null | BolticErrorResponse> {
     const lastSlash = filePath.lastIndexOf('/');
-    const nameOnly = lastSlash === -1 ? filePath : filePath.slice(lastSlash + 1);
+    const nameOnly =
+      lastSlash === -1 ? filePath : filePath.slice(lastSlash + 1);
     const folderPrefix = lastSlash === -1 ? '' : filePath.slice(0, lastSlash);
     const basePath = folderPrefix ? `${folderPrefix}/` : '';
     const result = await this.list({ basePath, storageType });
@@ -285,9 +286,7 @@ export class StorageApiClient extends BaseApiClient {
 
     const cdnRaw = raw.cdnUrl;
     const cdnUrl =
-      cdnRaw === undefined || cdnRaw === null
-        ? null
-        : (cdnRaw as string);
+      cdnRaw === undefined || cdnRaw === null ? null : (cdnRaw as string);
 
     const item: StorageListItem = {
       name,

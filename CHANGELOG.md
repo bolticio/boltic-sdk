@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.0] - Unreleased
+
+> Changed
+
+- **Breaking runtime support change:** require patched Node 22, 24 or 26 release
+  lines: `^22.23.4 || ^24.22.1 || ^26.12.1`. Node 18, 20 and other unlisted majors
+  are no longer supported. Align the root SDK and database module engine metadata.
+- Refresh SDK and database build/test dependencies and the supported Axios peer
+  range, and regenerate their dependency lockfiles.
+- Make release validation non-interactive, validate actual CJS/ESM imports, and
+  derive generated package version and engine metadata from the root manifest.
+
+> Migration
+
+- Clients must upgrade their **Node runtime** as well as the SDK, rebuild and
+  redeploy/restart their applications, and verify the running Node version.
+  Updating SDK metadata alone does not patch Node's built-in fetch/Undici or Node
+  core. npm `engines` normally warns unless the consuming application enables
+  `engine-strict`.
+- This version is being prepared for release; upgrade to `@boltic/sdk@^0.2.0`
+  after it has been published. See the [README](README.md#upgrading-from-sdk-01x).
+
 ## [v0.1.7] - 2026-06-10
 
 > Fixed

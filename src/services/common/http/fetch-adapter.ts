@@ -103,10 +103,7 @@ export class FetchAdapter implements HttpAdapter {
         clearTimeout(timeoutId);
       }
 
-      const data = (await parseFetchResponseData(
-        response,
-        config
-      )) as T;
+      const data = (await parseFetchResponseData(response, config)) as T;
 
       const headers: Record<string, string> = {};
       response.headers.forEach((value, key) => {

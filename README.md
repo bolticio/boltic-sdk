@@ -23,8 +23,30 @@ Boltic SDK is an open-source TypeScript library, developed by Fynd, for integrat
 
 ## Prerequisites
 
-- **Node.js:** >=18.0.0
+- **Node.js:** 22.23.4 or later in Node 22, 24.22.1 or later in Node 24, or 26.12.1 or later in Node 26
 - **NPM:** >=8.0.0
+
+SDK 0.2.0 raises the supported Node runtime floor to the patched release lines
+above. Node 18, 20 and other unlisted majors are no longer supported. See the
+[October 2026 Node security advisory](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases).
+
+### Upgrading from SDK 0.1.x
+
+1. Upgrade Node in the environment that runs your application. For local
+   development with nvm, run `nvm install` and `nvm use` from this repository;
+   `.nvmrc` selects Node 22.23.4. Supported Node 24 and 26 minimums are listed above.
+2. After SDK 0.2.0 is published, update your application to `@boltic/sdk@^0.2.0`
+   and regenerate its dependency lockfile with your normal package manager.
+3. Rebuild and redeploy or restart the application, including container images,
+   workers and serverless functions. Verify `node --version` in the running
+   environment and exercise your SDK operations.
+
+Installing a new SDK version does **not** update Node itself. The SDK uses native
+`fetch`, whose Undici implementation is supplied by Node; adding an npm `undici`
+override does not patch that runtime implementation or Node core. npm normally
+warns about incompatible `engines`; applications that require install-time
+rejection can enable `engine-strict=true` in their own npm configuration.
+See [npm's engine documentation](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#engines).
 
 ## Installation
 

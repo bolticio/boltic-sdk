@@ -1,6 +1,13 @@
 # Boltic SDK - Database Operations
 
-This is the database-specific documentation for the Boltic SDK. For the complete SDK documentation, see the [main README](../../README.md).
+This is the database-specific documentation for the Boltic SDK. For the complete SDK documentation, see the [main README](../../../README.md).
+
+## Runtime requirements
+
+The database module uses the same Node support policy as SDK 0.2.0:
+`^22.23.4 || ^24.22.1 || ^26.12.1`, with npm >=8. Upgrade the application's actual
+Node runtime and rebuild/redeploy when moving from the old Node >=18 policy.
+See the [SDK upgrade instructions](../../../README.md#upgrading-from-sdk-01x).
 
 ## Overview
 

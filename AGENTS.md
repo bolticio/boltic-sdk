@@ -4,10 +4,10 @@
 
 `@boltic/sdk` is a TypeScript SDK for the Boltic platform (databases, workflows, and future modules). It builds to ESM + CJS via Vite with full type declarations.
 
-- **Package**: `@boltic/sdk` v0.1.3
+- **Package**: `@boltic/sdk` v0.2.0
 - **Entry**: `src/index.ts` → `dist/sdk.mjs` (ESM) / `dist/sdk.js` (CJS)
-- **Node**: >=18, npm >=8
-- **Test**: Vitest
+- **Node**: `^22.23.4 || ^24.22.1 || ^26.12.1`, npm >=8; `.nvmrc` selects 22.23.4
+- **Test**: `npm test` runs Vitest once; `npm run test:watch` starts watch mode
 - **Lint**: ESLint + Prettier (semi, singleQuote, trailingComma es5, printWidth 80, tabWidth 2)
 
 ## Architecture
@@ -133,11 +133,19 @@ Use `isErrorResponse(result)` guard to check.
 |---------|---------|
 | `npm run build` | Vite build + post-build script |
 | `npm run dev` | Watch mode |
-| `npm test` | Vitest |
+| `npm test` | Vitest, non-interactive |
+| `npm run test:watch` | Vitest watch mode |
+| `npm run test:module` | Validate built CJS/ESM imports and package metadata |
 | `npm run test:coverage` | Coverage report |
 | `npm run type-check` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
 | `npm run lint:fix` | Auto-fix lint |
+
+Validate install, build, type-check, tests and built module imports on each supported
+Node minimum before a release. Raising the supported Node floor is a consumer
+compatibility change: update both package manifests and lockfile metadata, the
+README and changelog together. SDK engine metadata does not upgrade a consumer's
+Node runtime; client guidance must include rebuilding and redeploying their app.
 
 ## Environment
 

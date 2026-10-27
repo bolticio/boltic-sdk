@@ -1,0 +1,37 @@
+name: SDK validation
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22.23.4', '24.22.1', '26.12.1']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            src/services/databases/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix src/services/databases
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm test
+      - run: npm run build
+      - run: npm run test:module
+      - run: npm audit --audit-level=high
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm audit --prefix src/services/databases --package-lock-only --audit-level=high
+      - run: npm audit --prefix src/services/databases --omit=dev --audit-level=high

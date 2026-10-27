@@ -29,8 +29,7 @@ export type WorkflowSuccessResponse<T> = BolticSuccessResponse<T>;
 export type WorkflowErrorResponse = BolticErrorResponse;
 /** @deprecated Use `BolticSuccessResponse<T> | BolticErrorResponse` directly */
 export type WorkflowApiResponse<T> =
-  | BolticSuccessResponse<T>
-  | BolticErrorResponse;
+  BolticSuccessResponse<T> | BolticErrorResponse;
 
 // ---------------------------------------------------------------------------
 // Endpoint

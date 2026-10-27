@@ -21,7 +21,11 @@ export const SCHEMA_TYPE_MAPPING = {
   boolean: { type: 'boolean', secondary_type: 'string', fallback_value: '' },
   int: { type: 'number', fallback_value: '' },
   integer: { type: 'number', fallback_value: '' },
-  'date-time': { type: 'date-time', secondary_type: 'string', fallback_value: '' },
+  'date-time': {
+    type: 'date-time',
+    secondary_type: 'string',
+    fallback_value: '',
+  },
   date: { type: 'date', secondary_type: 'string', fallback_value: '' },
   json: { type: 'object', fallback_value: {} },
   text: { type: 'string', fallback_value: '' },
@@ -51,4 +55,4 @@ export const SCHEMA_TYPE_MAPPING = {
   'number[]': { type: 'string', fallback_value: '' },
   'number []': { type: 'string', fallback_value: '' },
   'object | any': { type: 'string', fallback_value: '' },
-}
+};
