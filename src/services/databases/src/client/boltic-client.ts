@@ -553,7 +553,11 @@ export class BolticClient {
     }
   }
 
-  // Get client version
+  // Get client version.
+  // NOTE: This returns the root `@boltic/sdk` version (derived from the root
+  // manifest at build time), not the independently-versioned
+  // `@boltic/sdk-databases` package version. Consumers who install
+  // `@boltic/sdk-databases` standalone will see the root SDK version here.
   getVersion(): string {
     return sdkVersion;
   }

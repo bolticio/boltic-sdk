@@ -31,6 +31,11 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run test:module
+      # `npm audit` queries a live, time-varying advisory database, so results
+      # can change between runs without any code change. The gate below only
+      # fails on `high`/`critical`; newly-published moderate advisories in
+      # transitive devDependencies will not block CI or ship to consumers.
+      # Re-run these right before `npm publish` — do not rely on a prior run.
       - run: npm audit --audit-level=high
       - run: npm audit --omit=dev --audit-level=high
       - run: npm audit --prefix src/services/databases --package-lock-only --audit-level=high
