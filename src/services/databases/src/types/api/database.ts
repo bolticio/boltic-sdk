@@ -12,10 +12,7 @@ export type DatabaseStatus = 'ACTIVE' | 'INACTIVE';
  * Database Job status enum
  */
 export type DatabaseJobStatus =
-  | 'pending'
-  | 'in_progress'
-  | 'success'
-  | 'failed';
+  'pending' | 'in_progress' | 'success' | 'failed';
 
 /**
  * Database Job action enum

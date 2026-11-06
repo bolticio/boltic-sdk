@@ -1,3 +1,5 @@
+import { version as packageVersion } from '../package.json';
+
 // Main SDK exports - Boltic SDK for databases
 export * from './auth';
 export * from './errors';
@@ -120,7 +122,6 @@ export type {
   GetBuildLogsData,
 } from './services/serverless/src/types';
 
-
 export { StorageResource } from './services/storage/src/client';
 export {
   StorageApiClient,
@@ -152,4 +153,4 @@ export type {
 } from './services/storage/src/types';
 
 // Version information
-export const VERSION = '1.0.0';
+export const VERSION = packageVersion;

@@ -83,7 +83,6 @@ export class ServerlessApiClient extends BaseApiClient {
       const endpoint = SERVERLESS_ENDPOINTS.get;
       const path = buildServerlessEndpointPath(endpoint, { app_id: appId });
       const url = `${this.baseURL}${path}`;
-      console.log('url', url);
 
       const response = await this.httpAdapter.request<
         ServerlessResponse<GetServerlessData>
@@ -93,7 +92,6 @@ export class ServerlessApiClient extends BaseApiClient {
         headers: this.buildHeaders(),
         timeout: this.config.timeout,
       });
-      console.log('response', response.data);
 
       return response.data;
     } catch (error: unknown) {

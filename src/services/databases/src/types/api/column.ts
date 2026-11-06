@@ -5,13 +5,7 @@ export type AlignmentType = 'left' | 'center' | 'right';
 
 // Decimal types for number and currency fields
 export type DecimalType =
-  | '00'
-  | '0.0'
-  | '0.00'
-  | '0.000'
-  | '0.0000'
-  | '0.00000'
-  | '0.000000';
+  '00' | '0.0' | '0.00' | '0.000' | '0.0000' | '0.00000' | '0.000000';
 
 // Phone format types
 export type PhoneFormatType =

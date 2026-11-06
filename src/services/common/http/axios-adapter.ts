@@ -40,7 +40,7 @@ export class AxiosAdapter implements HttpAdapter {
       this.axios = require('axios');
     } catch (error) {
       throw createErrorWithContext(
-        'Axios is required for Node.js < 18. Please install axios: npm install axios',
+        'Axios is required when native fetch is unavailable. Please install axios: npm install axios',
         { error }
       );
     }

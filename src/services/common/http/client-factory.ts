@@ -12,7 +12,7 @@ export function createHttpAdapter(): HttpAdapter {
     return new AxiosAdapter();
   } catch (error) {
     throw createErrorWithContext(
-      'No suitable HTTP adapter found. Please use Node.js >= 18 or install axios: npm install axios',
+      'No suitable HTTP adapter found. Please use a supported Node.js runtime or install axios: npm install axios',
       { error }
     );
   }

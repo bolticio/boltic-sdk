@@ -38,9 +38,7 @@ export interface BolticErrorResponse {
 }
 
 export type ApiResponse<T> =
-  | BolticSuccessResponse<T>
-  | BolticListResponse<T>
-  | BolticErrorResponse;
+  BolticSuccessResponse<T> | BolticListResponse<T> | BolticErrorResponse;
 
 export function isErrorResponse<T>(
   response: ApiResponse<T>

@@ -12,7 +12,12 @@ function getSchemaMapping(displayType: string): {
   fallback_value: unknown;
 } {
   return (
-    (SCHEMA_TYPE_MAPPING as Record<string, { type: string; fallback_value: unknown }>)[displayType] ?? {
+    (
+      SCHEMA_TYPE_MAPPING as Record<
+        string,
+        { type: string; fallback_value: unknown }
+      >
+    )[displayType] ?? {
       type: 'string',
       fallback_value: '',
     }

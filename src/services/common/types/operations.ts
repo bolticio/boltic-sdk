@@ -36,7 +36,8 @@ export interface DeleteOperation {
 }
 
 export interface CrudOperations<TCreate, TUpdate, TResult, TQuery = unknown>
-  extends CreateOperation<TCreate, TResult>,
+  extends
+    CreateOperation<TCreate, TResult>,
     ReadOperation<TQuery, TResult>,
     UpdateOperation<TUpdate, TResult>,
     DeleteOperation {}

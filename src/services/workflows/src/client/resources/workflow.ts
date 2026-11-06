@@ -26,7 +26,6 @@ import type {
   GetIntegrationResourceParams,
   GetIntegrationsParams,
   IntegrationExecutionData,
-  IntegrationFormData,
   IntegrationFormJsonSchema,
   IntegrationResourceData,
   IntegrationsListData,
@@ -263,17 +262,16 @@ export class WorkflowResource extends BaseResource {
   async getIntegrationForm(
     params: GetIntegrationFormParams
   ): Promise<
-    | BolticSuccessResponse<
-        Record<string, unknown> | IntegrationFormJsonSchema
-      >
+    | BolticSuccessResponse<Record<string, unknown> | IntegrationFormJsonSchema>
     | BolticErrorResponse
   > {
     const rawResult = await this.apiClient.getIntegrationForm(params);
-    console.log('rawResult', JSON.stringify(rawResult, null, 2));
     if (isErrorResponse(rawResult)) {
       return rawResult;
     }
-    const configuration = rawResult.data?.parameters as unknown as { data: FormField[] } || rawResult.data;
+    const configuration =
+      (rawResult.data?.parameters as unknown as { data: FormField[] }) ||
+      rawResult.data;
     const fields = (configuration as unknown as FormField[]) ?? [];
 
     const transformed = params.asJsonSchema
