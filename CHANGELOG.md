@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v0.2.0] - Unreleased
+## [v0.2.0] - 2026-11-06
 
 > Changed
 
@@ -24,8 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Updating SDK metadata alone does not patch Node's built-in fetch/Undici or Node
   core. npm `engines` normally warns unless the consuming application enables
   `engine-strict`.
-- This version is being prepared for release; upgrade to `@boltic/sdk@^0.2.0`
-  after it has been published. See the [README](README.md#upgrading-from-sdk-01x).
+- This version is published to npm as `@boltic/sdk@0.2.0` (the `latest` tag);
+  upgrade to `@boltic/sdk@^0.2.0`. See the
+  [README](README.md#upgrading-from-sdk-01x).
 
 ## [v0.1.7] - 2026-06-10
 
